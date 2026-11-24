@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.3.2-shell';
+const SHELL_CACHE = 'offline-ai-v1.3.3-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -781,24 +781,54 @@ function detectChatMode(text) {
     : 'chat';
 }
 
-async function runChatGeneration(pipe, messages, options, chat, bubble, log, mode) {
+function buildChatPrompt(pipe, messages, modelKey) {
+  try {
+    if (pipe?.tokenizer?.apply_chat_template) {
+      const kwargs = { tokenize: false, add_generation_prompt: true };
+      // A Qwen3 alapból <think> blokkal indítana. A sablonba kell megadni a kapcsolót,
+      // a generálási opciók között a library nem továbbítja a modellnek.
+      if (modelKey === 'chat') kwargs.enable_thinking = false;
+      const text = pipe.tokenizer.apply_chat_template(messages, kwargs);
+      if (typeof text === 'string' && text.length) return text;
+    }
+  } catch (err) {
+    console.warn('Chat sablon előállítása nem sikerült, az üzeneteket használom:', err);
+  }
+  return messages;
+}
+
+async function runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey) {
+  const input = buildChatPrompt(pipe, messages, modelKey);
+  const asText = typeof input === 'string';
+  let streamed = '';
+
   const streamer = new TextStreamer(pipe.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
     callback_function: (chunk) => {
       if (!bubble.isConnected) return;
+      streamed += chunk;
       const current = chat.messages.at(-1);
-      current.content = stripThink((current.content === '…' ? '' : current.content) + chunk);
+      current.content = stripThink(streamed);
       bubble.textContent = current.content;
       log.scrollTop = log.scrollHeight;
     },
   });
 
-  const output = await pipe(messages, { ...options, streamer });
-  let result = output?.[0]?.generated_text;
-  if (Array.isArray(result)) result = result.at(-1)?.content;
-  if (typeof result !== 'string') result = JSON.stringify(result ?? '');
-  return stripThink(result) || '(Üres válasz)';
+  const output = await pipe(input, {
+    ...options,
+    ...(asText ? { return_full_text: false } : {}),
+    streamer,
+  });
+
+  let result = '';
+  const first = Array.isArray(output) ? output[0] : output;
+  if (Array.isArray(first)) result = first.at(-1)?.generated_text ?? '';
+  else result = first?.generated_text ?? '';
+  if (typeof result !== 'string') result = '';
+  result = stripThink(result);
+  if (!result && streamed) result = stripThink(streamed);
+  return result.trim();
 }
 
 async function sendChat(text, forcedMode) {
@@ -862,7 +892,6 @@ async function sendChat(text, forcedMode) {
           max_new_tokens: Math.min(maxNewTokens, 64),
           do_sample: false,
           repetition_penalty: 1.15,
-          enable_thinking: false,
         }
       : {
           max_new_tokens: maxNewTokens,
@@ -870,24 +899,41 @@ async function sendChat(text, forcedMode) {
           temperature: Math.max(safeTemp, 0.01),
           top_p: 0.85,
           repetition_penalty: 1.08,
-          enable_thinking: false,
         };
 
-    let result;
+    let result = '';
     try {
-      result = await runChatGeneration(pipe, messages, options, chat, bubble, log, mode);
+      result = await runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey);
     } catch (sampleErr) {
       if (!options.do_sample) throw sampleErr;
       // Egyes WebGPU/WASM hajtások a mintavételes generálást nem szeretik.
       // Determinista újrapróbálással a válasz még megmarad.
       console.warn('Mintavételes generálás hiba, újrapróbálás mintavétel nélkül:', sampleErr);
-      const { temperature: _ignored, ...fallback } = options;
+      const { temperature: _ignored, top_p: _ignoredTopP, ...fallback } = options;
       fallback.do_sample = false;
       fallback.max_new_tokens = Math.min(maxNewTokens, 256);
       chat.messages.at(-1).content = '…';
       if (bubble.isConnected) bubble.textContent = '…';
-      result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode);
+      result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode, modelKey);
       toast('A mintavétel nem működött, mintavétel nélkül válaszoltam.', 'info');
+    }
+
+    if (!result) {
+      // Előfordul, hogy a modell csak gondolkodási jeleket ír ki. Újrapróbáljuk
+      // rövidebb, mintavétel nélküli generálással, hogy mindenképpen kapjunk szöveget.
+      console.warn('Üres válasz, újrapróbálás rövidebb determinista generálással.');
+      const { temperature: _t, top_p: _p, ...safe } = options;
+      safe.do_sample = false;
+      safe.max_new_tokens = Math.min(maxNewTokens, 160);
+      safe.repetition_penalty = 1.05;
+      chat.messages.at(-1).content = '…';
+      if (bubble.isConnected) bubble.textContent = '…';
+      result = await runChatGeneration(pipe, messages, safe, chat, bubble, log, mode, modelKey);
+      if (result) toast('Az első kísérlet üres volt, újrapróbáltam rövidebben.', 'info');
+    }
+
+    if (!result) {
+      throw new Error('A modell nem írt szöveget. Próbáld újra rövidebb kéréssel, vagy állítsd WASM módra a Settingsben.');
     }
 
     chat.messages.at(-1).content = result;
