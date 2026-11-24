@@ -15,7 +15,7 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.2.0-shell';
+const SHELL_CACHE = 'offline-ai-v1.2.1-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -178,6 +178,7 @@ function initChats() {
       id: c.id || uid(),
       title: c.title || titleFromMessages(c.messages),
       mode: ['auto', 'chat', 'code'].includes(c.mode) ? c.mode : 'auto',
+      temp: Boolean(c.temp),
       updatedAt: c.updatedAt || Date.now(),
     }));
   if (!state.chats.length) state.chats.push(makeChat());
@@ -190,7 +191,8 @@ function activeChat() {
 }
 
 function persistChats() {
-  saveJSON(CHATS_KEY, state.chats);
+  // Az ideiglenes/privát csevegések nem kerülnek tartós tárolóba.
+  saveJSON(CHATS_KEY, state.chats.filter((chat) => !chat.temp));
   saveJSON(ACTIVE_KEY, state.activeChatId);
 }
 
@@ -378,6 +380,8 @@ async function getVlm(onProgress) {
 
 /* -------------------------- navigation -------------------------- */
 
+let chatSearchQuery = '';
+
 function switchView(name) {
   // A „Kód mód” nem külön oldal, hanem a jelenlegi chat egyik módja.
   if (name === 'code') {
@@ -389,9 +393,12 @@ function switchView(name) {
     renderChatList();
     name = 'chat';
   }
-  $$('.nav [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  $$('.side-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  $('#newChatBtn')?.classList.toggle('active', name === 'chat');
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   if (name === 'models') refreshModels();
+  if (name === 'chat') syncChatHeader();
+  setMenu(false);
 }
 
 /* Mobil hamburger menü */
@@ -401,6 +408,7 @@ const mainNav = $('#mainNav');
 const navBackdrop = $('#navBackdrop');
 
 function setMenu(open) {
+  if (open && window.innerWidth <= 767) document.body.classList.remove('sidebar-collapsed');
   mainNav.classList.toggle('open', open);
   navBackdrop.hidden = !open;
   requestAnimationFrame(() => navBackdrop.classList.toggle('show', open));
@@ -412,50 +420,103 @@ function setMenu(open) {
 menuBtn.addEventListener('click', () => setMenu(!mainNav.classList.contains('open')));
 menuClose.addEventListener('click', () => setMenu(false));
 navBackdrop.addEventListener('click', () => setMenu(false));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
-window.addEventListener('resize', () => { if (window.innerWidth > 720) setMenu(false); });
-
-$$('.nav [data-view]').forEach((btn) => btn.addEventListener('click', () => {
-  switchView(btn.dataset.view);
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
   setMenu(false);
+  setProfileMenu(false);
+  setComposerMenu(null);
+});
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 767) setMenu(false);
+});
+
+$$('.side-item[data-view]').forEach((btn) => btn.addEventListener('click', () => {
+  switchView(btn.dataset.view);
 }));
 
+$('#exploreBtn').addEventListener('click', () => {
+  switchView('models');
+  toast('Itt találod a letölthető modelleket.', 'info');
+});
+
+/* Keresés az oldalsávban */
+$('#sidebarSearch').addEventListener('click', () => {
+  const nav = $('#mainNav');
+  const open = !nav.classList.contains('search-open');
+  nav.classList.toggle('search-open', open);
+  if (open) {
+    $('#chatSearch').focus();
+  } else {
+    $('#chatSearch').value = '';
+    chatSearchQuery = '';
+    renderChatList();
+  }
+});
+$('#chatSearch').addEventListener('input', (e) => {
+  chatSearchQuery = e.target.value.trim().toLowerCase();
+  renderChatList();
+});
+
+/* Oldalsáv összecsukása asztalon */
+function applySidebarCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const btn = $('#sidebarCollapse');
+  btn.setAttribute('aria-label', collapsed ? 'Oldalsáv kinyitása' : 'Oldalsáv összecsukása');
+  btn.title = collapsed ? 'Kinyitás' : 'Összecsukás';
+}
+applySidebarCollapsed(localStorage.getItem('sidebarCollapsed') === '1');
+$('#sidebarCollapse').addEventListener('click', () => {
+  const collapsed = !document.body.classList.contains('sidebar-collapsed');
+  applySidebarCollapsed(collapsed);
+  localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+});
+
+/* Profil és fiók menü */
+function setProfileMenu(open) {
+  const menu = $('#profileMenu');
+  if (!menu) return;
+  menu.hidden = !open;
+  $('#profileBtn')?.setAttribute('aria-expanded', String(open));
+}
+$('#profileBtn').addEventListener('click', (event) => {
+  event.stopPropagation();
+  setProfileMenu($('#profileMenu').hidden);
+  setComposerMenu(null);
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.profile-wrap')) setProfileMenu(false);
+  if (!event.target.closest('.composer-wrap')) setComposerMenu(null);
+});
+$('#profileSettings').addEventListener('click', () => {
+  setProfileMenu(false);
+  switchView('settings');
+});
+$('#upgradeBtn').addEventListener('click', () => {
+  setProfileMenu(false);
+  switchView('settings');
+  toast('A Nexa AI ingyenes. Az APK frissítését a Telepítés résznél találod.', 'info');
+});
 $('#themeBtn').addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
   document.documentElement.dataset.theme = next;
   localStorage.setItem('theme', next);
+  setProfileMenu(false);
+  toast(next === 'light' ? 'Világos téma bekapcsolva.' : 'Sötét téma bekapcsolva.', 'info');
 });
+
+/* A böngészős „telepítés” csak parancsikont hoz létre – mindenhol a valódi APK-t kínáljuk. */
+const installBtn = $('#installBtn');
+installBtn.hidden = false;
+installBtn.textContent = '⬇ Nexa AI APK letöltése';
+installBtn.addEventListener('click', () => {
+  setProfileMenu(false);
+  toast('APK letöltése indult. Telepítés után az alkalmazásfiókból indítsd a Nexa AI-t.', 'ok');
+  window.location.href = './downloads/offline-ai.apk';
+});
+window.addEventListener('beforeinstallprompt', (event) => event.preventDefault());
 
 $('#chatTemp').addEventListener('input', (e) => { $('#tempOut').textContent = e.target.value; });
 $('#chatTokens').addEventListener('input', (e) => { $('#tokensOut').textContent = e.target.value; });
-
-/* Androidon a böngészős „telepítés” csak parancsikont hoz létre,
-   ezért ott közvetlenül a valódi APK-t kínáljuk. */
-const installBtn = $('#installBtn');
-const isAndroid = /Android/i.test(navigator.userAgent);
-
-if (isAndroid) {
-  window.addEventListener('beforeinstallprompt', (event) => event.preventDefault());
-  installBtn.textContent = '⬇ APK telepítése';
-  installBtn.hidden = false;
-  installBtn.addEventListener('click', () => {
-    toast('APK letöltése indult. Telepítés után az alkalmazásfiókból indítsd a Nexa AI-t.', 'ok');
-    window.location.href = './downloads/offline-ai.apk';
-  });
-} else {
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    state.deferredPrompt = event;
-    installBtn.hidden = false;
-  });
-  installBtn.addEventListener('click', async () => {
-    if (!state.deferredPrompt) return toast('A böngésző nem támogatja a telepítést.', 'info');
-    state.deferredPrompt.prompt();
-    await state.deferredPrompt.userChoice;
-    state.deferredPrompt = null;
-    installBtn.hidden = true;
-  });
-}
 
 /* ---------------------------- chat ------------------------------ */
 
@@ -495,7 +556,10 @@ function syncChatHeader() {
   $('#chatTitle').textContent = chat.title;
   const modeText = chat.mode === 'auto' ? 'Automatikus' : chat.mode === 'code' ? 'Kód' : 'Csevegés';
   const turns = chat.messages.filter((m) => m.role === 'user').length;
-  $('#chatSubtitle').textContent = `${modeText} mód · ${turns} üzenet · automatikusan mentve`;
+  $('#chatSubtitle').textContent = `${modeText} mód · ${turns} üzenet · ${chat.temp ? 'ideiglenes' : 'automatikusan mentve'}`;
+  $('#chatHeading').hidden = chat.messages.length === 0;
+  $('#tempBadge').hidden = !chat.temp;
+  $('#tempChatBtn').setAttribute('aria-pressed', String(Boolean(chat.temp)));
   $('#codeOptions').hidden = chat.mode !== 'code';
   if ($('#chatMode').value !== chat.mode) $('#chatMode').value = chat.mode;
 }
@@ -504,14 +568,23 @@ function renderChatList() {
   const list = $('#chatList');
   if (!list) return;
   list.textContent = '';
-  const sorted = state.chats.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const sorted = state.chats
+    .filter((chat) => !chat.temp && (!chatSearchQuery || chat.title.toLowerCase().includes(chatSearchQuery)))
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  if (!sorted.length) {
+    const empty = document.createElement('div');
+    empty.className = 'pinned-empty';
+    empty.textContent = chatSearchQuery ? 'Nincs találat.' : 'Még nincs mentett csevegés.';
+    list.appendChild(empty);
+    return;
+  }
   sorted.forEach((chat) => {
     const row = document.createElement('div');
     row.className = `chat-list-item${chat.id === state.activeChatId ? ' active' : ''}`;
 
     const open = document.createElement('button');
     open.type = 'button';
-    open.className = 'nav-item';
+    open.className = 'chat-open';
     const icon = document.createElement('span');
     icon.textContent = chat.mode === 'code' ? '🔨' : '💬';
     const label = document.createElement('span');
@@ -585,10 +658,29 @@ function newChat() {
   $('#chatInput').focus();
 }
 $('#newChatBtn').addEventListener('click', newChat);
+$('#scheduledNewBtn').addEventListener('click', () => {
+  switchView('chat');
+  newChat();
+});
+
+$('#tempChatBtn').addEventListener('click', () => {
+  const chat = activeChat();
+  chat.temp = !chat.temp;
+  chat.updatedAt = Date.now();
+  persistChats();
+  syncChatHeader();
+  renderChatList();
+  toast(chat.temp
+    ? 'Ideiglenes csevegés: nem kerül a mentett beszélgetések közé.'
+    : 'A csevegés ismét mentve lesz.', 'info');
+});
 
 function renderChat() {
   const log = $('#chatLog');
   const chat = activeChat();
+  const hasMessages = chat.messages.length > 0;
+  $('#view-chat')?.classList.toggle('has-messages', hasMessages);
+  $('#chatHeading').hidden = !hasMessages;
   log.textContent = '';
   if (!chat.messages.length) {
     const empty = document.createElement('div');
@@ -687,6 +779,8 @@ async function sendChat(text, forcedMode) {
   sendBtn.disabled = true;
   sendBtn.textContent = '…';
   input.value = '';
+  updateComposerState();
+  setComposerMenu(null);
 
   chat.messages.push({ role: 'user', content: userText, ts: Date.now() });
   chat.messages.push({ role: 'assistant', content: '…', ts: Date.now(), code: mode === 'code' });
@@ -775,9 +869,109 @@ function enterToSend(selector, formSelector) {
 }
 enterToSend('#chatInput', '#chatForm');
 
+function updateComposerState() {
+  const hasText = Boolean($('#chatInput').value.trim());
+  $('.composer')?.classList.toggle('has-text', hasText);
+}
+$('#chatInput').addEventListener('input', updateComposerState);
+
+function setComposerMenu(which) {
+  const plusOpen = which === 'plus';
+  const thinkOpen = which === 'think';
+  $('#plusMenu').hidden = !plusOpen;
+  $('#thinkMenu').hidden = !thinkOpen;
+  $('#plusBtn')?.setAttribute('aria-expanded', String(plusOpen));
+  $('#thinkBtn')?.setAttribute('aria-expanded', String(thinkOpen));
+}
+
+$('#plusBtn').addEventListener('click', (event) => {
+  event.stopPropagation();
+  const open = $('#plusMenu').hidden;
+  setComposerMenu(open ? 'plus' : null);
+  setProfileMenu(false);
+});
+$('#thinkBtn').addEventListener('click', (event) => {
+  event.stopPropagation();
+  const open = $('#thinkMenu').hidden;
+  setComposerMenu(open ? 'think' : null);
+  setProfileMenu(false);
+});
+
+function chooseChatMode(mode) {
+  const select = $('#chatMode');
+  select.value = mode;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+$$('[data-plus]').forEach((btn) => btn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const action = btn.dataset.plus;
+  setComposerMenu(null);
+  if (action === 'new') newChat();
+  else if (action === 'image') switchView('image');
+  else if (action === 'voice') {
+    switchView('voice');
+    toast('Itt írod át beszédet szöveggé.', 'info');
+  } else if (action === 'models') switchView('models');
+}));
+
+$$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const action = btn.dataset.think;
+  setComposerMenu(null);
+  if (action === 'code') {
+    chooseChatMode('code');
+    toast('Kód mód bekapcsolva.', 'info');
+    return;
+  }
+  if (action === 'advanced') {
+    const panel = $('#advancedPanel');
+    panel.hidden = !panel.hidden;
+    toast(panel.hidden ? 'Speciális beállítások elrejtve.' : 'Speciális beállítások megnyitva.', 'info');
+    return;
+  }
+  const temp = action === 'deep' ? '0.5' : '0.3';
+  const tokens = action === 'deep' ? '512' : '256';
+  $('#chatTemp').value = temp;
+  $('#tempOut').textContent = temp;
+  $('#chatTokens').value = tokens;
+  $('#tokensOut').textContent = tokens;
+  chooseChatMode('chat');
+  toast(action === 'deep' ? 'Alapos gondolkodás: hosszabb válasz.' : 'Gyors válasz mód.', 'info');
+}));
+
+async function toggleMicToChat() {
+  try {
+    if (state.mic) {
+      const samples = stopRecording();
+      await transcribe(samples);
+      const text = $('#asrResult').value.trim();
+      if (!text) return;
+      $('#chatInput').value = text;
+      updateComposerState();
+      $('#chatInput').focus();
+      toast('A leírt szöveg beszúrva.', 'ok');
+    } else {
+      await startRecording();
+      toast('Felvétel folyik… újabb kattintásra leírom.', 'info');
+    }
+  } catch (err) {
+    console.error(err);
+    toast(`Mikrofon hiba: ${err.message}`, 'error');
+    if (state.mic) stopRecording();
+  }
+}
+$('#micBtn').addEventListener('click', toggleMicToChat);
+$('#voiceBtn').addEventListener('click', () => {
+  if ($('#chatInput').value.trim()) return $('#chatForm').requestSubmit();
+  toggleMicToChat();
+});
+
+switchView('chat');
 syncChatHeader();
 renderChat();
 renderChatList();
+updateComposerState();
 
 /* ---------------------------- voice ----------------------------- */
 
