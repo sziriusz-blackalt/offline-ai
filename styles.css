@@ -179,14 +179,71 @@ code { background: var(--surface-3); padding: .1em .35em; border-radius: 5px; fo
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---------- Mobil ---------- */
 @media (max-width: 720px) {
-  .app-shell { padding: 10px 10px 30px; }
+  html, body { overflow-x: hidden; }
+  body { font-size: 16px; }
+
+  .app-shell { padding: 12px 12px calc(96px + env(safe-area-inset-bottom)); }
+
+  .topbar { padding: 4px 2px 12px; gap: 8px; }
   .brand small { display: none; }
-  .nav { position: fixed; bottom: 0; left: 0; right: 0; margin: 0; border-radius: 0; border-width: 1px 0 0; padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); }
-  .nav-item { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 2px; }
-  .nav-item span { font-size: 19px; }
-  .view-head { align-items: flex-start; flex-direction: column; }
-  .chat-panel { min-height: 60vh; }
-  .chat-log { max-height: 48vh; }
-  .footer { padding-bottom: 60px; }
+  .brand-mark { width: 38px; height: 38px; border-radius: 10px; font-size: 21px; }
+  .brand strong { font-size: 16px; }
+  .badge { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+  .btn { min-height: 42px; padding: 9px 12px; font-size: 14px; }
+  .btn-icon { width: 42px; height: 42px; }
+
+  .nav {
+    position: fixed; top: auto; bottom: 0; left: 0; right: 0;
+    margin: 0; gap: 2px; padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0; border-width: 1px 0 0;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .32);
+  }
+  .nav-item { flex-direction: column; gap: 3px; min-height: 54px; padding: 6px 1px; font-size: 10px; }
+  .nav-item span { font-size: 20px; line-height: 1; }
+  .nav-item label { font-size: 10px; white-space: nowrap; }
+
+  .view-head { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .view-head h1 { font-size: 22px; }
+  .toolbar { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+  .toolbar select, .toolbar input[type=range], .card select, .card input[type=text], textarea {
+    font-size: 16px; padding: 11px 12px; min-height: 46px;
+  }
+  .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+  .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card { padding: 14px; }
+  .card h2 { font-size: 17px; }
+  .row input[type=text] { min-width: 0; width: 100%; }
+  .row .btn { flex: 1; }
+
+  .chat-panel { min-height: 0; height: calc(100dvh - 230px); }
+  .chat-log { max-height: none; flex: 1; padding: 14px; }
+  .msg { max-width: 94%; }
+  .bubble { padding: 10px 12px; }
+  .composer { padding: 10px; gap: 8px; }
+  .composer textarea { min-height: 46px; max-height: 130px; }
+  .composer .btn { min-width: 84px; padding: 10px; }
+
+  .preview img { max-height: 220px; }
+  .model-card { padding: 12px; }
+  .model-actions .btn { flex: 1; }
+  .toast { bottom: calc(82px + env(safe-area-inset-bottom)); }
+  .footer { padding-bottom: 8px; }
+}
+
+@media (max-width: 480px) {
+  .brand strong { font-size: 15px; }
+  .topbar-actions { gap: 6px; }
+  .composer { flex-direction: column; }
+  .composer .btn { width: 100%; }
+  .stat strong { font-size: 14px; }
+  .stat span { font-size: 10px; }
+}
+
+/* Tájolás, rövid képernyő: ne csússzon át a tartalom a navigáción. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .nav-item { flex-direction: row; min-height: 42px; }
+  .nav-item span { font-size: 16px; }
+  .chat-panel { height: calc(100dvh - 150px); }
 }
