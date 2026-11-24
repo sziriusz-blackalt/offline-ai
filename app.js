@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.3.1-shell';
+const SHELL_CACHE = 'offline-ai-v1.3.2-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -1001,7 +1001,7 @@ $$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
   }
   chooseChatMode('chat');
   toast(fast
-    ? 'Gyors mód: ⚡ Szikra. Rövid, de néha hibás magyar válaszok.'
+    ? 'Gyors próba: ⚡ Szikra. Nagyon hibás magyarul – értelmes válaszhoz válassz Novát.'
     : 'Minőségi mód: ✨ Nova. Jobb magyar válaszok.', 'info');
 }));
 
