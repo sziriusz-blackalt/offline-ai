@@ -15,11 +15,11 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.1.1-shell';
+const SHELL_CACHE = 'offline-ai-v1.1.2-shell';
 
 const MODEL_DEFS = {
   tiny: {
-    group: 'Csevegés', label: 'SmolLM2 135M Instruct', task: 'text-generation',
+    group: 'Csevegés', nick: 'Szikra', icon: '⚡', label: 'SmolLM2 135M Instruct', task: 'text-generation',
     model: 'onnx-community/SmolLM2-135M-Instruct-ONNX',
     web: 'q4', wasm: 'q4', sizeMB: 172, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
@@ -27,7 +27,7 @@ const MODEL_DEFS = {
     note: 'Nagyon gyors, kevés tárhely – egyszerűbb kérdésekre jó.',
   },
   chat: {
-    group: 'Csevegés', label: 'Qwen3 0.6B', task: 'text-generation',
+    group: 'Csevegés', nick: 'Nova', icon: '✨', label: 'Qwen3 0.6B', task: 'text-generation',
     model: 'onnx-community/Qwen3-0.6B-ONNX',
     web: 'q4', wasm: 'q4', sizeMB: 880, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
@@ -35,7 +35,7 @@ const MODEL_DEFS = {
     note: 'Jobb minőségű magyar és általános válaszok.',
   },
   code: {
-    group: 'Kód', label: 'Qwen2.5-Coder 0.5B', task: 'text-generation',
+    group: 'Kód', nick: 'Forge', icon: '🔨', label: 'Qwen2.5-Coder 0.5B', task: 'text-generation',
     model: 'onnx-community/Qwen2.5-Coder-0.5B-Instruct',
     web: 'q4', wasm: 'q4', sizeMB: 822, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
@@ -43,14 +43,14 @@ const MODEL_DEFS = {
     note: 'Kódírásra és magyarázatra hangolva.',
   },
   asr: {
-    group: 'Hang', label: 'Whisper Tiny', task: 'automatic-speech-recognition',
+    group: 'Hang', nick: 'Suttogó', icon: '🎧', label: 'Whisper Tiny', task: 'automatic-speech-recognition',
     model: 'onnx-community/whisper-tiny',
     web: 'q8', wasm: 'q8', sizeMB: 45,
     probe: 'onnx/encoder_model_quantized.onnx',
     note: 'Beszéd szöveggé alakítása, több nyelven.',
   },
   tts: {
-    group: 'Hang', label: 'Supertonic TTS', task: 'text-to-speech',
+    group: 'Hang', nick: 'Szirén', icon: '🎤', label: 'Supertonic TTS', task: 'text-to-speech',
     model: 'onnx-community/Supertonic-TTS-ONNX',
     web: 'fp32', wasm: 'fp32', sizeMB: 260,
     probe: 'onnx/text_encoder.onnx',
@@ -58,21 +58,21 @@ const MODEL_DEFS = {
     note: 'Természetes angol beszéd, 10 hanggal.',
   },
   caption: {
-    group: 'Kép', label: 'Képleíró / OCR', task: 'image-to-text',
+    group: 'Kép', nick: 'Látó', icon: '👁️', label: 'Képleíró / OCR', task: 'image-to-text',
     model: 'Xenova/vit-gpt2-image-captioning',
     web: 'q8', wasm: 'q8', sizeMB: 190,
     probe: 'onnx/decoder_model_merged_quantized.onnx',
     note: 'Leírja a képet és felismeri a nyomtatott szöveget.',
   },
   matte: {
-    group: 'Kép', label: 'Háttér eltávolító', task: 'background-removal',
+    group: 'Kép', nick: 'Olló', icon: '✂️', label: 'Háttér eltávolító', task: 'background-removal',
     model: 'Xenova/modnet',
     web: 'q8', wasm: 'q8', sizeMB: 25,
     probe: 'onnx/model_quantized.onnx',
     note: 'Portré hátterét átlátszóvá teszi.',
   },
   vlm: {
-    group: 'Kép', label: 'LFM2.5-VL 450M', task: 'image-text-to-text',
+    group: 'Kép', nick: 'Látnok', icon: '🔮', label: 'LFM2.5-VL 450M', task: 'image-text-to-text',
     model: 'onnx-community/LFM2.5-VL-450M-ONNX',
     web: 'q4', wasm: 'q4', sizeMB: 350,
     probe: 'onnx/decoder_model_merged_q4.onnx_data',
@@ -926,10 +926,11 @@ async function refreshModels() {
     head.className = 'model-card-head';
     const title = document.createElement('div');
     const h3 = document.createElement('h3');
-    h3.textContent = def.label;
+    h3.textContent = `${def.icon ? def.icon + ' ' : ''}${def.nick}`;
     const meta = document.createElement('div');
     meta.className = 'meta';
-    meta.textContent = `${def.group} · ${def.note} · ~${info.size ? formatBytes(info.size) : '?'} · ${def.model}`;
+    meta.textContent = `${def.label} · ${def.group} · ${def.note} · ~${info.size ? formatBytes(info.size) : '?'}`;
+    meta.title = def.model;
     title.append(h3, meta);
     const tag = document.createElement('span');
     tag.className = `tag ${info.cached ? 'ok' : 'wait'}`;
@@ -966,7 +967,7 @@ async function refreshModels() {
             dtype: await resolveDtype(key, await resolveDevice()),
           });
         } catch { /* régi modellnél nem elérhető */ }
-        toast(`${def.label} gyorsítótára törölve.`, 'ok');
+        toast(`${def.nick} gyorsítótára törölve.`, 'ok');
         refreshModels();
       });
       actions.appendChild(del);
@@ -996,11 +997,11 @@ async function downloadModel(key) {
       await pipe.dispose?.();
       state.pipes.delete(key);
     }
-    toast(`${def.label} készen áll offline használatra.`, 'ok');
+    toast(`${def.nick} készen áll offline használatra.`, 'ok');
   } catch (err) {
     console.error(err);
     setProgress(key, 0, 'Hiba');
-    toast(`${def.label}: ${err.message}`, 'error');
+    toast(`${def.nick}: ${err.message}`, 'error');
   } finally {
     refreshModels();
   }

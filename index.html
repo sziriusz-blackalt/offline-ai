@@ -73,8 +73,8 @@
         <div class="toolbar">
           <label>Modell
             <select id="chatModel">
-              <option value="tiny">SmolLM2 135M Instruct · gyors, telefonbarát (~170 MB)</option>
-              <option value="chat" selected>Qwen3 0.6B · jobb minőség (~880 MB)</option>
+              <option value="tiny">⚡ Szikra · gyors, telefonbarát (~170 MB)</option>
+              <option value="chat" selected>✨ Nova · jobb minőség (~880 MB)</option>
             </select>
           </label>
           <label>Stílus
@@ -155,7 +155,7 @@
         <div class="grid-2">
           <article class="card">
             <h2>🎧 Beszéd → szöveg</h2>
-            <p class="muted">Whisper Tiny modell. Magyar felismerés is támogatott, de a pontosság mérsékelt.</p>
+            <p class="muted">🎧 Suttogó (Whisper Tiny). Magyar felismerés is támogatott, de a pontosság mérsékelt.</p>
             <label>Nyelv
               <select id="asrLang">
                 <option value="hungarian" selected>Magyar</option>
@@ -180,7 +180,7 @@
 
           <article class="card">
             <h2>🔊 Szöveg → beszéd</h2>
-            <p class="muted">Supertonic TTS. Jelenleg angol nyelvű hangok érhetők el.</p>
+            <p class="muted">🎤 Szirén (Supertonic TTS). Jelenleg angol nyelvű hangok érhetők el.</p>
             <label>Hang
               <select id="ttsVoice">
                 <option value="F1">F1 · női, kifejező</option>
@@ -213,7 +213,7 @@
         </div>
         <div class="grid-2">
           <article class="card">
-            <h2>🖼️ Kép leírása / OCR</h2>
+            <h2>👁️ Látó – kép leírása / OCR</h2>
             <label class="btn btn-ghost file-btn">Kép kiválasztása<input type="file" id="imgCaptionFile" accept="image/*" hidden></label>
             <div id="imgCaptionPreview" class="preview"></div>
             <button id="captionBtn" class="btn btn-primary">Leírás készítése</button>
@@ -221,7 +221,7 @@
           </article>
 
           <article class="card">
-            <h2>✂️ Háttér eltávolítása</h2>
+            <h2>✂️ Olló – háttér eltávolítása</h2>
             <label class="btn btn-ghost file-btn">Portré kiválasztása<input type="file" id="imgMatteFile" accept="image/*" hidden></label>
             <div id="imgMattePreview" class="preview"></div>
             <button id="matteBtn" class="btn btn-primary">Háttér eltávolítása</button>
@@ -231,7 +231,7 @@
 
           <article class="card card-wide">
             <h2>❓ Kérdezz a képről (haladó)</h2>
-            <p class="muted">Egy kis multimodális modell (LFM2.5-VL 450M, q4). Első használat előtt kb. 350 MB letöltés szükséges.</p>
+            <p class="muted">🔮 Látnok (LFM2.5-VL 450M, q4). Első használat előtt kb. 350 MB letöltés szükséges.</p>
             <label class="btn btn-ghost file-btn">Kép kiválasztása<input type="file" id="vlmFile" accept="image/*" hidden></label>
             <div id="vlmPreview" class="preview"></div>
             <div class="row">
@@ -313,7 +313,7 @@
     </main>
 
     <footer class="footer">
-      Nexa AI · minden számítás a készülékeden történik · <span id="version">v1.1.1</span>
+      Nexa AI · minden számítás a készülékeden történik · <span id="version">v1.1.2</span>
       <br><a href="downloads/offline-ai.apk" download>⬇ Android APK letöltése / frissítése</a>
     </footer>
   </div>
