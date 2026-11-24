@@ -2,6 +2,12 @@
 
 Egyetlen statikus webalkalmazás, ami **telefonon (Android/iOS) és számítógépen (Windows/macOS/Linux) is fut**, és a modellek letöltése után **internetkapcsolat nélkül** használható. Nincs szerver, nincs API-kulcs, nincs adatgyűjtés: minden számítás a készüléken történik.
 
+## Élő cím
+
+**https://sziriusz-blackalt.github.io/offline-ai/**
+
+A repó **nyilvános**, a GitHub Pages tartósan kiszolgálja – a laptopnak nem kell bekapcsolva lennie. Androidra van egy aláírt APK is: `offline-ai.apk` (a projekt gyökerében, illetve az `offline-ai-apk-github/` mappában). Ugyanazzal a kulccsal van aláírva, mint a korábbi verzió, így simán frissíti azt.
+
 ## Mit tartalmaz
 
 | Funkció | Modell | Megjegyzés |
