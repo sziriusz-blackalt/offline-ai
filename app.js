@@ -15,7 +15,7 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.0.6-shell';
+const SHELL_CACHE = 'offline-ai-v1.0.7-shell';
 
 const MODEL_DEFS = {
   tiny: {
