@@ -15,7 +15,7 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.1.2-shell';
+const SHELL_CACHE = 'offline-ai-v1.2.0-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -106,12 +106,16 @@ const CODE_STYLES = {
   review: 'Tekintsd át a kódot magyarul: biztonság, olvashatóság, teljesítmény. Pontokba szedett javaslatokat adj.',
 };
 
+const CHATS_KEY = 'nexa-chats-v1';
+const ACTIVE_KEY = 'nexa-active-chat-v1';
+
 const state = {
   pipes: new Map(),
-  chats: { chat: [], code: [] },
+  chats: [],
+  activeChatId: null,
   modelInfo: {},
   busyChat: false,
-  busyCode: false,
+  downloading: new Set(),
   mic: null,
   ttsBlobUrl: null,
   matteUrl: null,
@@ -137,6 +141,70 @@ function saveJSON(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode */ }
 }
 
+/* -------------------------- chat sessions ------------------------- */
+
+function uid() {
+  return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function titleFromMessages(messages) {
+  const first = Array.isArray(messages) ? messages.find((m) => m?.role === 'user') : null;
+  const text = String(first?.content || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'Új csevegés';
+  return text.length > 34 ? `${text.slice(0, 34)}…` : text;
+}
+
+function makeChat(title = 'Új csevegés', mode = 'auto', messages = []) {
+  return { id: uid(), title, mode, messages, createdAt: Date.now(), updatedAt: Date.now() };
+}
+
+function initChats() {
+  let loaded = loadJSON(CHATS_KEY, null);
+  if (!Array.isArray(loaded) || !loaded.length) {
+    loaded = [];
+    const legacyChat = loadJSON('offline-ai-chat', []);
+    const legacyCode = loadJSON('offline-ai-code', []);
+    if (Array.isArray(legacyChat) && legacyChat.length) {
+      loaded.push(makeChat(titleFromMessages(legacyChat), 'chat', legacyChat));
+    }
+    if (Array.isArray(legacyCode) && legacyCode.length) {
+      loaded.push(makeChat(titleFromMessages(legacyCode), 'code', legacyCode));
+    }
+  }
+  state.chats = loaded
+    .filter((c) => c && Array.isArray(c.messages))
+    .map((c) => ({
+      ...c,
+      id: c.id || uid(),
+      title: c.title || titleFromMessages(c.messages),
+      mode: ['auto', 'chat', 'code'].includes(c.mode) ? c.mode : 'auto',
+      updatedAt: c.updatedAt || Date.now(),
+    }));
+  if (!state.chats.length) state.chats.push(makeChat());
+  const savedId = localStorage.getItem(ACTIVE_KEY);
+  state.activeChatId = state.chats.some((c) => c.id === savedId) ? savedId : state.chats[0].id;
+}
+
+function activeChat() {
+  return state.chats.find((c) => c.id === state.activeChatId) || state.chats[0];
+}
+
+function persistChats() {
+  saveJSON(CHATS_KEY, state.chats);
+  saveJSON(ACTIVE_KEY, state.activeChatId);
+}
+
+function isSmallDevice() {
+  return window.matchMedia?.('(max-width: 720px)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+}
+
+async function releasePipe(key) {
+  const pipe = state.pipes.get(key);
+  if (!pipe) return;
+  try { await pipe.dispose?.(); } catch { /* már felszabadítva */ }
+  state.pipes.delete(key);
+}
+
 let offlineMode = localStorage.getItem('offline') === '1';
 $('#offlineToggle').checked = offlineMode;
 env.allowRemoteModels = !offlineMode;
@@ -144,8 +212,7 @@ env.allowRemoteModels = !offlineMode;
 const theme = localStorage.getItem('theme') || 'dark';
 document.documentElement.dataset.theme = theme;
 
-state.chats.chat = loadJSON('offline-ai-chat', []);
-state.chats.code = loadJSON('offline-ai-code', []);
+initChats();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -184,6 +251,17 @@ function toast(message, kind = 'info') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3800);
 }
+
+// Egy váratlan hiba ne döntse el az egész felületet.
+window.addEventListener('error', (event) => {
+  console.error('Váratlan hiba:', event.error || event.message);
+  toast(`Váratlan hiba: ${event.message || 'ismeretlen'}`, 'error');
+});
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Kezeletlen ígéret hiba:', event.reason);
+  toast(`Hiba: ${event.reason?.message || String(event.reason || 'ismeretlen')}`, 'error');
+  event.preventDefault();
+});
 
 function stripThink(text) {
   return String(text || '')
@@ -301,7 +379,17 @@ async function getVlm(onProgress) {
 /* -------------------------- navigation -------------------------- */
 
 function switchView(name) {
-  $$('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  // A „Kód mód” nem külön oldal, hanem a jelenlegi chat egyik módja.
+  if (name === 'code') {
+    const chat = activeChat();
+    chat.mode = 'code';
+    persistChats();
+    if ($('#chatMode')) $('#chatMode').value = 'code';
+    syncChatHeader();
+    renderChatList();
+    name = 'chat';
+  }
+  $$('.nav [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   if (name === 'models') refreshModels();
 }
@@ -327,7 +415,7 @@ navBackdrop.addEventListener('click', () => setMenu(false));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 window.addEventListener('resize', () => { if (window.innerWidth > 720) setMenu(false); });
 
-$$('.nav-item').forEach((btn) => btn.addEventListener('click', () => {
+$$('.nav [data-view]').forEach((btn) => btn.addEventListener('click', () => {
   switchView(btn.dataset.view);
   setMenu(false);
 }));
@@ -351,6 +439,7 @@ if (isAndroid) {
   installBtn.textContent = '⬇ APK telepítése';
   installBtn.hidden = false;
   installBtn.addEventListener('click', () => {
+    toast('APK letöltése indult. Telepítés után az alkalmazásfiókból indítsd a Nexa AI-t.', 'ok');
     window.location.href = './downloads/offline-ai.apk';
   });
 } else {
@@ -401,28 +490,124 @@ function renderFormatted(container, text, isCode) {
   });
 }
 
-function renderChat(kind) {
-  const log = $(kind === 'chat' ? '#chatLog' : '#codeLog');
+function syncChatHeader() {
+  const chat = activeChat();
+  $('#chatTitle').textContent = chat.title;
+  const modeText = chat.mode === 'auto' ? 'Automatikus' : chat.mode === 'code' ? 'Kód' : 'Csevegés';
+  const turns = chat.messages.filter((m) => m.role === 'user').length;
+  $('#chatSubtitle').textContent = `${modeText} mód · ${turns} üzenet · automatikusan mentve`;
+  $('#codeOptions').hidden = chat.mode !== 'code';
+  if ($('#chatMode').value !== chat.mode) $('#chatMode').value = chat.mode;
+}
+
+function renderChatList() {
+  const list = $('#chatList');
+  if (!list) return;
+  list.textContent = '';
+  const sorted = state.chats.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  sorted.forEach((chat) => {
+    const row = document.createElement('div');
+    row.className = `chat-list-item${chat.id === state.activeChatId ? ' active' : ''}`;
+
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'nav-item';
+    const icon = document.createElement('span');
+    icon.textContent = chat.mode === 'code' ? '🔨' : '💬';
+    const label = document.createElement('span');
+    label.className = 'chat-label';
+    label.textContent = chat.title;
+    const meta = document.createElement('small');
+    meta.className = 'chat-meta';
+    meta.textContent = `${chat.mode === 'code' ? 'Kód' : chat.mode === 'chat' ? 'Csevegés' : 'Auto'} · ${chat.messages.length} üzenet`;
+    label.appendChild(meta);
+    open.append(icon, label);
+    open.addEventListener('click', () => {
+      state.activeChatId = chat.id;
+      persistChats();
+      syncChatHeader();
+      renderChat();
+      renderChatList();
+      setMenu(false);
+    });
+
+    const rename = document.createElement('button');
+    rename.type = 'button';
+    rename.className = 'chat-act';
+    rename.textContent = '✎';
+    rename.title = 'Átnevezés';
+    rename.setAttribute('aria-label', `Átnevezés: ${chat.title}`);
+    rename.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const name = prompt('Beszélgetés neve:', chat.title);
+      if (name && name.trim()) {
+        chat.title = name.trim().slice(0, 60);
+        chat.updatedAt = Date.now();
+        persistChats();
+        syncChatHeader();
+        renderChatList();
+      }
+    });
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'chat-act';
+    remove.textContent = '🗑';
+    remove.title = 'Törlés';
+    remove.setAttribute('aria-label', `Törlés: ${chat.title}`);
+    remove.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (!confirm(`Törlöd a(z) „${chat.title}” beszélgetést?`)) return;
+      state.chats = state.chats.filter((c) => c.id !== chat.id);
+      if (!state.chats.length) state.chats.push(makeChat());
+      if (state.activeChatId === chat.id) state.activeChatId = state.chats[0].id;
+      persistChats();
+      syncChatHeader();
+      renderChat();
+      renderChatList();
+    });
+
+    row.append(open, rename, remove);
+    list.appendChild(row);
+  });
+}
+
+function newChat() {
+  const chat = makeChat();
+  state.chats.unshift(chat);
+  state.activeChatId = chat.id;
+  persistChats();
+  switchView('chat');
+  syncChatHeader();
+  renderChat();
+  renderChatList();
+  setMenu(false);
+  $('#chatInput').focus();
+}
+$('#newChatBtn').addEventListener('click', newChat);
+
+function renderChat() {
+  const log = $('#chatLog');
+  const chat = activeChat();
   log.textContent = '';
-  const messages = state.chats[kind];
-  if (!messages.length) {
+  if (!chat.messages.length) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = kind === 'chat'
-      ? 'Írj egy üzenetet, és a modell itt, a készülékeden válaszol. ✨'
-      : 'Példa: „Írj egy függvényt, ami kiveszi az ékezetes betűket egy szövegből.”';
+    empty.textContent = chat.mode === 'code'
+      ? 'Írd le, milyen kódot szeretnél – például „Írj egy függvényt, ami kiveszi az ékezetes betűket”. ⌘'
+      : 'Írj egy üzenetet, és a modell itt, a készülékeden válaszol. ✨';
     log.appendChild(empty);
     return;
   }
-  messages.forEach((msg) => {
+  chat.messages.forEach((msg) => {
     const row = document.createElement('div');
     row.className = `msg ${msg.role === 'user' ? 'user' : 'assistant'}`;
     const avatar = document.createElement('div');
     avatar.className = 'avatar';
-    avatar.textContent = msg.role === 'user' ? '🙂' : kind === 'code' ? '⌘' : '◈';
+    avatar.textContent = msg.role === 'user' ? '🙂' : msg.code ? '⌘' : '◈';
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    renderFormatted(bubble, msg.content, kind === 'code');
+    renderFormatted(bubble, msg.content, Boolean(msg.code));
     row.append(avatar, bubble);
     log.appendChild(row);
   });
@@ -430,104 +615,155 @@ function renderChat(kind) {
 }
 
 $('#chatClear').addEventListener('click', () => {
-  state.chats.chat = [];
-  saveJSON('offline-ai-chat', []);
-  renderChat('chat');
-});
-$('#codeClear').addEventListener('click', () => {
-  state.chats.code = [];
-  saveJSON('offline-ai-code', []);
-  renderChat('code');
+  const chat = activeChat();
+  if (!chat.messages.length) return;
+  if (!confirm('Törlöd ennek a beszélgetésnek az összes üzenetét?')) return;
+  chat.messages = [];
+  chat.title = 'Új csevegés';
+  chat.updatedAt = Date.now();
+  persistChats();
+  syncChatHeader();
+  renderChat();
+  renderChatList();
 });
 
-function systemPrompt(kind) {
-  if (kind === 'code') {
-    const mode = CODE_STYLES[$('#codeMode').value] || CODE_STYLES.write;
+$('#chatMode').addEventListener('change', (event) => {
+  const chat = activeChat();
+  chat.mode = event.target.value;
+  chat.updatedAt = Date.now();
+  persistChats();
+  syncChatHeader();
+  renderChatList();
+});
+
+function systemPrompt(mode) {
+  if (mode === 'code') {
+    const task = CODE_STYLES[$('#codeMode').value] || CODE_STYLES.write;
     const lang = $('#codeLang').value;
-    return `${mode} A programozási nyelv: ${lang}. Válasz magyarul, röviden.`;
+    return `${task} A programozási nyelv: ${lang}. Válasz magyarul, röviden.`;
   }
   return CHAT_STYLES[$('#chatStyle').value] || CHAT_STYLES.hu;
 }
 
-async function sendChat(kind, text, overrideModelKey) {
-  const busyKey = kind === 'chat' ? 'busyChat' : 'busyCode';
-  if (state[busyKey]) return toast('A modell még dolgozik, várj egy pillanatot.', 'info');
-  const input = $(kind === 'chat' ? '#chatInput' : '#codeInput');
+function detectChatMode(text) {
+  const t = String(text).toLowerCase();
+  return /```|\bfunction\b|\bdef\s|\bclass\s|\bimport\b|console\.|print\(|\bselect\s+.+\bfrom\b|<\/?[a-z]+>|=>|\bbug\b|\bhiba\b|\bdebug\b|refaktor|\bkód|\bfüggvény|\bscript\b|\bpython\b|\bjavascript\b|\bhtml\b|\bcss\b|\bjson\b|\bsql\b|\bc#\b/.test(t)
+    ? 'code'
+    : 'chat';
+}
+
+async function runChatGeneration(pipe, messages, options, chat, bubble, log, mode) {
+  const streamer = new TextStreamer(pipe.tokenizer, {
+    skip_prompt: true,
+    skip_special_tokens: true,
+    callback_function: (chunk) => {
+      if (!bubble.isConnected) return;
+      const current = chat.messages.at(-1);
+      current.content = stripThink((current.content === '…' ? '' : current.content) + chunk);
+      bubble.textContent = current.content;
+      log.scrollTop = log.scrollHeight;
+    },
+  });
+
+  const output = await pipe(messages, { ...options, streamer });
+  let result = output?.[0]?.generated_text;
+  if (Array.isArray(result)) result = result.at(-1)?.content;
+  if (typeof result !== 'string') result = JSON.stringify(result ?? '');
+  return stripThink(result) || '(Üres válasz)';
+}
+
+async function sendChat(text, forcedMode) {
+  if (state.busyChat) return toast('A modell még dolgozik, várj egy pillanatot.', 'info');
+  const input = $('#chatInput');
   const userText = (text ?? input.value).trim();
   if (!userText) return;
 
-  state[busyKey] = true;
-  const sendBtn = $(kind === 'chat' ? '#chatSend' : '#codeSend');
+  const chat = activeChat();
+  const mode = forcedMode || (chat.mode === 'auto' ? detectChatMode(userText) : chat.mode);
+  const modelKey = mode === 'code' ? 'code' : $('#chatModel').value;
+  if (state.downloading.has(modelKey)) return toast('Ez a modell még töltődik, várj egy pillanatot.', 'info');
+  state.busyChat = true;
+  const sendBtn = $('#chatSend');
   sendBtn.disabled = true;
   sendBtn.textContent = '…';
   input.value = '';
 
-  state.chats[kind].push({ role: 'user', content: userText, ts: Date.now() });
-  state.chats[kind].push({ role: 'assistant', content: '…', ts: Date.now() });
-  renderChat(kind);
+  chat.messages.push({ role: 'user', content: userText, ts: Date.now() });
+  chat.messages.push({ role: 'assistant', content: '…', ts: Date.now(), code: mode === 'code' });
+  if (chat.title === 'Új csevegés' && chat.messages.filter((m) => m.role === 'user').length === 1) {
+    chat.title = titleFromMessages(chat.messages);
+  }
+  chat.updatedAt = Date.now();
+  persistChats();
+  syncChatHeader();
+  renderChat();
+  renderChatList();
 
-  const log = $(kind === 'chat' ? '#chatLog' : '#codeLog');
+  const log = $('#chatLog');
   const bubble = log.querySelector('.msg.assistant:last-child .bubble');
-  const modelKey = overrideModelKey || (kind === 'code' ? 'code' : $('#chatModel').value);
 
   try {
     const pipe = await loadPipe(modelKey);
-    const messages = [{ role: 'system', content: systemPrompt(kind) }];
-    state.chats[kind].slice(0, -2).slice(-8).forEach((m) => {
+    const messages = [{ role: 'system', content: systemPrompt(mode) }];
+    chat.messages.slice(0, -2).slice(-6).forEach((m) => {
       messages.push({ role: m.role, content: m.content });
     });
     messages.push({ role: 'user', content: userText });
 
-    const maxNewTokens = kind === 'chat' ? Number($('#chatTokens').value) : 384;
-    const temperature = kind === 'chat' ? Number($('#chatTemp').value) : 0.2;
-    const streamer = new TextStreamer(pipe.tokenizer, {
-      skip_prompt: true,
-      skip_special_tokens: true,
-      callback_function: (chunk) => {
-        if (!bubble.isConnected) return;
-        const current = state.chats[kind].at(-1);
-        current.content = stripThink((current.content === '…' ? '' : current.content) + chunk);
-        bubble.textContent = current.content;
-        log.scrollTop = log.scrollHeight;
-      },
-    });
-
-    const output = await pipe(messages, {
+    // Magas hőmérséklet + hosszú generálás telefonon kifuthat a memóriából.
+    const rawTemp = Number($('#chatTemp').value);
+    const temperature = Math.min(Math.max(Number.isFinite(rawTemp) ? rawTemp : 0.3, 0), 1);
+    const safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
+    const maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 256, 64), 512);
+    const options = {
       max_new_tokens: maxNewTokens,
-      do_sample: temperature > 0,
-      temperature: Math.max(temperature, 0.01),
+      do_sample: safeTemp > 0,
+      temperature: Math.max(safeTemp, 0.01),
       top_p: 0.9,
       repetition_penalty: 1.05,
       enable_thinking: false,
-      streamer,
-    });
+    };
 
-    let result = output?.[0]?.generated_text;
-    if (Array.isArray(result)) result = result.at(-1)?.content;
-    if (typeof result !== 'string') result = JSON.stringify(result ?? '');
-    result = stripThink(result) || '(Üres válasz)';
+    let result;
+    try {
+      result = await runChatGeneration(pipe, messages, options, chat, bubble, log, mode);
+    } catch (sampleErr) {
+      if (!options.do_sample) throw sampleErr;
+      // Egyes WebGPU/WASM hajtások a mintavételes generálást nem szeretik.
+      // Determinista újrapróbálással a válasz még megmarad.
+      console.warn('Mintavételes generálás hiba, újrapróbálás mintavétel nélkül:', sampleErr);
+      const { temperature: _ignored, ...fallback } = options;
+      fallback.do_sample = false;
+      fallback.max_new_tokens = Math.min(maxNewTokens, 256);
+      chat.messages.at(-1).content = '…';
+      if (bubble.isConnected) bubble.textContent = '…';
+      result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode);
+      toast('A mintavétel nem működött, mintavétel nélkül válaszoltam.', 'info');
+    }
 
-    state.chats[kind].at(-1).content = result;
+    chat.messages.at(-1).content = result;
     bubble.textContent = '';
-    renderFormatted(bubble, result, kind === 'code');
-    saveJSON(kind === 'chat' ? 'offline-ai-chat' : 'offline-ai-code', state.chats[kind]);
+    renderFormatted(bubble, result, mode === 'code');
   } catch (err) {
     console.error(err);
     const message = `Hiba: ${err?.message || String(err)}. Ellenőrizd a Modellek fülön, hogy a modell le van-e töltve.`;
-    state.chats[kind].at(-1).content = message;
+    chat.messages.at(-1).content = message;
     log.querySelector('.msg.assistant:last-child')?.classList.add('err');
     bubble.textContent = message;
-    toast('A modell betöltése nem sikerült.', 'error');
+    toast('A válasz generálása nem sikerült.', 'error');
   } finally {
-    state[busyKey] = false;
+    state.busyChat = false;
     sendBtn.disabled = false;
     sendBtn.textContent = 'Küldés';
-    renderChat(kind);
+    if (isSmallDevice()) await releasePipe(modelKey);
+    chat.updatedAt = Date.now();
+    persistChats();
+    renderChat();
+    renderChatList();
   }
 }
 
-$('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat('chat'); });
-$('#codeForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat('code'); });
+$('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
 
 function enterToSend(selector, formSelector) {
   $(selector).addEventListener('keydown', (e) => {
@@ -538,10 +774,10 @@ function enterToSend(selector, formSelector) {
   });
 }
 enterToSend('#chatInput', '#chatForm');
-enterToSend('#codeInput', '#codeForm');
 
-renderChat('chat');
-renderChat('code');
+syncChatHeader();
+renderChat();
+renderChatList();
 
 /* ---------------------------- voice ----------------------------- */
 
@@ -978,36 +1214,43 @@ async function refreshModels() {
 }
 
 async function downloadModel(key) {
+  if (state.downloading.has(key)) return;
   const def = MODEL_DEFS[key];
   const btn = document.querySelector(`[data-progress="${key}"]`)?.parentElement?.querySelector('.btn-primary');
+  state.downloading.add(key);
   if (btn) { btn.disabled = true; btn.textContent = 'Letöltés…'; }
   setProgress(key, 0, 'Indítás');
   try {
     if (def.extras) for (const extra of def.extras) await warmVoiceFile(extra);
-    let pipe;
-    if (def.special) pipe = await getVlm((ratio, label) => setProgress(key, ratio, label));
-    else pipe = await loadPipe(key, (ratio, label) => setProgress(key, ratio, label));
-    setProgress(key, 1, 'Kész');
+    const pipeKey = def.special ? 'vlm' : key;
+    const alreadyLoaded = state.pipes.has(pipeKey);
+    if (!alreadyLoaded) {
+      let pipe;
+      if (def.special) pipe = await getVlm((ratio, label) => setProgress(key, ratio, label));
+      else pipe = await loadPipe(key, (ratio, label) => setProgress(key, ratio, label));
+      setProgress(key, 1, 'Kész');
 
-    // A modell a gyorsítótárban marad, de a memóriát felszabadítjuk.
-    if (def.special) {
-      await pipe.model.dispose?.();
-      state.pipes.delete('vlm');
+      // A modell a gyorsítótárban marad, de a memóriát felszabadítjuk.
+      // Ha épp használatban van, nem szabad dispose-olni.
+      if (def.special) await pipe.model.dispose?.();
+      else await pipe.dispose?.();
+      state.pipes.delete(pipeKey);
     } else {
-      await pipe.dispose?.();
-      state.pipes.delete(key);
+      setProgress(key, 1, 'Már betöltve');
     }
     toast(`${def.nick} készen áll offline használatra.`, 'ok');
   } catch (err) {
     console.error(err);
     setProgress(key, 0, 'Hiba');
-    toast(`${def.nick}: ${err.message}`, 'error');
+    toast(`${def.nick}: ${err?.message || String(err)}`, 'error');
   } finally {
+    state.downloading.delete(key);
     refreshModels();
   }
 }
 
 $('#downloadAll').addEventListener('click', async () => {
+  if (state.downloading.size) return toast('Már folyik egy modell letöltése.', 'info');
   const btn = $('#downloadAll');
   btn.disabled = true;
   btn.textContent = 'Letöltés folyik…';

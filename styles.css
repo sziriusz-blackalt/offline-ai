@@ -79,7 +79,7 @@ code { background: var(--surface-3); padding: .1em .35em; border-radius: 5px; fo
 .nav-backdrop { display: none; }
 
 .nav {
-  display: flex; gap: 6px; padding: 6px; margin-bottom: 20px;
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; margin-bottom: 20px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   position: sticky; top: 8px; z-index: 20; box-shadow: var(--shadow);
 }
@@ -91,6 +91,40 @@ code { background: var(--surface-3); padding: .1em .35em; border-radius: 5px; fo
 .nav-item span { font-size: 17px; }
 .nav-item:hover { background: var(--surface-2); color: var(--text); }
 .nav-item.active { background: var(--surface-3); color: var(--text); }
+.nav-section {
+  display: block; width: 100%; padding: 8px 8px 2px; color: var(--muted);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+}
+.nav-section-tools { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px; }
+.nav-new { flex: 0 0 auto; background: rgba(124, 156, 255, .16); color: var(--text); }
+.chat-list {
+  display: flex; flex-wrap: wrap; gap: 6px; width: 100%;
+  max-height: 132px; overflow-y: auto; padding: 2px;
+}
+.chat-list:empty::after {
+  content: 'Még nincs beszélgetés – kattints az Új chat gombra.';
+  color: var(--muted); font-size: 12px; padding: 6px;
+}
+
+.code-options {
+  grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+  padding-top: 4px;
+}
+.code-options[hidden] { display: none; }
+.chat-list-item {
+  display: flex; align-items: center; gap: 2px; flex: 0 1 210px; min-width: 170px;
+  border: 1px solid transparent; border-radius: 12px; background: var(--surface-2);
+}
+.chat-list-item.active { border-color: var(--accent); background: var(--surface-3); }
+.chat-list-item .nav-item { flex: 1; min-width: 0; min-height: 42px; padding: 6px 9px; gap: 8px; justify-content: flex-start; }
+.chat-list-item .nav-item span { font-size: 16px; width: 20px; }
+.chat-list-item .chat-label { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-list-item .chat-meta { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+.chat-list-item .chat-act {
+  flex: 0 0 30px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 14px;
+}
+.chat-list-item .chat-act:hover { background: var(--surface-3); color: var(--text); }
 
 .view { display: none; animation: fade .2s ease; }
 .view.active { display: block; }
@@ -247,6 +281,23 @@ code { background: var(--surface-3); padding: .1em .35em; border-radius: 5px; fo
     background: linear-gradient(100deg, rgba(124, 156, 255, .22), rgba(155, 124, 255, .12));
     box-shadow: inset 3px 0 0 var(--accent);
   }
+  .nav-section {
+    display: block; width: 100%; padding: 12px 8px 4px; color: var(--muted);
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+  }
+  .nav-section-tools { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 14px; }
+  .chat-list {
+    display: flex; flex-direction: column; flex-wrap: nowrap; gap: 4px; width: 100%;
+    max-height: 38vh; overflow-y: auto; padding-right: 2px;
+  }
+  .chat-list-item {
+    display: flex; align-items: center; gap: 2px; flex: none; width: 100%;
+    border: 1px solid transparent; border-radius: 12px; background: var(--surface-2);
+  }
+  .chat-list-item.active { border-color: var(--accent); background: var(--surface-3); }
+  .chat-list-item .nav-item { flex: 1; min-width: 0; min-height: 46px; padding: 8px 10px; gap: 10px; }
+  .chat-list-item .nav-item span { font-size: 18px; width: 22px; }
+  .code-options { grid-template-columns: 1fr; }
 
   .view-head { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 14px; }
   .view-head h1 { font-size: 22px; }

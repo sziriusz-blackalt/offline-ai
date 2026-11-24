@@ -51,8 +51,13 @@
         <strong>Menü</strong>
         <button id="menuClose" class="menu-close" aria-label="Menü bezárása">×</button>
       </div>
+      <button id="newChatBtn" class="nav-item nav-new"><span>➕</span><label>Új chat</label></button>
+      <div class="nav-section">Csevegések</div>
+      <div id="chatList" class="chat-list"></div>
+      <div class="nav-section nav-section-tools">Eszközök</div>
+
       <button class="nav-item active" data-view="chat"><span>💬</span><label>Csevegés</label></button>
-      <button class="nav-item" data-view="code"><span>⌘</span><label>Kód</label></button>
+      <button class="nav-item" data-view="code"><span>🔨</span><label>Kód mód</label></button>
       <button class="nav-item" data-view="voice"><span>🎙️</span><label>Hang</label></button>
       <button class="nav-item" data-view="image"><span>🖼️</span><label>Kép</label></button>
       <button class="nav-item" data-view="models"><span>📦</span><label>Modellek</label></button>
@@ -64,13 +69,20 @@
       <section id="view-chat" class="view active">
         <div class="view-head">
           <div>
-            <h1>Csevegés</h1>
-            <p class="muted">Kis, helyben futó nyelvi modell. Első használat előtt töltsd le a modellt a <b>Modellek</b> fülön.</p>
+            <h1 id="chatTitle">Csevegés</h1>
+            <p class="muted" id="chatSubtitle">A beszélgetések automatikusan megmaradnak. A menüben újat is létrehozhatsz.</p>
           </div>
-          <button class="btn btn-ghost" id="chatClear">Beszélgetés törlése</button>
+          <button class="btn btn-ghost" id="chatClear">Jelenlegi törlése</button>
         </div>
 
         <div class="toolbar">
+          <label>Mód
+            <select id="chatMode">
+              <option value="auto" selected>Automatikus (ajánlott)</option>
+              <option value="chat">💬 Csevegés</option>
+              <option value="code">🔨 Kód</option>
+            </select>
+          </label>
           <label>Modell
             <select id="chatModel">
               <option value="tiny">⚡ Szikra · gyors, telefonbarát (~170 MB)</option>
@@ -86,11 +98,31 @@
             </select>
           </label>
           <label>Hőmérséklet <output id="tempOut">0.3</output>
-            <input type="range" id="chatTemp" min="0" max="1.2" step="0.1" value="0.3">
+            <input type="range" id="chatTemp" min="0" max="1" step="0.1" value="0.3">
           </label>
           <label>Tokenek <output id="tokensOut">256</output>
-            <input type="range" id="chatTokens" min="64" max="1024" step="64" value="256">
+            <input type="range" id="chatTokens" min="64" max="512" step="64" value="256">
           </label>
+          <div id="codeOptions" class="code-options" hidden>
+            <label>Feladat
+              <select id="codeMode">
+                <option value="write">Kód írása</option>
+                <option value="explain">Kód magyarázata</option>
+                <option value="fix">Hibakeresés</option>
+                <option value="review">Kód áttekintés</option>
+              </select>
+            </label>
+            <label>Nyelv
+              <select id="codeLang">
+                <option value="JavaScript">JavaScript</option>
+                <option value="Python">Python</option>
+                <option value="HTML/CSS">HTML/CSS</option>
+                <option value="C#">C#</option>
+                <option value="Java">Java</option>
+                <option value="SQL">SQL</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div class="chat-panel">
@@ -100,46 +132,6 @@
           <form id="chatForm" class="composer">
             <textarea id="chatInput" rows="2" placeholder="Kérdezz valamit… (Enter = küldés, Shift+Enter = új sor)"></textarea>
             <button type="submit" class="btn btn-primary" id="chatSend">Küldés</button>
-          </form>
-        </div>
-      </section>
-
-      <!-- CODE -->
-      <section id="view-code" class="view">
-        <div class="view-head">
-          <div>
-            <h1>Kód asszisztens</h1>
-            <p class="muted">Kódmodellel magyarázat, javítás és generálás – szintén offline.</p>
-          </div>
-          <button class="btn btn-ghost" id="codeClear">Törlése</button>
-        </div>
-        <div class="toolbar">
-          <label>Feladat
-            <select id="codeMode">
-              <option value="write">Kód írása</option>
-              <option value="explain">Kód magyarázata</option>
-              <option value="fix">Hibakeresés</option>
-              <option value="review">Kód áttekintés</option>
-            </select>
-          </label>
-          <label>Nyelv
-            <select id="codeLang">
-              <option value="JavaScript">JavaScript</option>
-              <option value="Python">Python</option>
-              <option value="HTML/CSS">HTML/CSS</option>
-              <option value="C#">C#</option>
-              <option value="Java">Java</option>
-              <option value="SQL">SQL</option>
-            </select>
-          </label>
-        </div>
-        <div class="chat-panel">
-          <div id="codeLog" class="chat-log" aria-live="polite">
-            <div class="empty-state">Példa: „Írj egy függvényt, ami kiveszi az ékezetes betűket egy szövegből.”</div>
-          </div>
-          <form id="codeForm" class="composer">
-            <textarea id="codeInput" rows="2" placeholder="Írd le, milyen kódot szeretnél…"></textarea>
-            <button type="submit" class="btn btn-primary" id="codeSend">Küldés</button>
           </form>
         </div>
       </section>
@@ -295,13 +287,15 @@
           </article>
           <article class="card">
             <h2>Telepítés telefonra / gépre</h2>
+            <p><a class="btn btn-primary" href="downloads/offline-ai.apk" download>⬇ Nexa AI APK letöltése</a></p>
             <ol class="steps">
-              <li>Nyisd meg ezt az oldalt egy <b>https</b> címen (vagy a gépen <code>http://localhost</code> címen).</li>
-              <li>A címsorban válaszd a <b>Telepítés</b> / <b>Hozzáadás a kezdőképernyőhöz</b> lehetőséget.</li>
+              <li>Androidon kattints a fenti <b>APK letöltése</b> gombra, majd nyisd meg a letöltött <code>offline-ai.apk</code> fájlt, és engedélyezd az ismeretlen forrásból származó telepítést.</li>
+              <li>A telepítés után <b>az alkalmazásfiókból indítsd a Nexa AI-t</b> – nem a böngészőből. A böngésző menüjének „Hozzáadás a kezdőképernyőhöz” lehetősége csak parancsikont létre, nem valódi APK-t.</li>
+              <li>Windows/Mac/Linux gépen a címsorban válaszd a <b>Telepítés</b> / <b>Hozzáadás a kezdőképernyőhöz</b> lehetőséget.</li>
               <li>Kapcsolj össze a <b>Modellek</b> fülön a szükséges modelleket – ezt még online kell megtenni.</li>
               <li>Ezután kapcsold ki az internetet, és használd tovább. Semmi sem kerül fel a felhőbe.</li>
             </ol>
-            <p class="muted">A PWA telepítéshez a böngésző biztonságos eredetet (HTTPS vagy localhost) kér. Ha a fájlokat közvetlenül a telefonra másolod, először töltsd fel őket egy ingyenes statikus tárhelyre (pl. GitHub Pages, Netlify).</p>
+            <p class="muted">Ha a régi, „Offline AI Stúdió” nevezetű APK van a telefonodon, töröld, és az itteni Nexa AI APK-val cseréld fel. A frissítés ugyanazzal a kulccsal van aláírva, így a régi adataid megmaradnak.</p>
           </article>
           <article class="card card-wide">
             <h2>Az alkalmazásról</h2>
@@ -313,8 +307,8 @@
     </main>
 
     <footer class="footer">
-      Nexa AI · minden számítás a készülékeden történik · <span id="version">v1.1.2</span>
-      <br><a href="downloads/offline-ai.apk" download>⬇ Android APK letöltése / frissítése</a>
+      Nexa AI · minden számítás a készülékeden történik · <span id="version">v1.2.0</span>
+      <br><a href="downloads/offline-ai.apk" download>⬇ Valódi Android APK (Nexa AI) – nem böngésző-parancsikon</a>
     </footer>
   </div>
 
