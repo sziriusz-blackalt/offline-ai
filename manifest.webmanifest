@@ -1,6 +1,6 @@
 {
-  "name": "Offline AI Stúdió",
-  "short_name": "Offline AI",
+  "name": "Nexa AI – Offline Stúdió",
+  "short_name": "Nexa AI",
   "description": "Helyben futó AI csevegésre, kódra, hangra és képekre – internet nélkül.",
   "lang": "hu",
   "start_url": "./index.html",

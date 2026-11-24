@@ -1,4 +1,4 @@
-# Offline AI Stúdió
+# Nexa AI – Offline Stúdió
 
 Egyetlen statikus webalkalmazás, ami **telefonon (Android/iOS) és számítógépen (Windows/macOS/Linux) is fut**, és a modellek letöltése után **internetkapcsolat nélkül** használható. Nincs szerver, nincs API-kulcs, nincs adatgyűjtés: minden számítás a készüléken történik.
 
