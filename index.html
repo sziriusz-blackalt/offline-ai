@@ -29,6 +29,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
+        <button id="menuBtn" class="menu-btn" aria-label="Menü megnyitása" aria-expanded="false" aria-controls="mainNav">☰</button>
         <span class="brand-mark">◈</span>
         <div>
           <strong>Offline AI Stúdió</strong>
@@ -42,7 +43,14 @@
       </div>
     </header>
 
-    <nav class="nav" aria-label="Fő navigáció">
+    <div id="navBackdrop" class="nav-backdrop" hidden></div>
+
+    <nav id="mainNav" class="nav" aria-label="Fő navigáció">
+      <div class="nav-mobile-head">
+        <span class="brand-mark">◈</span>
+        <strong>Menü</strong>
+        <button id="menuClose" class="menu-close" aria-label="Menü bezárása">×</button>
+      </div>
       <button class="nav-item active" data-view="chat"><span>💬</span><label>Csevegés</label></button>
       <button class="nav-item" data-view="code"><span>⌘</span><label>Kód</label></button>
       <button class="nav-item" data-view="voice"><span>🎙️</span><label>Hang</label></button>
@@ -305,7 +313,7 @@
     </main>
 
     <footer class="footer">
-      Offline AI Stúdió · minden számítás a készülékeden történik · <span id="version">v1.0.8</span>
+      Offline AI Stúdió · minden számítás a készülékeden történik · <span id="version">v1.0.9</span>
       <br><a href="downloads/offline-ai.apk" download>⬇ Android APK letöltése / frissítése</a>
     </footer>
   </div>

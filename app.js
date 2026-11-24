@@ -15,7 +15,7 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.0.8-shell';
+const SHELL_CACHE = 'offline-ai-v1.0.9-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -306,7 +306,31 @@ function switchView(name) {
   if (name === 'models') refreshModels();
 }
 
-$$('.nav-item').forEach((btn) => btn.addEventListener('click', () => switchView(btn.dataset.view)));
+/* Mobil hamburger menü */
+const menuBtn = $('#menuBtn');
+const menuClose = $('#menuClose');
+const mainNav = $('#mainNav');
+const navBackdrop = $('#navBackdrop');
+
+function setMenu(open) {
+  mainNav.classList.toggle('open', open);
+  navBackdrop.hidden = !open;
+  requestAnimationFrame(() => navBackdrop.classList.toggle('show', open));
+  document.body.classList.toggle('menu-open', open);
+  menuBtn.setAttribute('aria-expanded', String(open));
+  menuBtn.setAttribute('aria-label', open ? 'Menü bezárása' : 'Menü megnyitása');
+}
+
+menuBtn.addEventListener('click', () => setMenu(!mainNav.classList.contains('open')));
+menuClose.addEventListener('click', () => setMenu(false));
+navBackdrop.addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+window.addEventListener('resize', () => { if (window.innerWidth > 720) setMenu(false); });
+
+$$('.nav-item').forEach((btn) => btn.addEventListener('click', () => {
+  switchView(btn.dataset.view);
+  setMenu(false);
+}));
 
 $('#themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
