@@ -3,59 +3,206 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
   <meta name="robots" content="index,follow">
   <title>Adatvédelem – Nexa AI</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <style>
-    .legal { max-width: 780px; margin: 0 auto; }
-    .legal h2 { margin-top: 26px; }
-    .legal li { margin-bottom: 8px; }
+    :root {
+      --bg: #000000;
+      --card: #0d0d0d;
+      --surface: #1a1a1a;
+      --border: #262626;
+      --text: #ffffff;
+      --muted: #9a9a9a;
+      --accent: #10a37f;
+      --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); }
+    body {
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: calc(28px + env(safe-area-inset-top)) 20px calc(48px + env(safe-area-inset-bottom));
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--accent); font-size: 22px; flex: 0 0 auto;
+    }
+    .brand-text strong { display: block; font-size: 18px; letter-spacing: -.2px; }
+    .brand-text small { display: block; color: var(--muted); font-size: 12px; }
+    .back {
+      margin-left: auto;
+      display: inline-flex; align-items: center; gap: 7px;
+      min-height: 38px; padding: 0 14px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 13px; font-weight: 600;
+    }
+    .back:hover { background: #242424; text-decoration: none; }
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 26px;
+      margin-bottom: 18px;
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -.5px; }
+    .hero p { margin: 0; color: var(--muted); }
+    .updated {
+      display: inline-block; margin-top: 16px; padding: 5px 10px;
+      border-radius: 999px; background: rgba(16,163,127,.12);
+      color: #8fd6bd; font-size: 11px; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .doc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 8px 26px 26px;
+    }
+    section { padding-top: 22px; }
+    section + section { border-top: 1px solid var(--border); margin-top: 18px; }
+    h2 {
+      margin: 0 0 10px; font-size: 17px; font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h2 .num {
+      width: 24px; height: 24px; border-radius: 7px;
+      display: grid; place-items: center;
+      background: var(--surface); color: var(--accent);
+      font-size: 11px; font-weight: 700; flex: 0 0 auto;
+    }
+    p { margin: 0 0 10px; }
+    ul { margin: 8px 0 0; padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    li::marker { color: var(--accent); }
+    .good {
+      border-left: 2px solid var(--accent);
+      padding: 10px 14px;
+      background: rgba(16,163,127,.07);
+      border-radius: 0 10px 10px 0;
+      margin: 12px 0;
+    }
+    .warn {
+      border-left: 2px solid #d9a86a;
+      padding: 10px 14px;
+      background: rgba(217,168,106,.07);
+      border-radius: 0 10px 10px 0;
+      margin: 12px 0;
+    }
+    .kv {
+      width: 100%; border-collapse: collapse; margin-top: 10px;
+      font-size: 14px;
+    }
+    .kv th, .kv td {
+      text-align: left; padding: 10px 8px;
+      border-bottom: 1px solid var(--border); vertical-align: top;
+    }
+    .kv th { width: 34%; color: var(--muted); font-weight: 600; }
+    .kv tr:last-child th, .kv tr:last-child td { border-bottom: 0; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 12px; background: var(--surface);
+      padding: 2px 6px; border-radius: 5px;
+    }
+    .footer {
+      margin-top: 20px; color: var(--muted); font-size: 12px;
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between;
+    }
+    @media (max-width: 767px) {
+      .page { padding-left: 14px; padding-right: 14px; }
+      .hero, .doc { padding-left: 18px; padding-right: 18px; }
+      .top { flex-wrap: wrap; }
+      .back { margin-left: 0; }
+      .kv th { width: 42%; }
+    }
   </style>
 </head>
 <body>
-  <div class="app-shell legal">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark">◈</span>
-        <div><strong>Nexa AI</strong><small>Adatvédelmi nyilatkozat</small></div>
+  <div class="page">
+    <div class="top">
+      <div class="brand-mark">◈</div>
+      <div class="brand-text">
+        <strong>Nexa AI</strong>
+        <small>Adatvédelmi nyilatkozat</small>
       </div>
-    </header>
+      <a class="back" href="index.html">← Vissza az alkalmazáshoz</a>
+    </div>
 
-    <p class="muted">Utolsó frissítés: 2026. november 24.</p>
+    <div class="hero">
+      <h1>Az adatod a készülékeden marad.</h1>
+      <p>A Nexa AI helyben futó alkalmazás. Nincs szerver, nincs fiók, nincs analitika, nincs reklámkövetés. A beszélgetéseket, képeket és hangokat nem küldjük sehová.</p>
+      <span class="updated">Utolsó frissítés: 2026. november 24.</span>
+    </div>
 
-    <p>A <b>Nexa AI</b> egy helyben (a készülékeden) futó mesterséges intelligencia alkalmazás. Nem tartozik hozzá szerver, felhasználói fiók vagy háttérben futó adatgyűjtés.</p>
+    <div class="doc">
+      <section>
+        <h2><span class="num">1</span>Mit gyűjtünk?</h2>
+        <div class="good"><b>Személyes adatot nem gyűjtünk.</b> Nincs regisztráció, bejelentkezés, e-mail-címkérés vagy felhasználói azonosító.</div>
+        <p>Az alkalmazás csak azt tárolja, amit te magad hozzáadsz: csevegéseid, beállításaid, az általad választott háttérkép és a letöltött AI modellek. Ezek mind a készülékeden vannak.</p>
+      </section>
 
-    <h2>1. Milyen adatokat gyűjtünk?</h2>
-    <p><b>Személyes adatot nem gyűjtünk.</b> Nincs regisztráció, nincs bejelentkezés, nincs analitika, nincs reklám, nincs harmadik féltől származó követő kód. A beszélgetéseid, a kódjaid, a feltöltött képeid és a hangfelvételeid nem kerülnek el a készülékedről.</p>
+      <section>
+        <h2><span class="num">2</span>Hol tárolódik az adat?</h2>
+        <table class="kv">
+          <tr><th>Csevegések, címek, módok</th><td><code>localStorage</code> – csak ebben a böngészőben</td></tr>
+          <tr><th>Beállítások, kinézet, háttér</th><td><code>localStorage</code> – a feltöltött kép átméretre van kicsinyítve</td></tr>
+          <tr><th>AI modellek és fájlok</th><td><code>Cache Storage</code> – a böngésző gyorsítótára</td></tr>
+          <tr><th>Képek, hangfelvételek</th><td>Ideiglenesen a memóriában; nem kerülnek feltöltésre</td></tr>
+        </table>
+        <p class="warn">A böngésző webhelyadatainak törlésével vagy a Settings → „Modellek törlése” gombbal minden helyi adat eltávolítható.</p>
+      </section>
 
-    <h2>2. Hol tárolódik az adat?</h2>
-    <ul>
-      <li>Az alkalmazás „héja” (HTML, CSS, JavaScript) és a letöltött AI modellek a böngésző <b>Cache Storage</b> területére kerülnek.</li>
-      <li>A beállítások (téma, eszköz, pontosság) a böngésző <b>localStorage</b> területén maradnak.</li>
-      <li>Ezek az adatok kizárólag a készülékeden vannak. Az alkalmazás Beállítások fülén vagy a böngésző webhelyadatainak törlésével bármikor eltávolíthatók.</li>
-    </ul>
+      <section>
+        <h2><span class="num">3</span>Hálózat és harmadik felek</h2>
+        <p>Az első modellletöltéskor az alkalmazás kapcsolatot létesít a <a href="https://huggingface.co/" target="_blank" rel="noopener">Hugging Face</a> nyilvános modelltárával. Erre a Hugging Face saját adatvédelmi szabályzata vonatkozik. A letöltés után az alkalmazás internet nélkül is működik.</p>
+        <p>A statikus fájlokat a <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> szolgáltatja. Nincs szerveroldali kód, és nem küldünk adatot gyűjtő vagy hirdetési szolgáltatónak.</p>
+        <p>A „Szigorú offline mód” bekapcsolásával a modellkérések kizárólag a gyorsítótárból történnek.</p>
+      </section>
 
-    <h2>3. Hálózati kapcsolat</h2>
-    <p>Az első használatkor a modelleket a <a href="https://huggingface.co/" target="_blank" rel="noopener">Hugging Face</a> nyilvános modelltárából kell letöltened. Ez a letöltés kapcsolatot létesít a huggingface.co-val, amelyre a Hugging Face saját adatvédelmi szabályzata vonatkozik. A letöltés után az alkalmazás <b>internetkapcsolat nélkül is működik</b>; a „Szigorú offline mód” bekapcsolásával a hálózati kérések letiltásra kerülnek.</p>
-    <p>Az alkalmazást a <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> szolgáltatja statikus fájlokként. Nem fut rajta szerveroldali kód, és nem küld vissza adatot semmilyen gyűjtő szolgáltatásnak.</p>
+      <section>
+        <h2><span class="num">4</span>Engedélyek</h2>
+        <ul>
+          <li><b>Mikrofon:</b> csak akkor kérjük, amikor a mikrofon- vagy felvételgombot megnyomod. A hang nem hagyja el a készüléket.</li>
+          <li><b>Fájlok és képek:</b> kizárólag azokat olvassuk be, amelyeket te kiválasztasz.</li>
+          <li><b>Helyzet, névjegyek, SMS, hívások, értesítések:</b> nem kérjük őket.</li>
+        </ul>
+      </section>
 
-    <h2>4. Engedélyek</h2>
-    <ul>
-      <li><b>Mikrofon:</b> kizárólag a hangfelismerés gomb megnyomásakor használjuk, és a hang anyaga nem hagyja el a készüléket.</li>
-      <li><b>Fájlok / képek:</b> csak azokat a képeket olvassuk be, amelyeket te kiválasztasz.</li>
-      <li>Nem kérünk helyzeti adatot, névjegyet, SMS-t, hívásokat vagy értesítéseket.</li>
-    </ul>
+      <section>
+        <h2><span class="num">5</span>Gyerekek</h2>
+        <p>Az alkalmazás nem gyerekeknek készült, és nem gyűjt tudatosan adatot 16 év alatti felhasználóktól.</p>
+      </section>
 
-    <h2>5. Gyerekek</h2>
-    <p>Az alkalmazás nem gyerekeknek készült, és nem gyűjt tudatosan adatot 16 év alatti felhasználóktól.</p>
+      <section>
+        <h2><span class="num">6</span>Kapcsolat és változások</h2>
+        <p>A projekt nyílt forráskódú: <a href="https://github.com/sziriusz-blackalt/offline-ai" target="_blank" rel="noopener">github.com/sziriusz-blackalt/offline-ai</a>. Kérdéseidet a repository „Issues” fülén küldheted.</p>
+        <p>Ha a nyilatkozat megváltozik, a dátum fent frissül. Mivel nem gyűjtünk adatot, nincs mit áttelepíteni vagy központilag törölni.</p>
+      </section>
 
-    <h2>6. Kapcsolat</h2>
-    <p>A projekt nyílt forráskódú: <a href="https://github.com/sziriusz-blackalt/offline-ai" target="_blank" rel="noopener">github.com/sziriusz-blackalt/offline-ai</a>. Kérdéseidet a repository „Issues” fülén tudod elküldeni.</p>
-
-    <h2>7. Változások</h2>
-    <p>A nyilatkozat frissítése esetén a változás dátuma fent módosul. Mivel nem gyűjtünk adatot, a korábbi adatokra vonatkozóan nincs mit áttelepíteni vagy törölni.</p>
-
-    <p><a href="index.html">← Vissza az alkalmazáshoz</a></p>
+      <div class="footer">
+        <span>Nexa AI · helyben futó AI</span>
+        <span>Verzió: v1.3.1</span>
+      </div>
+    </div>
   </div>
 </body>
 </html>

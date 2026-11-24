@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.3.0">
+  <link rel="stylesheet" href="styles.css?v=1.3.1">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version">v1.3.0</span></div>
+          <div class="profile-version">Nexa AI · <span id="version">v1.3.1</span></div>
         </div>
       </div>
     </aside>
@@ -136,9 +136,10 @@
             </label>
             <label>Modell
               <select id="chatModel">
-                <option value="tiny" selected>⚡ Szikra · gyors (~170 MB)</option>
-                <option value="chat">✨ Nova · jobb minőség (~880 MB)</option>
+                <option value="chat" selected>✨ Nova · ajánlott (~880 MB)</option>
+                <option value="tiny">⚡ Szikra · gyors, de hibás (~170 MB)</option>
               </select>
+              <small class="hint">A Szikra nagyon kicsi: magyarul gyakran ír értelmetlenséget. Értelmes válaszhoz használd a Novát.</small>
             </label>
             <label>Stílus
               <select id="chatStyle">
@@ -375,6 +376,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.3.0"></script>
+  <script type="module" src="app.js?v=1.3.1"></script>
 </body>
 </html>

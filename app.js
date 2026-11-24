@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.3.0-shell';
+const SHELL_CACHE = 'offline-ai-v1.3.1-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -30,7 +30,7 @@ const MODEL_DEFS = {
     web: 'q4', wasm: 'q4', sizeMB: 172, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
-    note: 'Nagyon gyors, kevés tárhely – egyszerűbb kérdésekre jó.',
+    note: 'Nagyon gyors, de csak 135M paraméter: magyarul gyakran hibás. Rövid próbákhoz jó.',
   },
   chat: {
     group: 'Csevegés', nick: 'Nova', icon: '✨', label: 'Qwen3 0.6B', task: 'text-generation',
@@ -38,7 +38,7 @@ const MODEL_DEFS = {
     web: 'q4', wasm: 'q4', sizeMB: 880, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
-    note: 'Jobb minőségű magyar és általános válaszok.',
+    note: 'Ajánlott modell: sokkal jobb magyar válaszok, lassabb és nagyobb letöltés.',
   },
   code: {
     group: 'Kód', nick: 'Forge', icon: '🔨', label: 'Qwen2.5-Coder 0.5B', task: 'text-generation',
@@ -99,7 +99,7 @@ const RUNTIME_FILES = [
 ];
 
 const CHAT_STYLES = {
-  hu: 'Te egy segítőkész magyar nyelvű asszisztens vagy. Rövid, világos és pontos válaszokat adj magyarul. Ha nem tudod a választ, őszintén mondd meg.',
+  hu: 'You are a helpful assistant. Answer in correct, natural Hungarian. Keep it short: at most two sentences. Be friendly and honest. Never invent facts. If you do not know, say so in Hungarian.',
   general: 'You are a helpful, concise assistant. Answer clearly and honestly.',
   translate: 'Fordító vagy. Csak a fordítást add meg magyar és angol között, magyarázat nélkül.',
   summary: 'Összefoglaló vagy. Rövid, lényegre törő összefoglalót készíts magyarul.',
@@ -127,6 +127,7 @@ const state = {
   matteUrl: null,
   files: { caption: null, matte: null, vlm: null },
   deferredPrompt: null,
+  tinyWarned: false,
 };
 
 /* ----------------------------- setup ----------------------------- */
@@ -548,6 +549,11 @@ on('#chatTokens', 'input', (e) => {
   $('#tokensOut').textContent = value;
   localStorage.setItem('chatTokens', value);
 });
+const savedChatModel = localStorage.getItem('chatModel');
+if (savedChatModel && $('#chatModel')) $('#chatModel').value = savedChatModel;
+on('#chatModel', 'change', (e) => {
+  localStorage.setItem('chatModel', e.target.value);
+});
 
 /* ---------------------------- chat ------------------------------ */
 
@@ -755,13 +761,17 @@ on('#chatMode', 'change', (event) => {
   renderChatList();
 });
 
-function systemPrompt(mode) {
+function systemPrompt(mode, modelKey) {
   if (mode === 'code') {
     const task = CODE_STYLES[$('#codeMode').value] || CODE_STYLES.write;
     const lang = $('#codeLang').value;
-    return `${task} A programozási nyelv: ${lang}. Válasz magyarul, röviden.`;
+    return `${task} Programming language: ${lang}. Answer in Hungarian, briefly.`;
   }
-  return CHAT_STYLES[$('#chatStyle').value] || CHAT_STYLES.hu;
+  const base = CHAT_STYLES[$('#chatStyle').value] || CHAT_STYLES.hu;
+  if (modelKey === 'tiny') {
+    return `${base} Use only simple Hungarian words. Do not add emojis or extra examples.`;
+  }
+  return base;
 }
 
 function detectChatMode(text) {
@@ -825,11 +835,18 @@ async function sendChat(text, forcedMode) {
 
   try {
     const pipe = await loadPipe(modelKey);
-    const messages = [{ role: 'system', content: systemPrompt(mode) }];
-    chat.messages.slice(0, -2).slice(-6).forEach((m) => {
+    const messages = [{ role: 'system', content: systemPrompt(mode, modelKey) }];
+    const isTiny = modelKey === 'tiny';
+    const history = isTiny ? 2 : 6;
+    chat.messages.slice(0, -2).slice(-history).forEach((m) => {
       messages.push({ role: m.role, content: m.content });
     });
     messages.push({ role: 'user', content: userText });
+
+    if (isTiny && !state.tinyWarned) {
+      state.tinyWarned = true;
+      toast('A Szikra csak 135M paraméter: gyors, de magyarul hibás lehet. Jobb válaszhoz válassz Novát.', 'info');
+    }
 
     // Magas hőmérséklet + hosszú generálás telefonon kifuthat a memóriából.
     const rawTemp = Number($('#chatTemp').value);
@@ -838,14 +855,23 @@ async function sendChat(text, forcedMode) {
     if (isSmallDevice()) safeTemp = Math.min(safeTemp, 0.5);
     let maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 128, 64), 512);
     if (isSmallDevice()) maxNewTokens = Math.min(maxNewTokens, 256);
-    const options = {
-      max_new_tokens: maxNewTokens,
-      do_sample: safeTemp > 0,
-      temperature: Math.max(safeTemp, 0.01),
-      top_p: 0.9,
-      repetition_penalty: 1.05,
-      enable_thinking: false,
-    };
+
+    // A kis modellt mintavétel nélkül futtatjuk: így sokkal ritkábban ír értelmetlenséget.
+    const options = isTiny
+      ? {
+          max_new_tokens: Math.min(maxNewTokens, 64),
+          do_sample: false,
+          repetition_penalty: 1.15,
+          enable_thinking: false,
+        }
+      : {
+          max_new_tokens: maxNewTokens,
+          do_sample: safeTemp > 0,
+          temperature: Math.max(safeTemp, 0.01),
+          top_p: 0.85,
+          repetition_penalty: 1.08,
+          enable_thinking: false,
+        };
 
     let result;
     try {
@@ -959,16 +985,24 @@ $$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
     toast(panel.hidden ? 'Speciális beállítások elrejtve.' : 'Speciális beállítások megnyitva.', 'info');
     return;
   }
-  const temp = action === 'deep' ? '0.45' : (smallDevice ? '0.2' : '0.3');
-  const tokens = action === 'deep' ? (smallDevice ? '256' : '384') : '128';
+  const fast = action === 'fast';
+  const temp = fast ? '0' : '0.2';
+  const tokens = fast ? '64' : (smallDevice ? '256' : '384');
   $('#chatTemp').value = temp;
   $('#tempOut').textContent = temp;
   $('#chatTokens').value = tokens;
   $('#tokensOut').textContent = tokens;
   localStorage.setItem('chatTemp', temp);
   localStorage.setItem('chatTokens', tokens);
+  const modelSelect = $('#chatModel');
+  if (modelSelect) {
+    modelSelect.value = fast ? 'tiny' : 'chat';
+    modelSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   chooseChatMode('chat');
-  toast(action === 'deep' ? 'Alapos gondolkodás: hosszabb válasz.' : 'Gyors válasz mód.', 'info');
+  toast(fast
+    ? 'Gyors mód: ⚡ Szikra. Rövid, de néha hibás magyar válaszok.'
+    : 'Minőségi mód: ✨ Nova. Jobb magyar válaszok.', 'info');
 }));
 
 async function toggleMicToChat() {
