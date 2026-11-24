@@ -2,7 +2,7 @@
 // Az alkalmazás "héját" (HTML/CSS/JS/könyvtárak) előre gyorsítótárazza.
 // A modelleket a Transformers.js saját Cache Storage-be menti; ezt az app.js kezeli.
 
-const VERSION = 'offline-ai-v1.0.7';
+const VERSION = 'offline-ai-v1.0.8';
 const SHELL_CACHE = `${VERSION}-shell`;
 
 const SHELL = [
@@ -67,6 +67,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   // A Hugging Face és más külső kéréseket a Transformers.js saját cache-e kezeli.
   if (url.origin !== self.location.origin) return;
+  // Az APK-t mindig frissen kell letölteni, különben a régi verziót adná ki a cache.
+  if (url.pathname.endsWith('.apk')) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
