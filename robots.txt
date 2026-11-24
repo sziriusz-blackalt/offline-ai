@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sziriusz-blackalt.github.io/offline-ai/sitemap.xml
