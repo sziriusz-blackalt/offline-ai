@@ -1,4 +1,4 @@
-import {
+﻿import {
   env,
   LogLevel,
   ModelRegistry,
@@ -15,7 +15,13 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.2.2-shell';
+// Hiányzó elem esetén az eseményfeliratkozás nem szakítja meg az alkalmazást.
+function on(selector, event, handler) {
+  const el = typeof selector === 'string' ? $(selector) : selector;
+  if (el) el.addEventListener(event, handler);
+  return el;
+}
+const SHELL_CACHE = 'offline-ai-v1.3.0-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -197,7 +203,9 @@ function persistChats() {
 }
 
 function isSmallDevice() {
-  return window.matchMedia?.('(max-width: 720px)').matches || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  return Boolean(window.matchMedia?.('(max-width: 767px)').matches)
+    || Boolean(navigator.deviceMemory && navigator.deviceMemory <= 6)
+    || Boolean(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 }
 
 async function releasePipe(key) {
@@ -208,11 +216,28 @@ async function releasePipe(key) {
 }
 
 let offlineMode = localStorage.getItem('offline') === '1';
-$('#offlineToggle').checked = offlineMode;
+const toggleEl = $('#offlineToggle');
+if (toggleEl) toggleEl.checked = offlineMode;
 env.allowRemoteModels = !offlineMode;
 
 const theme = localStorage.getItem('theme') || 'dark';
 document.documentElement.dataset.theme = theme;
+
+// Telefonon alapból a stabil, gyors CPU/WASM út + rövidebb generálás.
+const smallDevice = isSmallDevice();
+if (smallDevice && localStorage.getItem('device') === null) localStorage.setItem('device', 'wasm');
+if (localStorage.getItem('chatTemp') === null) localStorage.setItem('chatTemp', smallDevice ? '0.2' : '0.3');
+if (localStorage.getItem('chatTokens') === null) localStorage.setItem('chatTokens', '128');
+
+function syncGenerationControls() {
+  const temp = localStorage.getItem('chatTemp') || (smallDevice ? '0.2' : '0.3');
+  const tokens = localStorage.getItem('chatTokens') || '128';
+  if ($('#chatTemp')) $('#chatTemp').value = temp;
+  if ($('#tempOut')) $('#tempOut').textContent = temp;
+  if ($('#chatTokens')) $('#chatTokens').value = tokens;
+  if ($('#tokensOut')) $('#tokensOut').textContent = tokens;
+}
+syncGenerationControls();
 
 initChats();
 
@@ -287,6 +312,7 @@ async function resolveDevice() {
   const pref = localStorage.getItem('device') || 'auto';
   if (pref === 'wasm') return 'wasm';
   if (pref === 'webgpu') return 'webgpu';
+  if (isSmallDevice()) return 'wasm';
   return (typeof navigator !== 'undefined' && navigator.gpu) ? 'webgpu' : 'wasm';
 }
 
@@ -396,7 +422,7 @@ function switchView(name) {
   $$('.side-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   $('#newChatBtn')?.classList.toggle('active', name === 'chat');
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
-  if (name === 'models') refreshModels();
+  if (name === 'settings') refreshModels();
   if (name === 'chat') syncChatHeader();
   setMenu(false);
 }
@@ -408,18 +434,19 @@ const mainNav = $('#mainNav');
 const navBackdrop = $('#navBackdrop');
 
 function setMenu(open) {
+  if (!mainNav || !navBackdrop) return;
   if (open && window.innerWidth <= 767) document.body.classList.remove('sidebar-collapsed');
   mainNav.classList.toggle('open', open);
   navBackdrop.hidden = !open;
   requestAnimationFrame(() => navBackdrop.classList.toggle('show', open));
   document.body.classList.toggle('menu-open', open);
-  menuBtn.setAttribute('aria-expanded', String(open));
-  menuBtn.setAttribute('aria-label', open ? 'Menü bezárása' : 'Menü megnyitása');
+  menuBtn?.setAttribute('aria-expanded', String(open));
+  menuBtn?.setAttribute('aria-label', open ? 'Menü bezárása' : 'Menü megnyitása');
 }
 
-menuBtn.addEventListener('click', () => setMenu(!mainNav.classList.contains('open')));
-menuClose.addEventListener('click', () => setMenu(false));
-navBackdrop.addEventListener('click', () => setMenu(false));
+on(menuBtn, 'click', () => setMenu(!mainNav?.classList.contains('open')));
+on(menuClose, 'click', () => setMenu(false));
+on(navBackdrop, 'click', () => setMenu(false));
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   setMenu(false);
@@ -434,13 +461,8 @@ $$('.side-item[data-view]').forEach((btn) => btn.addEventListener('click', () =>
   switchView(btn.dataset.view);
 }));
 
-$('#exploreBtn').addEventListener('click', () => {
-  switchView('models');
-  toast('Itt találod a letölthető modelleket.', 'info');
-});
-
 /* Keresés az oldalsávban */
-$('#sidebarSearch').addEventListener('click', () => {
+on('#sidebarSearch', 'click', () => {
   const nav = $('#mainNav');
   const open = !nav.classList.contains('search-open');
   nav.classList.toggle('search-open', open);
@@ -452,7 +474,7 @@ $('#sidebarSearch').addEventListener('click', () => {
     renderChatList();
   }
 });
-$('#chatSearch').addEventListener('input', (e) => {
+on('#chatSearch', 'input', (e) => {
   chatSearchQuery = e.target.value.trim().toLowerCase();
   renderChatList();
 });
@@ -465,7 +487,7 @@ function applySidebarCollapsed(collapsed) {
   btn.title = collapsed ? 'Kinyitás' : 'Összecsukás';
 }
 applySidebarCollapsed(localStorage.getItem('sidebarCollapsed') === '1');
-$('#sidebarCollapse').addEventListener('click', () => {
+on('#sidebarCollapse', 'click', () => {
   const collapsed = !document.body.classList.contains('sidebar-collapsed');
   applySidebarCollapsed(collapsed);
   localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
@@ -478,45 +500,54 @@ function setProfileMenu(open) {
   menu.hidden = !open;
   $('#profileBtn')?.setAttribute('aria-expanded', String(open));
 }
-$('#profileBtn').addEventListener('click', (event) => {
+on('#profileBtn', 'click', (event) => {
   event.stopPropagation();
-  setProfileMenu($('#profileMenu').hidden);
+  const menu = $('#profileMenu');
+  setProfileMenu(menu ? menu.hidden : false);
   setComposerMenu(null);
 });
 document.addEventListener('click', (event) => {
   if (!event.target.closest('.profile-wrap')) setProfileMenu(false);
   if (!event.target.closest('.composer-wrap')) setComposerMenu(null);
 });
-$('#profileSettings').addEventListener('click', () => {
+on('#profileSettings', 'click', () => {
   setProfileMenu(false);
   switchView('settings');
 });
-$('#upgradeBtn').addEventListener('click', () => {
+on('#upgradeBtn', 'click', () => {
   setProfileMenu(false);
   switchView('settings');
   toast('A Nexa AI ingyenes. Az APK frissítését a Telepítés résznél találod.', 'info');
 });
-$('#themeBtn').addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-  document.documentElement.dataset.theme = next;
-  localStorage.setItem('theme', next);
+on('#appearanceBtn', 'click', () => {
   setProfileMenu(false);
-  toast(next === 'light' ? 'Világos téma bekapcsolva.' : 'Sötét téma bekapcsolva.', 'info');
+  switchView('settings');
+  requestAnimationFrame(() => $('#appearancePanel')?.scrollIntoView({ block: 'start' }));
 });
 
 /* A böngészős „telepítés” csak parancsikont hoz létre – mindenhol a valódi APK-t kínáljuk. */
 const installBtn = $('#installBtn');
-installBtn.hidden = false;
-installBtn.textContent = '⬇ Nexa AI APK letöltése';
-installBtn.addEventListener('click', () => {
-  setProfileMenu(false);
-  toast('APK letöltése indult. Telepítés után az alkalmazásfiókból indítsd a Nexa AI-t.', 'ok');
-  window.location.href = './downloads/offline-ai.apk';
-});
+if (installBtn) {
+  installBtn.hidden = false;
+  installBtn.textContent = '⬇ Nexa AI APK letöltése';
+  installBtn.addEventListener('click', () => {
+    setProfileMenu(false);
+    toast('APK letöltése indult. Telepítés után az alkalmazásfiókból indítsd a Nexa AI-t.', 'ok');
+    window.location.href = './downloads/offline-ai.apk';
+  });
+}
 window.addEventListener('beforeinstallprompt', (event) => event.preventDefault());
 
-$('#chatTemp').addEventListener('input', (e) => { $('#tempOut').textContent = e.target.value; });
-$('#chatTokens').addEventListener('input', (e) => { $('#tokensOut').textContent = e.target.value; });
+on('#chatTemp', 'input', (e) => {
+  const value = e.target.value;
+  $('#tempOut').textContent = value;
+  localStorage.setItem('chatTemp', value);
+});
+on('#chatTokens', 'input', (e) => {
+  const value = e.target.value;
+  $('#tokensOut').textContent = value;
+  localStorage.setItem('chatTokens', value);
+});
 
 /* ---------------------------- chat ------------------------------ */
 
@@ -532,7 +563,7 @@ function renderFormatted(container, text, isCode) {
       const wrap = document.createElement('div');
       wrap.className = 'code-wrap';
       const pre = document.createElement('pre');
-      pre.style.cssText = 'background:var(--surface-3);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap';
+      pre.style.cssText = 'background:var(--surface-2);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap';
       const code = document.createElement('code');
       code.textContent = part.replace(/^[a-zA-Z0-9+#-]+\n/, '');
       pre.appendChild(code);
@@ -657,13 +688,9 @@ function newChat() {
   setMenu(false);
   $('#chatInput').focus();
 }
-$('#newChatBtn').addEventListener('click', newChat);
-$('#scheduledNewBtn').addEventListener('click', () => {
-  switchView('chat');
-  newChat();
-});
+on('#newChatBtn', 'click', newChat);
 
-$('#tempChatBtn').addEventListener('click', () => {
+on('#tempChatBtn', 'click', () => {
   const chat = activeChat();
   chat.temp = !chat.temp;
   chat.updatedAt = Date.now();
@@ -706,7 +733,7 @@ function renderChat() {
   log.scrollTop = log.scrollHeight;
 }
 
-$('#chatClear').addEventListener('click', () => {
+on('#chatClear', 'click', () => {
   const chat = activeChat();
   if (!chat.messages.length) return;
   if (!confirm('Törlöd ennek a beszélgetésnek az összes üzenetét?')) return;
@@ -719,7 +746,7 @@ $('#chatClear').addEventListener('click', () => {
   renderChatList();
 });
 
-$('#chatMode').addEventListener('change', (event) => {
+on('#chatMode', 'change', (event) => {
   const chat = activeChat();
   chat.mode = event.target.value;
   chat.updatedAt = Date.now();
@@ -807,8 +834,10 @@ async function sendChat(text, forcedMode) {
     // Magas hőmérséklet + hosszú generálás telefonon kifuthat a memóriából.
     const rawTemp = Number($('#chatTemp').value);
     const temperature = Math.min(Math.max(Number.isFinite(rawTemp) ? rawTemp : 0.3, 0), 1);
-    const safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
-    const maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 256, 64), 512);
+    let safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
+    if (isSmallDevice()) safeTemp = Math.min(safeTemp, 0.5);
+    let maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 128, 64), 512);
+    if (isSmallDevice()) maxNewTokens = Math.min(maxNewTokens, 256);
     const options = {
       max_new_tokens: maxNewTokens,
       do_sample: safeTemp > 0,
@@ -857,7 +886,7 @@ async function sendChat(text, forcedMode) {
   }
 }
 
-$('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); sendChat(); });
+on('#chatForm', 'submit', (e) => { e.preventDefault(); sendChat(); });
 
 function enterToSend(selector, formSelector) {
   $(selector).addEventListener('keydown', (e) => {
@@ -873,7 +902,7 @@ function updateComposerState() {
   const hasText = Boolean($('#chatInput').value.trim());
   $('.composer')?.classList.toggle('has-text', hasText);
 }
-$('#chatInput').addEventListener('input', updateComposerState);
+on('#chatInput', 'input', updateComposerState);
 
 function setComposerMenu(which) {
   const plusOpen = which === 'plus';
@@ -884,13 +913,13 @@ function setComposerMenu(which) {
   $('#thinkBtn')?.setAttribute('aria-expanded', String(thinkOpen));
 }
 
-$('#plusBtn').addEventListener('click', (event) => {
+on('#plusBtn', 'click', (event) => {
   event.stopPropagation();
   const open = $('#plusMenu').hidden;
   setComposerMenu(open ? 'plus' : null);
   setProfileMenu(false);
 });
-$('#thinkBtn').addEventListener('click', (event) => {
+on('#thinkBtn', 'click', (event) => {
   event.stopPropagation();
   const open = $('#thinkMenu').hidden;
   setComposerMenu(open ? 'think' : null);
@@ -912,7 +941,7 @@ $$('[data-plus]').forEach((btn) => btn.addEventListener('click', (event) => {
   else if (action === 'voice') {
     switchView('voice');
     toast('Itt írod át beszédet szöveggé.', 'info');
-  } else if (action === 'models') switchView('models');
+  } else if (action === 'models') switchView('settings');
 }));
 
 $$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
@@ -930,12 +959,14 @@ $$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
     toast(panel.hidden ? 'Speciális beállítások elrejtve.' : 'Speciális beállítások megnyitva.', 'info');
     return;
   }
-  const temp = action === 'deep' ? '0.5' : '0.3';
-  const tokens = action === 'deep' ? '512' : '256';
+  const temp = action === 'deep' ? '0.45' : (smallDevice ? '0.2' : '0.3');
+  const tokens = action === 'deep' ? (smallDevice ? '256' : '384') : '128';
   $('#chatTemp').value = temp;
   $('#tempOut').textContent = temp;
   $('#chatTokens').value = tokens;
   $('#tokensOut').textContent = tokens;
+  localStorage.setItem('chatTemp', temp);
+  localStorage.setItem('chatTokens', tokens);
   chooseChatMode('chat');
   toast(action === 'deep' ? 'Alapos gondolkodás: hosszabb válasz.' : 'Gyors válasz mód.', 'info');
 }));
@@ -961,8 +992,8 @@ async function toggleMicToChat() {
     if (state.mic) stopRecording();
   }
 }
-$('#micBtn').addEventListener('click', toggleMicToChat);
-$('#voiceBtn').addEventListener('click', () => {
+on('#micBtn', 'click', toggleMicToChat);
+on('#voiceBtn', 'click', () => {
   if ($('#chatInput').value.trim()) return $('#chatForm').requestSubmit();
   toggleMicToChat();
 });
@@ -1011,7 +1042,7 @@ function stopRecording() {
   return mergeAudio(chunks);
 }
 
-$('#recBtn').addEventListener('click', async () => {
+on('#recBtn', 'click', async () => {
   try {
     if (state.mic) {
       const samples = stopRecording();
@@ -1056,7 +1087,7 @@ async function transcribe(audio) {
   }
 }
 
-$('#asrFile').addEventListener('change', async (e) => {
+on('#asrFile', 'change', async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   try { await transcribe(await decodeAudioFile(file)); }
@@ -1064,14 +1095,14 @@ $('#asrFile').addEventListener('change', async (e) => {
   e.target.value = '';
 });
 
-$('#asrCopy').addEventListener('click', async () => {
+on('#asrCopy', 'click', async () => {
   const text = $('#asrResult').value.trim();
   if (!text) return;
   await navigator.clipboard?.writeText(text);
   toast('Szöveg másolva.', 'ok');
 });
 
-$('#asrToChat').addEventListener('click', () => {
+on('#asrToChat', 'click', () => {
   const text = $('#asrResult').value.trim();
   if (!text) return;
   switchView('chat');
@@ -1113,7 +1144,7 @@ function encodeWav(samples, sampleRate) {
   return new Blob([buffer], { type: 'audio/wav' });
 }
 
-$('#ttsBtn').addEventListener('click', async () => {
+on('#ttsBtn', 'click', async () => {
   const text = $('#ttsText').value.trim();
   if (!text) return toast('Írj be szöveget a felolvasáshoz.', 'info');
   const btn = $('#ttsBtn');
@@ -1147,7 +1178,7 @@ $('#ttsBtn').addEventListener('click', async () => {
   }
 });
 
-$('#ttsDownload').addEventListener('click', () => {
+on('#ttsDownload', 'click', () => {
   if (!state.ttsBlobUrl) return;
   const a = document.createElement('a');
   a.href = state.ttsBlobUrl;
@@ -1169,15 +1200,15 @@ function showPreview(input, previewSelector, stateKey) {
   holder.appendChild(img);
 }
 
-$('#imgCaptionFile').addEventListener('change', (e) => showPreview(e.target, '#imgCaptionPreview', 'caption'));
-$('#imgMatteFile').addEventListener('change', (e) => showPreview(e.target, '#imgMattePreview', 'matte'));
-$('#vlmFile').addEventListener('change', (e) => showPreview(e.target, '#vlmPreview', 'vlm'));
+on('#imgCaptionFile', 'change', (e) => showPreview(e.target, '#imgCaptionPreview', 'caption'));
+on('#imgMatteFile', 'change', (e) => showPreview(e.target, '#imgMattePreview', 'matte'));
+on('#vlmFile', 'change', (e) => showPreview(e.target, '#vlmPreview', 'vlm'));
 
 function fileToUrl(file) {
   return URL.createObjectURL(file);
 }
 
-$('#captionBtn').addEventListener('click', async () => {
+on('#captionBtn', 'click', async () => {
   const file = state.files.caption;
   if (!file) return toast('Először válassz képet.', 'info');
   const btn = $('#captionBtn');
@@ -1227,7 +1258,7 @@ function rawImageToCanvas(raw) {
   return canvas;
 }
 
-$('#matteBtn').addEventListener('click', async () => {
+on('#matteBtn', 'click', async () => {
   const file = state.files.matte;
   if (!file) return toast('Először válassz képet.', 'info');
   const btn = $('#matteBtn');
@@ -1256,7 +1287,7 @@ $('#matteBtn').addEventListener('click', async () => {
   }
 });
 
-$('#matteDownload').addEventListener('click', () => {
+on('#matteDownload', 'click', () => {
   if (!state.matteUrl) return;
   const a = document.createElement('a');
   a.href = state.matteUrl;
@@ -1264,7 +1295,7 @@ $('#matteDownload').addEventListener('click', () => {
   a.click();
 });
 
-$('#vlmBtn').addEventListener('click', async () => {
+on('#vlmBtn', 'click', async () => {
   const file = state.files.vlm;
   if (!file) return toast('Először válassz képet.', 'info');
   const question = $('#vlmQuestion').value.trim() || 'Describe this image.';
@@ -1342,6 +1373,7 @@ async function estimateModel(key) {
 
 async function refreshModels() {
   const list = $('#modelList');
+  if (!list) return;
   list.textContent = 'Az állapot ellenőrzése…';
   const entries = await Promise.all(Object.keys(MODEL_DEFS).map(async (key) => [key, await estimateModel(key)]));
   state.modelInfo = Object.fromEntries(entries);
@@ -1443,7 +1475,7 @@ async function downloadModel(key) {
   }
 }
 
-$('#downloadAll').addEventListener('click', async () => {
+on('#downloadAll', 'click', async () => {
   if (state.downloading.size) return toast('Már folyik egy modell letöltése.', 'info');
   const btn = $('#downloadAll');
   btn.disabled = true;
@@ -1488,7 +1520,7 @@ async function updateStats() {
 window.addEventListener('online', updateStats);
 window.addEventListener('offline', updateStats);
 
-$('#offlineToggle').addEventListener('change', (e) => {
+on('#offlineToggle', 'change', (e) => {
   const value = e.target.checked;
   localStorage.setItem('offline', value ? '1' : '0');
   offlineMode = value;
@@ -1500,11 +1532,11 @@ $('#offlineToggle').addEventListener('change', (e) => {
 
 $('#deviceSelect').value = localStorage.getItem('device') || 'auto';
 $('#dtypeSelect').value = localStorage.getItem('dtype') || 'auto';
-$('#deviceSelect').addEventListener('change', (e) => {
+on('#deviceSelect', 'change', (e) => {
   localStorage.setItem('device', e.target.value);
   updateDeviceHint();
 });
-$('#dtypeSelect').addEventListener('change', (e) => {
+on('#dtypeSelect', 'change', (e) => {
   localStorage.setItem('dtype', e.target.value);
   updateDeviceHint();
 });
@@ -1518,7 +1550,119 @@ function updateDeviceHint() {
   $('#deviceHint').textContent = text;
 }
 
-$('#clearCacheBtn').addEventListener('click', async () => {
+/* --------------------------- kinézet ----------------------------- */
+
+async function makeBackgroundDataUrl(file) {
+  const maxSide = 1280;
+  if (typeof createImageBitmap === 'function') {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    return canvas.toDataURL('image/jpeg', 0.72);
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('A kép nem olvasható be.')); };
+    img.src = url;
+  });
+}
+
+function applyAppearance() {
+  const skin = localStorage.getItem('skin') || 'obsidian';
+  const wall = localStorage.getItem('wall') || 'none';
+  const dim = Number(localStorage.getItem('bgDim') ?? 72);
+  const blur = Number(localStorage.getItem('bgBlur') ?? 0);
+  const image = localStorage.getItem('bgImage');
+  const root = document.documentElement;
+
+  root.dataset.skin = skin;
+  const workspace = $('.workspace');
+  if (workspace) workspace.dataset.wall = wall;
+  root.style.setProperty('--wall-bright', String(Math.max(0.2, 1 - (dim / 100) * 0.8)));
+  root.style.setProperty('--bg-blur', `${Math.min(12, Math.max(0, blur))}px`);
+  if (image) root.style.setProperty('--user-bg', `url("${image}")`);
+  else root.style.removeProperty('--user-bg');
+
+  $$('.skin-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.skin === skin));
+  $$('.wall-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.wall === wall));
+  if ($('#bgDim')) $('#bgDim').value = String(dim);
+  if ($('#bgDimOut')) $('#bgDimOut').textContent = `${dim}%`;
+  if ($('#bgBlur')) $('#bgBlur').value = String(blur);
+  if ($('#bgBlurOut')) $('#bgBlurOut').textContent = `${blur} px`;
+
+  const preview = $('#bgPreview');
+  if (preview) {
+    preview.textContent = '';
+    preview.style.backgroundImage = image ? `url("${image}")` : '';
+    if (!image) {
+      const span = document.createElement('span');
+      span.textContent = 'Nincs egyedi háttér';
+      preview.appendChild(span);
+    }
+  }
+}
+
+$$('.skin-btn').forEach((btn) => on(btn, 'click', () => {
+  localStorage.setItem('skin', btn.dataset.skin);
+  applyAppearance();
+  toast(`Kinézet: ${btn.querySelector('b')?.textContent || btn.dataset.skin}`, 'ok');
+}));
+
+$$('.wall-btn').forEach((btn) => on(btn, 'click', () => {
+  localStorage.setItem('wall', btn.dataset.wall);
+  applyAppearance();
+  toast(`Háttér: ${btn.textContent}`, 'ok');
+}));
+
+on('#bgFile', 'change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const dataUrl = await makeBackgroundDataUrl(file);
+    localStorage.setItem('bgImage', dataUrl);
+    localStorage.setItem('wall', 'custom');
+    applyAppearance();
+    toast('Saját háttér beállítva. A kép csak ezen az eszközön van tárolva.', 'ok');
+  } catch (err) {
+    console.error(err);
+    toast(`A háttér nem állítható be: ${err.message}`, 'error');
+  }
+  event.target.value = '';
+});
+
+on('#bgClear', 'click', () => {
+  localStorage.removeItem('bgImage');
+  localStorage.setItem('wall', 'none');
+  applyAppearance();
+  toast('Egyedi háttér törölve.', 'ok');
+});
+
+on('#bgDim', 'input', (event) => {
+  localStorage.setItem('bgDim', event.target.value);
+  applyAppearance();
+});
+on('#bgBlur', 'input', (event) => {
+  localStorage.setItem('bgBlur', event.target.value);
+  applyAppearance();
+});
+
+applyAppearance();
+
+on('#clearCacheBtn', 'click', async () => {
   if (!confirm('Biztosan törlöd az összes letöltött modellt? Ez nem vonható vissza.')) return;
   const keys = await caches.keys();
   await Promise.all(keys.filter((k) => k.startsWith('transformers-cache')).map((k) => caches.delete(k)));
@@ -1529,4 +1673,4 @@ $('#clearCacheBtn').addEventListener('click', async () => {
 
 updateDeviceHint();
 updateStats();
-warmRuntime().then(refreshModels);
+warmRuntime().then(updateStats);

@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.2.2">
+  <link rel="stylesheet" href="styles.css?v=1.3.0">
   <script type="importmap">
   {
     "imports": {
@@ -57,7 +57,7 @@
       </div>
 
       <nav class="side-nav">
-        <button id="newChatBtn" class="side-item">
+        <button id="newChatBtn" class="side-item active">
           <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
           <span class="side-label">New Chat</span>
         </button>
@@ -65,21 +65,13 @@
           <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.5"></circle><path d="m4 18 5-5 4 4 3-3 4 4"></path></svg></span>
           <span class="side-label">Images</span>
         </button>
-        <button class="side-item" data-view="scheduled">
-          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
-          <span class="side-label">Scheduled</span>
-        </button>
-        <button class="side-item" data-view="models">
-          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 5v14M12 5v14M16 5v14"></path></svg></span>
-          <span class="side-label">Library</span>
+        <button class="side-item" data-view="voice">
+          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"></path></svg></span>
+          <span class="side-label">Voice</span>
         </button>
         <button class="side-item" data-view="settings">
           <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v6M15 3v6M9 15v6M15 15v6M3 9h6M15 9h6M3 15h6M15 15h6"></path><rect x="9" y="9" width="6" height="6" rx="1"></rect></svg></span>
-          <span class="side-label">Plugins</span>
-        </button>
-        <button id="exploreBtn" class="side-item">
-          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-2 4-4 2 2-4z"></path></svg></span>
-          <span class="side-label">Explore</span>
+          <span class="side-label">Settings</span>
         </button>
       </nav>
 
@@ -98,16 +90,16 @@
         </button>
         <div id="profileMenu" class="pop-menu profile-menu" hidden>
           <button id="profileSettings" type="button">Beállítások</button>
-          <button id="themeBtn" type="button">Téma váltása</button>
+          <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version">v1.2.2</span></div>
+          <div class="profile-version">Nexa AI · <span id="version">v1.3.0</span></div>
         </div>
       </div>
     </aside>
 
     <!-- MAIN WORKSPACE -->
-    <div class="workspace">
+    <div class="workspace" data-wall="none">
       <header class="workspace-head">
         <button id="menuBtn" class="icon-btn menu-btn" aria-label="Menü megnyitása" aria-expanded="false" aria-controls="mainNav">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
@@ -144,8 +136,8 @@
             </label>
             <label>Modell
               <select id="chatModel">
-                <option value="tiny">⚡ Szikra · gyors (~170 MB)</option>
-                <option value="chat" selected>✨ Nova · jobb minőség (~880 MB)</option>
+                <option value="tiny" selected>⚡ Szikra · gyors (~170 MB)</option>
+                <option value="chat">✨ Nova · jobb minőség (~880 MB)</option>
               </select>
             </label>
             <label>Stílus
@@ -159,8 +151,8 @@
             <label>Hőmérséklet <output id="tempOut">0.3</output>
               <input type="range" id="chatTemp" min="0" max="1" step="0.1" value="0.3">
             </label>
-            <label>Tokenek <output id="tokensOut">256</output>
-              <input type="range" id="chatTokens" min="64" max="512" step="64" value="256">
+            <label>Tokenek <output id="tokensOut">128</output>
+              <input type="range" id="chatTokens" min="64" max="512" step="64" value="128">
             </label>
             <div id="codeOptions" class="code-options" hidden>
               <label>Feladat
@@ -190,7 +182,7 @@
               <button type="button" data-plus="new">Új csevegés</button>
               <button type="button" data-plus="image">Kép feltöltése</button>
               <button type="button" data-plus="voice">Hangfeltétel</button>
-              <button type="button" data-plus="models">Modellek</button>
+              <button type="button" data-plus="models">Modellek és beállítások</button>
             </div>
             <div id="thinkMenu" class="pop-menu composer-menu" hidden>
               <button type="button" data-think="fast">Gyors válasz</button>
@@ -217,65 +209,6 @@
               </button>
               <button id="chatSend" class="send-hidden" type="submit">Küldés</button>
             </form>
-          </div>
-        </section>
-
-        <!-- SCHEDULED -->
-        <section id="view-scheduled" class="view">
-          <div class="view-head"><div><h1>Scheduled</h1><p class="muted">Nincs ütemezett csevegés.</p></div></div>
-          <div class="empty-view">
-            <p>Itt később ütemezett csevegéseket indíthatsz.</p>
-            <button id="scheduledNewBtn" class="btn btn-primary">Új csevegés indítása</button>
-          </div>
-        </section>
-
-        <!-- VOICE -->
-        <section id="view-voice" class="view">
-          <div class="view-head"><div><h1>Hang</h1><p class="muted">Beszéd felismerése és szöveg felolvasása helyben.</p></div></div>
-          <div class="grid-2">
-            <article class="card">
-              <h2>Speech to text</h2>
-              <p class="muted">Whisper Tiny – magyar felismerés is támogatott.</p>
-              <label>Nyelv
-                <select id="asrLang">
-                  <option value="hungarian" selected>Magyar</option>
-                  <option value="english">Angol</option>
-                  <option value="german">Német</option>
-                  <option value="french">Francia</option>
-                  <option value="spanish">Spanyol</option>
-                  <option value="italian">Olasz</option>
-                </select>
-              </label>
-              <div class="row">
-                <button id="recBtn" class="btn btn-primary">● Felvétel indítása</button>
-                <label class="btn btn-ghost file-btn">Fájl<input type="file" id="asrFile" accept="audio/*" hidden></label>
-              </div>
-              <p id="recStatus" class="hint">Mikrofon engedély szükséges.</p>
-              <textarea id="asrResult" rows="6" placeholder="Itt jelenik meg a leírt szöveg…"></textarea>
-              <div class="row">
-                <button id="asrToChat" class="btn btn-ghost">Küldés csevegésbe →</button>
-                <button id="asrCopy" class="btn btn-ghost">Másolás</button>
-              </div>
-            </article>
-            <article class="card">
-              <h2>Text to speech</h2>
-              <p class="muted">Supertonic TTS – jelenleg angol hangok.</p>
-              <label>Hang
-                <select id="ttsVoice">
-                  <option value="F1">F1 · női</option>
-                  <option value="F2">F2 · női</option>
-                  <option value="M1">M1 · férfi</option>
-                  <option value="M2">M2 · férfi</option>
-                </select>
-              </label>
-              <textarea id="ttsText" rows="6">Hello! This text was generated on my own device, without the internet.</textarea>
-              <div class="row">
-                <button id="ttsBtn" class="btn btn-primary">Beszéd létrehozása</button>
-                <button id="ttsDownload" class="btn btn-ghost" disabled>WAV letöltése</button>
-              </div>
-              <audio id="ttsAudio" controls hidden></audio>
-              <p id="ttsStatus" class="hint"></p>
-            </article>
           </div>
         </section>
 
@@ -311,29 +244,89 @@
           </div>
         </section>
 
-        <!-- MODELS / LIBRARY -->
-        <section id="view-models" class="view">
-          <div class="view-head"><div><h1>Library</h1><p class="muted">A modellek a készüléken maradnak.</p></div><button id="downloadAll" class="btn btn-primary">Összes letöltése</button></div>
-          <div class="status-grid">
-            <div class="stat"><span>Kapcsolat</span><strong id="statNet">–</strong></div>
-            <div class="stat"><span>Hely használva</span><strong id="statStorage">–</strong></div>
-            <div class="stat"><span>Futtatókörnyezet</span><strong id="statRuntime">–</strong></div>
-            <div class="stat"><span>Gyorsítótár</span><strong id="statCache">–</strong></div>
-          </div>
-          <label class="switch-row">
-            <input type="checkbox" id="offlineToggle">
-            <span><b>Szigorú offline mód</b><br><small>Csak gyorsítótárból tölt modellt.</small></span>
-          </label>
-          <div id="modelList" class="model-list"></div>
-          <p class="hint">Először csak a szükséges modelleket töltsd le.</p>
-        </section>
-
-        <!-- SETTINGS / PLUGINS -->
-        <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Plugins</h1><p class="muted">Beállítások és telepítés.</p></div></div>
+        <!-- VOICE -->
+        <section id="view-voice" class="view">
+          <div class="view-head"><div><h1>Voice</h1><p class="muted">Beszéd szöveggé, és szöveg beszéddé – minden a készüléken.</p></div></div>
           <div class="grid-2">
             <article class="card">
-              <h2>Futtatás</h2>
+              <h2>Beszéd → szöveg</h2>
+              <div class="row">
+                <button id="recBtn" class="btn btn-primary">● Felvétel indítása</button>
+                <label class="btn btn-ghost file-btn">Hangfájl<input type="file" id="asrFile" accept="audio/*" hidden></label>
+              </div>
+              <p id="recStatus" class="hint"></p>
+              <label>Nyelv
+                <select id="asrLang">
+                  <option value="hungarian">Magyar</option>
+                  <option value="english" selected>Angol</option>
+                  <option value="german">Német</option>
+                </select>
+              </label>
+              <textarea id="asrResult" rows="6" placeholder="A leírt szöveg itt jelenik meg…" readonly></textarea>
+              <div class="row">
+                <button id="asrCopy" class="btn btn-ghost">Másolás</button>
+                <button id="asrToChat" class="btn btn-primary">Küldés csevegésbe</button>
+              </div>
+            </article>
+            <article class="card">
+              <h2>Szöveg → beszéd</h2>
+              <label>Szöveg
+                <textarea id="ttsText" rows="5" placeholder="Írd be, amit fel szeretnél olvasni…"></textarea>
+              </label>
+              <label>Hang
+                <select id="ttsVoice">
+                  <option value="F1">F1 · női</option>
+                  <option value="M1">M1 · férfi</option>
+                </select>
+              </label>
+              <button id="ttsBtn" class="btn btn-primary">Beszéd létrehozása</button>
+              <p id="ttsStatus" class="hint"></p>
+              <audio id="ttsAudio" controls hidden></audio>
+              <button id="ttsDownload" class="btn btn-ghost" disabled>WAV letöltése</button>
+            </article>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="view-settings" class="view">
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div></div>
+
+          <div id="appearancePanel" class="settings-block">
+            <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
+            <div class="skin-grid">
+              <button type="button" class="skin-btn active" data-skin="obsidian"><span class="swatch swatch-obsidian"></span><b>Obszidián</b><small>tiszta fekete</small></button>
+              <button type="button" class="skin-btn" data-skin="graphite"><span class="swatch swatch-graphite"></span><b>Grafit</b><small>puha szürke</small></button>
+              <button type="button" class="skin-btn" data-skin="midnight"><span class="swatch swatch-midnight"></span><b>Éjfél</b><small>hű kék</small></button>
+              <button type="button" class="skin-btn" data-skin="forest"><span class="swatch swatch-forest"></span><b>Erdő</b><small>mély zöld</small></button>
+              <button type="button" class="skin-btn" data-skin="warm"><span class="swatch swatch-warm"></span><b>Meleg</b><small>barna arányok</small></button>
+            </div>
+
+            <div class="section-head sub"><h3>Beépített háttér</h3><span class="muted">Finom, nem zavaró minták.</span></div>
+            <div class="wall-grid">
+              <button type="button" class="wall-btn active" data-wall="none">Nincs</button>
+              <button type="button" class="wall-btn" data-wall="aurora">Aurora</button>
+              <button type="button" class="wall-btn" data-wall="dusk">Dusk</button>
+              <button type="button" class="wall-btn" data-wall="forest">Forest</button>
+              <button type="button" class="wall-btn" data-wall="graphite">Graphite</button>
+            </div>
+
+            <div class="section-head sub"><h3>Saját háttérkép</h3><span class="muted">A kép le lesz kicsinyítve és helyben tárolva.</span></div>
+            <div class="appearance-controls">
+              <label class="btn btn-ghost file-btn">Kép feltöltése<input type="file" id="bgFile" accept="image/*" hidden></label>
+              <button type="button" id="bgClear" class="btn btn-ghost">Egyedi háttér törlése</button>
+              <label>Sötétítés <output id="bgDimOut">72%</output>
+                <input type="range" id="bgDim" min="0" max="90" step="2" value="72">
+              </label>
+              <label>Elmosás <output id="bgBlurOut">0 px</output>
+                <input type="range" id="bgBlur" min="0" max="12" step="1" value="0">
+              </label>
+            </div>
+            <div id="bgPreview" class="bg-preview"><span>Nincs egyedi háttér</span></div>
+          </div>
+
+          <div class="settings-block">
+            <div class="section-head"><h2>Futtatás</h2><span class="muted">Telefonon alapból CPU/WASM a stabilitásért.</span></div>
+            <div class="grid-2">
               <label>Eszköz
                 <select id="deviceSelect">
                   <option value="auto">Automatikus</option>
@@ -343,21 +336,38 @@
               </label>
               <label>Pontosság
                 <select id="dtypeSelect">
-                  <option value="auto">Automatikus</option>
+                  <option value="auto">Automatikus (ajánlott)</option>
                   <option value="q4">q4</option>
                   <option value="q4f16">q4f16</option>
                   <option value="q8">q8</option>
                 </select>
               </label>
-              <p id="deviceHint" class="hint"></p>
-              <button id="clearCacheBtn" class="btn btn-danger">Modellek törlése</button>
-            </article>
-            <article class="card">
-              <h2>Telepítés</h2>
-              <p><a class="btn btn-primary" href="downloads/offline-ai.apk" download>⬇ Nexa AI APK</a></p>
-              <p class="muted">Androidon ezt az APK-t telepítsd, és az alkalmazásfiókból indítsd. A böngésző „Hozzáadás a kezdőképernyőhöz” csak parancsikont létre.</p>
-              <p class="hint">Régi „Offline AI Stúdió” esetén előbb távolítsd el.</p>
-            </article>
+            </div>
+            <p id="deviceHint" class="hint"></p>
+            <button id="clearCacheBtn" class="btn btn-danger">Modellek törlése</button>
+          </div>
+
+          <div class="settings-block">
+            <div class="section-head"><h2>Modellek</h2><button id="downloadAll" class="btn btn-primary">Összes letöltése</button></div>
+            <div class="status-grid">
+              <div class="stat"><span>Kapcsolat</span><strong id="statNet">–</strong></div>
+              <div class="stat"><span>Hely használva</span><strong id="statStorage">–</strong></div>
+              <div class="stat"><span>Futtatókörnyezet</span><strong id="statRuntime">–</strong></div>
+              <div class="stat"><span>Gyorsítótár</span><strong id="statCache">–</strong></div>
+            </div>
+            <label class="switch-row">
+              <input type="checkbox" id="offlineToggle">
+              <span><b>Szigorú offline mód</b><br><small>Csak gyorsítótárból tölt modellt.</small></span>
+            </label>
+            <div id="modelList" class="model-list"></div>
+            <p class="hint">Először csak a szükséges modelleket töltsd le. A gyors válaszhoz elég a ⚡ Szikra.</p>
+          </div>
+
+          <div class="settings-block">
+            <div class="section-head"><h2>Telepítés</h2></div>
+            <p><a class="btn btn-primary" href="downloads/offline-ai.apk" download>⬇ Nexa AI APK</a></p>
+            <p class="muted">Androidon ezt az APK-t telepítsd, és az alkalmazásfiókból indítsd. A böngésző „Hozzáadás a kezdőképernyőhöz” csak parancsikont létre.</p>
+            <p class="hint">Régi „Offline AI Stúdió” esetén előbb távolítsd el.</p>
           </div>
         </section>
       </main>
@@ -365,6 +375,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.2.2"></script>
+  <script type="module" src="app.js?v=1.3.0"></script>
 </body>
 </html>
