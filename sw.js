@@ -2,14 +2,14 @@
 // Az alkalmazás "héját" (HTML/CSS/JS/könyvtárak) előre gyorsítótárazza.
 // A modelleket a Transformers.js saját Cache Storage-be menti; ezt az app.js kezeli.
 
-const VERSION = 'offline-ai-v1.2.1';
+const VERSION = 'offline-ai-v1.2.2';
 const SHELL_CACHE = `${VERSION}-shell`;
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
+  './styles.css?v=1.2.2',
+  './app.js?v=1.2.2',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',
@@ -70,6 +70,20 @@ self.addEventListener('fetch', (event) => {
   // Az APK-t mindig frissen kell letölteni, különben a régi verziót adná ki a cache.
   if (url.pathname.endsWith('.apk')) return;
 
+  // Az oldal mindig friss HTML-t kér; offline esetén a gyorsítótár marad.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const copy = response.clone();
+          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
+        return response;
+      }).catch(async () => (await caches.match(req)) || caches.match('./index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
@@ -79,9 +93,6 @@ self.addEventListener('fetch', (event) => {
           caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
         }
         return response;
-      }).catch(() => {
-        if (req.mode === 'navigate') return caches.match('./index.html');
-        throw new Error('Offline: az erőforrás nincs gyorsítótárban');
       });
     })
   );
