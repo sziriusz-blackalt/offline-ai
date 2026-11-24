@@ -15,7 +15,7 @@ import {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-const SHELL_CACHE = 'offline-ai-v1.1.0-shell';
+const SHELL_CACHE = 'offline-ai-v1.1.1-shell';
 
 const MODEL_DEFS = {
   tiny: {
@@ -341,18 +341,32 @@ $('#themeBtn').addEventListener('click', () => {
 $('#chatTemp').addEventListener('input', (e) => { $('#tempOut').textContent = e.target.value; });
 $('#chatTokens').addEventListener('input', (e) => { $('#tokensOut').textContent = e.target.value; });
 
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-  state.deferredPrompt = event;
-  $('#installBtn').hidden = false;
-});
-$('#installBtn').addEventListener('click', async () => {
-  if (!state.deferredPrompt) return toast('A böngésző nem támogatja a telepítést.', 'info');
-  state.deferredPrompt.prompt();
-  await state.deferredPrompt.userChoice;
-  state.deferredPrompt = null;
-  $('#installBtn').hidden = true;
-});
+/* Androidon a böngészős „telepítés” csak parancsikont hoz létre,
+   ezért ott közvetlenül a valódi APK-t kínáljuk. */
+const installBtn = $('#installBtn');
+const isAndroid = /Android/i.test(navigator.userAgent);
+
+if (isAndroid) {
+  window.addEventListener('beforeinstallprompt', (event) => event.preventDefault());
+  installBtn.textContent = '⬇ APK telepítése';
+  installBtn.hidden = false;
+  installBtn.addEventListener('click', () => {
+    window.location.href = './downloads/offline-ai.apk';
+  });
+} else {
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    state.deferredPrompt = event;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener('click', async () => {
+    if (!state.deferredPrompt) return toast('A böngésző nem támogatja a telepítést.', 'info');
+    state.deferredPrompt.prompt();
+    await state.deferredPrompt.userChoice;
+    state.deferredPrompt = null;
+    installBtn.hidden = true;
+  });
+}
 
 /* ---------------------------- chat ------------------------------ */
 
