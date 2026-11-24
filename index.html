@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="description" content="Teljesen offline, helyben futó AI: csevegés, kód, beszéd és képfeldolgozás telefonra és gépre.">
+  <title>Offline AI Stúdió</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "onnxruntime-common": "./vendor/onnxruntime-common/dist/esm/index.js",
+      "onnxruntime-web/webgpu": "./vendor/ort/ort.webgpu.bundle.min.mjs"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">◈</span>
+        <div>
+          <strong>Offline AI Stúdió</strong>
+          <small>100% helyben · adatok nem hagynák el az eszközt</small>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="netBadge" class="badge badge-online">● Online</span>
+        <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
+        <button id="themeBtn" class="btn btn-icon" title="Téma váltása" aria-label="Téma váltása">◐</button>
+      </div>
+    </header>
+
+    <nav class="nav" aria-label="Fő navigáció">
+      <button class="nav-item active" data-view="chat"><span>💬</span><label>Csevegés</label></button>
+      <button class="nav-item" data-view="code"><span>⌘</span><label>Kód</label></button>
+      <button class="nav-item" data-view="voice"><span>🎙️</span><label>Hang</label></button>
+      <button class="nav-item" data-view="image"><span>🖼️</span><label>Kép</label></button>
+      <button class="nav-item" data-view="models"><span>📦</span><label>Modellek</label></button>
+      <button class="nav-item" data-view="settings"><span>⚙️</span><label>Beállítások</label></button>
+    </nav>
+
+    <main>
+      <!-- CHAT -->
+      <section id="view-chat" class="view active">
+        <div class="view-head">
+          <div>
+            <h1>Csevegés</h1>
+            <p class="muted">Kis, helyben futó nyelvi modell. Első használat előtt töltsd le a modellt a <b>Modellek</b> fülön.</p>
+          </div>
+          <button class="btn btn-ghost" id="chatClear">Beszélgetés törlése</button>
+        </div>
+
+        <div class="toolbar">
+          <label>Modell
+            <select id="chatModel">
+              <option value="tiny">SmolLM2 135M Instruct · gyors, telefonbarát (~170 MB)</option>
+              <option value="chat" selected>Qwen3 0.6B · jobb minőség (~880 MB)</option>
+            </select>
+          </label>
+          <label>Stílus
+            <select id="chatStyle">
+              <option value="hu">Magyar, rövid és érthető</option>
+              <option value="general">Általános asszisztens</option>
+              <option value="translate">Fordító (hu ↔ en)</option>
+              <option value="summary">Összefoglaló</option>
+            </select>
+          </label>
+          <label>Hőmérséklet <output id="tempOut">0.3</output>
+            <input type="range" id="chatTemp" min="0" max="1.2" step="0.1" value="0.3">
+          </label>
+          <label>Tokenek <output id="tokensOut">256</output>
+            <input type="range" id="chatTokens" min="64" max="1024" step="64" value="256">
+          </label>
+        </div>
+
+        <div class="chat-panel">
+          <div id="chatLog" class="chat-log" aria-live="polite">
+            <div class="empty-state">Írj egy üzenetet, és a modell itt, a készülékeden válaszol. ✨</div>
+          </div>
+          <form id="chatForm" class="composer">
+            <textarea id="chatInput" rows="2" placeholder="Kérdezz valamit… (Enter = küldés, Shift+Enter = új sor)"></textarea>
+            <button type="submit" class="btn btn-primary" id="chatSend">Küldés</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- CODE -->
+      <section id="view-code" class="view">
+        <div class="view-head">
+          <div>
+            <h1>Kód asszisztens</h1>
+            <p class="muted">Kódmodellel magyarázat, javítás és generálás – szintén offline.</p>
+          </div>
+          <button class="btn btn-ghost" id="codeClear">Törlése</button>
+        </div>
+        <div class="toolbar">
+          <label>Feladat
+            <select id="codeMode">
+              <option value="write">Kód írása</option>
+              <option value="explain">Kód magyarázata</option>
+              <option value="fix">Hibakeresés</option>
+              <option value="review">Kód áttekintés</option>
+            </select>
+          </label>
+          <label>Nyelv
+            <select id="codeLang">
+              <option value="JavaScript">JavaScript</option>
+              <option value="Python">Python</option>
+              <option value="HTML/CSS">HTML/CSS</option>
+              <option value="C#">C#</option>
+              <option value="Java">Java</option>
+              <option value="SQL">SQL</option>
+            </select>
+          </label>
+        </div>
+        <div class="chat-panel">
+          <div id="codeLog" class="chat-log" aria-live="polite">
+            <div class="empty-state">Példa: „Írj egy függvényt, ami kiveszi az ékezetes betűket egy szövegből.”</div>
+          </div>
+          <form id="codeForm" class="composer">
+            <textarea id="codeInput" rows="2" placeholder="Írd le, milyen kódot szeretnél…"></textarea>
+            <button type="submit" class="btn btn-primary" id="codeSend">Küldés</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- VOICE -->
+      <section id="view-voice" class="view">
+        <div class="view-head">
+          <div>
+            <h1>Hang</h1>
+            <p class="muted">Beszéd felismerése és szöveg felolvasása helyben, hálózat nélkül.</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>🎧 Beszéd → szöveg</h2>
+            <p class="muted">Whisper Tiny modell. Magyar felismerés is támogatott, de a pontosság mérsékelt.</p>
+            <label>Nyelv
+              <select id="asrLang">
+                <option value="hungarian" selected>Magyar</option>
+                <option value="english">Angol</option>
+                <option value="german">Német</option>
+                <option value="french">Francia</option>
+                <option value="spanish">Spanyol</option>
+                <option value="italian">Olasz</option>
+              </select>
+            </label>
+            <div class="row">
+              <button id="recBtn" class="btn btn-primary">● Felvétel indítása</button>
+              <label class="btn btn-ghost file-btn">Fájl kiválasztása<input type="file" id="asrFile" accept="audio/*" hidden></label>
+            </div>
+            <p id="recStatus" class="hint">A mikrofon használatához engedély szükséges.</p>
+            <textarea id="asrResult" rows="6" placeholder="Itt jelenik meg a leírt szöveg…"></textarea>
+            <div class="row">
+              <button id="asrToChat" class="btn btn-ghost">Küldés csevegésbe →</button>
+              <button id="asrCopy" class="btn btn-ghost">Másolás</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>🔊 Szöveg → beszéd</h2>
+            <p class="muted">Supertonic TTS. Jelenleg angol nyelvű hangok érhetők el.</p>
+            <label>Hang
+              <select id="ttsVoice">
+                <option value="F1">F1 · női, kifejező</option>
+                <option value="F2">F2 · női</option>
+                <option value="M1">M1 · férfi</option>
+                <option value="M2">M2 · férfi</option>
+              </select>
+            </label>
+            <textarea id="ttsText" rows="6" placeholder="Type something in English to hear it…">Hello! This text was generated on my own device, without the internet.</textarea>
+            <div class="row">
+              <button id="ttsBtn" class="btn btn-primary">Beszéd létrehozása</button>
+              <button id="ttsDownload" class="btn btn-ghost" disabled>WAV letöltése</button>
+            </div>
+            <audio id="ttsAudio" controls hidden></audio>
+            <p id="ttsStatus" class="hint"></p>
+          </article>
+        </div>
+      </section>
+
+      <!-- IMAGE -->
+      <section id="view-image" class="view">
+        <div class="view-head">
+          <div>
+            <h1>Kép</h1>
+            <p class="muted">Képek leírása, szöveg olvasása és háttér eltávolítása – minden a böngészőben.</p>
+          </div>
+        </div>
+        <div class="notice">
+          ⓘ <b>Képgenerálás:</b> a szövegből képet létrehozó modellek több GB-osak és nem férnek el egy telefonbarát offline csomagban. Helyette képfelismerést, OCR-t és háttér eltávolítást kínálunk. Ha később elérhetővé válik egy kis ONNX képgenerátor, hozzáadjuk a modelllistához.
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>🖼️ Kép leírása / OCR</h2>
+            <label class="btn btn-ghost file-btn">Kép kiválasztása<input type="file" id="imgCaptionFile" accept="image/*" hidden></label>
+            <div id="imgCaptionPreview" class="preview"></div>
+            <button id="captionBtn" class="btn btn-primary">Leírás készítése</button>
+            <textarea id="captionResult" rows="5" placeholder="A modell itt írja le a képet…" readonly></textarea>
+          </article>
+
+          <article class="card">
+            <h2>✂️ Háttér eltávolítása</h2>
+            <label class="btn btn-ghost file-btn">Portré kiválasztása<input type="file" id="imgMatteFile" accept="image/*" hidden></label>
+            <div id="imgMattePreview" class="preview"></div>
+            <button id="matteBtn" class="btn btn-primary">Háttér eltávolítása</button>
+            <div id="matteResult" class="preview result"></div>
+            <button id="matteDownload" class="btn btn-ghost" disabled>Átlátszó PNG letöltése</button>
+          </article>
+
+          <article class="card card-wide">
+            <h2>❓ Kérdezz a képről (haladó)</h2>
+            <p class="muted">Egy kis multimodális modell (LFM2.5-VL 450M, q4). Első használat előtt kb. 350 MB letöltés szükséges.</p>
+            <label class="btn btn-ghost file-btn">Kép kiválasztása<input type="file" id="vlmFile" accept="image/*" hidden></label>
+            <div id="vlmPreview" class="preview"></div>
+            <div class="row">
+              <input type="text" id="vlmQuestion" placeholder="Mi történik a képen?" value="What is shown in this image?">
+              <button id="vlmBtn" class="btn btn-primary">Kérdés</button>
+            </div>
+            <textarea id="vlmResult" rows="4" readonly placeholder="Válasz…"></textarea>
+          </article>
+        </div>
+      </section>
+
+      <!-- MODELS -->
+      <section id="view-models" class="view">
+        <div class="view-head">
+          <div>
+            <h1>Modellek és letöltés</h1>
+            <p class="muted">A modellek a böngésző gyorsítótárába kerülnek. Miután letöltötted őket internetkapcsolattal, offline is működnek.</p>
+          </div>
+          <button id="downloadAll" class="btn btn-primary">Összes letöltése</button>
+        </div>
+
+        <div class="status-grid">
+          <div class="stat"><span>Kapcsolat</span><strong id="statNet">–</strong></div>
+          <div class="stat"><span>Hely használva</span><strong id="statStorage">–</strong></div>
+          <div class="stat"><span>Futtatókörnyezet</span><strong id="statRuntime">–</strong></div>
+          <div class="stat"><span>Gyorsítótár</span><strong id="statCache">–</strong></div>
+        </div>
+
+        <label class="switch-row">
+          <input type="checkbox" id="offlineToggle">
+          <span><b>Szigorú offline mód</b><br><small>Ha bekapcsolod, a modell betöltése csak gyorsítótárból történik, hálózati kérés nélkül.</small></span>
+        </label>
+
+        <div id="modelList" class="model-list"></div>
+        <p class="hint" id="downloadHint">Tipp: először csak a használni kívánt modelleket töltsd le – így spórolsz a tárhellyel.</p>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" class="view">
+        <div class="view-head"><div><h1>Beállítások</h1><p class="muted">A beállítások a készüléken maradnak.</p></div></div>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Futtatás</h2>
+            <label>Eszköz
+              <select id="deviceSelect">
+                <option value="auto">Automatikus (ajánlott)</option>
+                <option value="webgpu">WebGPU (gyors, ha támogatott)</option>
+                <option value="wasm">CPU / WASM (kompatibilis)</option>
+              </select>
+            </label>
+            <label>Pontosság
+              <select id="dtypeSelect">
+                <option value="auto">Automatikus</option>
+                <option value="q4">q4 – legkisebb</option>
+                <option value="q4f16">q4f16 – kicsi, GPU-barát</option>
+                <option value="q8">q8 – nagyobb, pontosabb</option>
+              </select>
+            </label>
+            <p class="hint" id="deviceHint"></p>
+            <button id="clearCacheBtn" class="btn btn-danger">Teljes modell-gyorsítótár törlése</button>
+          </article>
+          <article class="card">
+            <h2>Telepítés telefonra / gépre</h2>
+            <ol class="steps">
+              <li>Nyisd meg ezt az oldalt egy <b>https</b> címen (vagy a gépen <code>http://localhost</code> címen).</li>
+              <li>A címsorban válaszd a <b>Telepítés</b> / <b>Hozzáadás a kezdőképernyőhöz</b> lehetőséget.</li>
+              <li>Kapcsolj össze a <b>Modellek</b> fülön a szükséges modelleket – ezt még online kell megtenni.</li>
+              <li>Ezután kapcsold ki az internetet, és használd tovább. Semmi sem kerül fel a felhőbe.</li>
+            </ol>
+            <p class="muted">A PWA telepítéshez a böngésző biztonságos eredetet (HTTPS vagy localhost) kér. Ha a fájlokat közvetlenül a telefonra másolod, először töltsd fel őket egy ingyenes statikus tárhelyre (pl. GitHub Pages, Netlify).</p>
+          </article>
+          <article class="card card-wide">
+            <h2>Az alkalmazásról</h2>
+            <p class="muted">A projekt a <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noopener">Transformers.js</a> és az ONNX Runtime Web könyvtárakra épül. A modellek a Hugging Face könyvtárából származnak, és a böngésző Cache Storagejába kerülnek. Nincs szerver, nincs API-kulcs, nincs adatgyűjtés.</p>
+            <p class="hint">Korlátok: a kis modellek néha tévesztenek; a magyar nyelvű beszédfelismerés és szöveggenerálás pontossága változó. A TTS jelenleg csak angol. A képgenerálás nem része a csomagnak.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">Offline AI Stúdió · minden számítás a készülékeden történik · <span id="version">v1.0.5</span></footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
