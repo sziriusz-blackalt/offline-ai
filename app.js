@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.0-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.1-shell';
 
 const MODEL_DEFS = {
   nexa: {
@@ -34,26 +34,34 @@ const MODEL_DEFS = {
   tiny: {
     group: 'Csevegés', nick: 'Szikra', icon: '⚡', label: 'SmolLM2 135M Instruct', task: 'text-generation',
     model: 'onnx-community/SmolLM2-135M-Instruct-ONNX',
-    web: 'q4', wasm: 'q4', sizeMB: 172, override: true,
+    web: 'q4f16', wasm: 'q4f16', sizeMB: 117, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
     note: 'Nagyon gyors, de csak 135M paraméter: magyarul gyakran hibás. Rövid próbákhoz jó.',
   },
+  lite: {
+    group: 'Csevegés', nick: 'Nova Lite', icon: '🌙', label: 'SmolLM2 360M Instruct', task: 'text-generation',
+    model: 'onnx-community/SmolLM2-360M-Instruct-ONNX',
+    web: 'q8', wasm: 'q8', sizeMB: 363, override: true,
+    probes: ['onnx/model_quantized.onnx', 'onnx/model_q4.onnx'],
+    probe: 'onnx/model_quantized.onnx',
+    note: 'Telefonra ajánlott: sokkal jobb, mint a Szikra, és gyorsabb, mint a Nova.',
+  },
   chat: {
     group: 'Csevegés', nick: 'Nova', icon: '✨', label: 'Qwen3 0.6B', task: 'text-generation',
     model: 'onnx-community/Qwen3-0.6B-ONNX',
-    web: 'q4', wasm: 'q4', sizeMB: 880, override: true,
+    web: 'q4f16', wasm: 'q4f16', sizeMB: 570, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
-    note: 'Ajánlott modell: sokkal jobb magyar válaszok, lassabb és nagyobb letöltés.',
+    note: 'A legjobb magyar válaszok; nagyobb letöltés. Telefonra a Nova Lite ajánlott.',
   },
   code: {
     group: 'Kód', nick: 'Forge', icon: '🔨', label: 'Qwen2.5-Coder 0.5B', task: 'text-generation',
     model: 'onnx-community/Qwen2.5-Coder-0.5B-Instruct',
-    web: 'q4', wasm: 'q4', sizeMB: 822, override: true,
+    web: 'q4f16', wasm: 'q4f16', sizeMB: 555, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
-    note: 'Kódírásra és magyarázatra hangolva.',
+    note: 'Kódírásra és magyarázatra hangolva. Telefonon a kódhoz is a chatmodellt használja.',
   },
   asr: {
     group: 'Hang', nick: 'Suttogó', icon: '🎧', label: 'Whisper Tiny', task: 'automatic-speech-recognition',
@@ -249,13 +257,16 @@ const theme = localStorage.getItem('theme') || 'dark';
 document.documentElement.dataset.theme = theme;
 
 // Telefonon alapból a stabil, gyors CPU/WASM út + rövidebb generálás.
+// A `?small=1` URL paraméterrel ez a mód asztalon is kikényszeríthető (teszteléshez).
 const smallDevice = isSmallDevice();
-if (smallDevice && localStorage.getItem('device') === null) localStorage.setItem('device', 'wasm');
-if (localStorage.getItem('chatTemp') === null) localStorage.setItem('chatTemp', smallDevice ? '0.2' : '0.3');
+const forceSmall = new URLSearchParams(location.search).has('small');
+const phoneMode = () => smallDevice || forceSmall;
+if (phoneMode() && localStorage.getItem('device') === null) localStorage.setItem('device', 'wasm');
+if (localStorage.getItem('chatTemp') === null) localStorage.setItem('chatTemp', phoneMode() ? '0.2' : '0.3');
 if (localStorage.getItem('chatTokens') === null) localStorage.setItem('chatTokens', '128');
 
 function syncGenerationControls() {
-  const temp = localStorage.getItem('chatTemp') || (smallDevice ? '0.2' : '0.3');
+  const temp = localStorage.getItem('chatTemp') || (phoneMode() ? '0.2' : '0.3');
   const tokens = localStorage.getItem('chatTokens') || '128';
   if ($('#chatTemp')) $('#chatTemp').value = temp;
   if ($('#tempOut')) $('#tempOut').textContent = temp;
@@ -337,7 +348,7 @@ async function resolveDevice() {
   const pref = localStorage.getItem('device') || 'auto';
   if (pref === 'wasm') return 'wasm';
   if (pref === 'webgpu') return 'webgpu';
-  if (isSmallDevice()) return 'wasm';
+  if (phoneMode()) return 'wasm';
   return (typeof navigator !== 'undefined' && navigator.gpu) ? 'webgpu' : 'wasm';
 }
 
@@ -387,7 +398,8 @@ async function loadPipe(key, onProgress) {
     if (device === 'webgpu') {
       console.warn('WebGPU nem működött, váltás WASM-ra:', err);
       device = 'wasm';
-      dtype = def.wasm === 'q4f16' ? 'q4' : def.wasm;
+      // A q4f16 WASM-on is működik (ellenőrizve), így nem kell a nagyobb q4-re váltani.
+      dtype = def.wasm;
       pipe = await pipeline(def.task, def.model, generationOptions(key, device, dtype, {
         progress_callback: progressHandler(def, onProgress),
       }));
@@ -573,8 +585,10 @@ on('#chatTokens', 'input', (e) => {
   $('#tokensOut').textContent = value;
   localStorage.setItem('chatTokens', value);
 });
-const savedChatModel = localStorage.getItem('chatModel');
-if (savedChatModel && $('#chatModel')) $('#chatModel').value = savedChatModel;
+// Telefonon alapból a köztes, gyors modell: nem kell 570 MB-ot letölteni
+// csak azért, hogy egyáltalán választ kapjunk.
+const savedChatModel = localStorage.getItem('chatModel') || (phoneMode() ? 'lite' : 'chat');
+if ($('#chatModel')) $('#chatModel').value = savedChatModel;
 on('#chatModel', 'change', (e) => {
   localStorage.setItem('chatModel', e.target.value);
 });
@@ -863,8 +877,21 @@ async function sendChat(text, forcedMode) {
 
   const chat = activeChat();
   const mode = forcedMode || (chat.mode === 'auto' ? detectChatMode(userText) : chat.mode);
-  const modelKey = mode === 'code' ? 'code' : $('#chatModel').value;
+  // Telefonon a kód is a kiválasztott chatmodellt használja: így nem kell
+  // külön 555 MB-os Forge-ot letölteni csak azért, mert kódot kérünk.
+  let modelKey = mode === 'code' && !phoneMode() ? 'code' : $('#chatModel').value;
   if (state.downloading.has(modelKey)) return toast('Ez a modell még töltődik, várj egy pillanatot.', 'info');
+
+  // Küldéskor ne induljon el észrevétlenül egy hatalmas letöltés.
+  if (!await isModelCached(modelKey)) {
+    const fallback = await findCachedChatModel();
+    if (fallback) {
+      toast(`${getDef(modelKey).nick} nincs letöltve — a már elérhető ${getDef(fallback).nick} válaszol.`, 'info');
+      modelKey = fallback;
+    } else {
+      return toast('Először töltsd le a modellt: Beállítások → Modellek → Letöltés.', 'error');
+    }
+  }
   state.busyChat = true;
   const sendBtn = $('#chatSend');
   sendBtn.disabled = true;
@@ -891,6 +918,9 @@ async function sendChat(text, forcedMode) {
     const pipe = await loadPipe(modelKey);
     const messages = [{ role: 'system', content: systemPrompt(mode, modelKey) }];
     const isTiny = modelKey === 'tiny';
+    // Telefonon és a két kis modellnél mintavétel nélkül generálunk: gyorsabb,
+    // kevesebb a hibás/üres válasz, és kisebb a memóriahasználat.
+    const greedy = isTiny || modelKey === 'lite' || phoneMode();
     const history = isTiny ? 2 : 6;
     chat.messages.slice(0, -2).slice(-history).forEach((m) => {
       messages.push({ role: m.role, content: m.content });
@@ -906,16 +936,15 @@ async function sendChat(text, forcedMode) {
     const rawTemp = Number($('#chatTemp').value);
     const temperature = Math.min(Math.max(Number.isFinite(rawTemp) ? rawTemp : 0.3, 0), 1);
     let safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
-    if (isSmallDevice()) safeTemp = Math.min(safeTemp, 0.5);
+    if (phoneMode()) safeTemp = Math.min(safeTemp, 0.5);
     let maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 128, 64), 512);
-    if (isSmallDevice()) maxNewTokens = Math.min(maxNewTokens, 256);
+    if (phoneMode()) maxNewTokens = Math.min(maxNewTokens, 256);
 
-    // A kis modellt mintavétel nélkül futtatjuk: így sokkal ritkábban ír értelmetlenséget.
-    const options = isTiny
+    const options = greedy
       ? {
-          max_new_tokens: Math.min(maxNewTokens, 64),
+          max_new_tokens: isTiny ? 64 : Math.min(maxNewTokens, 128),
           do_sample: false,
-          repetition_penalty: 1.15,
+          repetition_penalty: 1.12,
         }
       : {
           max_new_tokens: maxNewTokens,
@@ -974,7 +1003,7 @@ async function sendChat(text, forcedMode) {
     state.busyChat = false;
     sendBtn.disabled = false;
     sendBtn.textContent = 'Küldés';
-    if (isSmallDevice()) await releasePipe(modelKey);
+    if (phoneMode()) await releasePipe(modelKey);
     chat.updatedAt = Date.now();
     persistChats();
     renderChat();
@@ -1475,6 +1504,24 @@ async function estimateModel(key) {
   return { size: def.sizeMB * 1024 * 1024, cached, files: null };
 }
 
+async function isModelCached(key) {
+  if (state.modelInfo[key]?.cached === true) return true;
+  const def = getDef(key);
+  for (const file of def.probes || [def.probe]) {
+    if (await isFileCached(def.model, file)) return true;
+  }
+  return false;
+}
+
+// Csak olyan modellre váltsunk, amely tényleg a gyorsítótárban van.
+async function findCachedChatModel() {
+  for (const key of ['lite', 'tiny', 'chat', 'nexa']) {
+    if (!modelDefs()[key]) continue;
+    if (await isModelCached(key)) return key;
+  }
+  return null;
+}
+
 async function refreshModels() {
   const list = $('#modelList');
   if (!list) return;
@@ -1551,6 +1598,14 @@ async function downloadModel(key) {
   if (btn) { btn.disabled = true; btn.textContent = 'Letöltés…'; }
   setProgress(key, 0, 'Indítás');
   try {
+    // A telefon gyakran nem a hálózat, hanem a böngésző tárhelykorlátja miatt bukik meg.
+    if (navigator.storage?.estimate) {
+      const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+      const need = (state.modelInfo[key]?.size || def.sizeMB * 1048576) * 1.15;
+      if (quota && usage + need > quota) {
+        throw new Error(`Nincs elég tárhely (~${formatBytes(need)} kell). Törölj egy másik modellt, vagy válassz kisebbet.`);
+      }
+    }
     if (def.extras) for (const extra of def.extras) await warmVoiceFile(extra);
     const pipeKey = def.special ? 'vlm' : key;
     const alreadyLoaded = state.pipes.has(pipeKey);
@@ -1584,12 +1639,17 @@ on('#downloadAll', 'click', async () => {
   const btn = $('#downloadAll');
   btn.disabled = true;
   btn.textContent = 'Letöltés folyik…';
-  for (const key of Object.keys(modelDefs())) {
+  // Telefonon a két nagy modell (Nova, Forge) gyakran nem fér el és percekig tart.
+  // Ezeket egyenként lehet letölteni; az alap csomag így is teljesen használható.
+  const keys = Object.keys(modelDefs()).filter((key) => !(phoneMode() && (key === 'chat' || key === 'code')));
+  for (const key of keys) {
     await downloadModel(key);
   }
   btn.disabled = false;
   btn.textContent = 'Összes letöltése';
-  toast('Az összes modell letöltése befejeződött.', 'ok');
+  toast(phoneMode()
+    ? 'Kész. A nagy Nova/Forge modellt nem töltöttem le automatikusan — egyenként választhatod.'
+    : 'Az összes modell letöltése befejeződött.', 'ok');
 });
 
 async function warmRuntime() {
