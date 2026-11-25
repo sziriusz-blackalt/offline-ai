@@ -21,9 +21,16 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.3.3-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.0-shell';
 
 const MODEL_DEFS = {
+  nexa: {
+    group: 'Csevegés', nick: 'Nexa HU', icon: '🧠', label: 'Nexa HU 0.6B (saját, finomhangolt)', task: 'text-generation',
+    model: 'sziriusz-blackalt/nexa-hu',
+    web: 'q4', wasm: 'q4', sizeMB: 420, override: false,
+    probe: 'onnx/model_q4.onnx',
+    note: 'Saját magyar adatokkal finomhangolt modell. A repo nevét a Beállításokban kell megadni.',
+  },
   tiny: {
     group: 'Csevegés', nick: 'Szikra', icon: '⚡', label: 'SmolLM2 135M Instruct', task: 'text-generation',
     model: 'onnx-community/SmolLM2-135M-Instruct-ONNX',
@@ -86,6 +93,23 @@ const MODEL_DEFS = {
     note: 'Kérdezz a képről (angol kérdésekkel).',
   },
 };
+
+// A saját modell csak akkor jelenik meg, ha a felhasználó megadta a repo nevét.
+// Így a beépített modellek és az „Összes letöltése” változatlanul működnek.
+const NEXA_REPO_KEY = 'nexaRepo';
+function nexaRepo() {
+  return (localStorage.getItem(NEXA_REPO_KEY) || '').trim();
+}
+function modelDefs() {
+  const defs = { ...MODEL_DEFS };
+  const repo = nexaRepo();
+  if (repo) defs.nexa = { ...MODEL_DEFS.nexa, model: repo };
+  else delete defs.nexa;
+  return defs;
+}
+function getDef(key) {
+  return modelDefs()[key] || MODEL_DEFS[key];
+}
 
 const RUNTIME_FILES = [
   'ort-wasm-simd-threaded.mjs',
@@ -318,7 +342,7 @@ async function resolveDevice() {
 }
 
 async function resolveDtype(key, device) {
-  const def = MODEL_DEFS[key];
+  const def = getDef(key);
   const override = localStorage.getItem('dtype') || 'auto';
   let dtype = device === 'webgpu' ? def.web : def.wasm;
   if (override !== 'auto' && def.override) dtype = override;
@@ -349,7 +373,7 @@ function progressHandler(def, onProgress) {
 
 async function loadPipe(key, onProgress) {
   if (state.pipes.has(key)) return state.pipes.get(key);
-  const def = MODEL_DEFS[key];
+  const def = getDef(key);
   let device = await resolveDevice();
   let dtype = await resolveDtype(key, device);
   const options = generationOptions(key, device, dtype, {
@@ -787,7 +811,7 @@ function buildChatPrompt(pipe, messages, modelKey) {
       const kwargs = { tokenize: false, add_generation_prompt: true };
       // A Qwen3 alapból <think> blokkal indítana. A sablonba kell megadni a kapcsolót,
       // a generálási opciók között a library nem továbbítja a modellnek.
-      if (modelKey === 'chat') kwargs.enable_thinking = false;
+      if (modelKey === 'chat' || modelKey === 'nexa') kwargs.enable_thinking = false;
       const text = pipe.tokenizer.apply_chat_template(messages, kwargs);
       if (typeof text === 'string' && text.length) return text;
     }
@@ -1423,7 +1447,7 @@ function setProgress(key, ratio, label) {
 }
 
 async function estimateModel(key) {
-  const def = MODEL_DEFS[key];
+  const def = getDef(key);
   const device = await resolveDevice();
   const dtype = await resolveDtype(key, device);
   const options = { device, dtype };
@@ -1455,11 +1479,11 @@ async function refreshModels() {
   const list = $('#modelList');
   if (!list) return;
   list.textContent = 'Az állapot ellenőrzése…';
-  const entries = await Promise.all(Object.keys(MODEL_DEFS).map(async (key) => [key, await estimateModel(key)]));
+  const entries = await Promise.all(Object.keys(modelDefs()).map(async (key) => [key, await estimateModel(key)]));
   state.modelInfo = Object.fromEntries(entries);
 
   list.textContent = '';
-  Object.entries(MODEL_DEFS).forEach(([key, def]) => {
+  Object.entries(modelDefs()).forEach(([key, def]) => {
     const info = state.modelInfo[key];
     const card = document.createElement('div');
     card.className = 'model-card';
@@ -1521,7 +1545,7 @@ async function refreshModels() {
 
 async function downloadModel(key) {
   if (state.downloading.has(key)) return;
-  const def = MODEL_DEFS[key];
+  const def = getDef(key);
   const btn = document.querySelector(`[data-progress="${key}"]`)?.parentElement?.querySelector('.btn-primary');
   state.downloading.add(key);
   if (btn) { btn.disabled = true; btn.textContent = 'Letöltés…'; }
@@ -1560,7 +1584,7 @@ on('#downloadAll', 'click', async () => {
   const btn = $('#downloadAll');
   btn.disabled = true;
   btn.textContent = 'Letöltés folyik…';
-  for (const key of Object.keys(MODEL_DEFS)) {
+  for (const key of Object.keys(modelDefs())) {
     await downloadModel(key);
   }
   btn.disabled = false;
@@ -1620,6 +1644,26 @@ on('#dtypeSelect', 'change', (e) => {
   localStorage.setItem('dtype', e.target.value);
   updateDeviceHint();
 });
+
+// Saját modell: csak megadott repo esetén jelenik meg a választható modellek között.
+function syncNexaOption() {
+  const select = $('#chatModel');
+  const option = select?.querySelector('option[value="nexa"]');
+  if (option) option.hidden = !nexaRepo();
+  if (select && !nexaRepo() && select.value === 'nexa') select.value = 'chat';
+}
+const nexaInput = $('#nexaRepo');
+if (nexaInput) {
+  nexaInput.value = nexaRepo();
+  syncNexaOption();
+  on('#nexaRepo', 'change', () => {
+    localStorage.setItem(NEXA_REPO_KEY, nexaInput.value.trim());
+    state.pipes.delete('nexa');
+    syncNexaOption();
+    refreshModels();
+    toast(nexaRepo() ? 'Saját Nexa modell bekapcsolva.' : 'Saját Nexa modell kikapcsolva.', 'info');
+  });
+}
 
 function updateDeviceHint() {
   const device = $('#deviceSelect').value;

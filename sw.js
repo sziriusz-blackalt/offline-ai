@@ -2,14 +2,14 @@
 // Az alkalmazás "héját" (HTML/CSS/JS/könyvtárak) előre gyorsítótárazza.
 // A modelleket a Transformers.js saját Cache Storage-be menti; ezt az app.js kezeli.
 
-const VERSION = 'offline-ai-v1.3.3';
+const VERSION = 'offline-ai-v1.4.0';
 const SHELL_CACHE = `${VERSION}-shell`;
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=1.3.3',
-  './app.js?v=1.3.3',
+  './styles.css?v=1.4.0',
+  './app.js?v=1.4.0',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',
