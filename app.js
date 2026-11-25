@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.2-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.3-shell';
 
 const MODEL_DEFS = {
   nexa: {
@@ -157,6 +157,7 @@ const state = {
   mic: null,
   ttsBlobUrl: null,
   matteUrl: null,
+  activePipeKey: null,
   files: { caption: null, matte: null, vlm: null },
   deferredPrompt: null,
   tinyWarned: false,
@@ -243,9 +244,20 @@ function isSmallDevice() {
 
 async function releasePipe(key) {
   const pipe = state.pipes.get(key);
+  state.pipes.delete(key);
+  if (state.activePipeKey === key) state.activePipeKey = null;
   if (!pipe) return;
   try { await pipe.dispose?.(); } catch { /* már felszabadítva */ }
-  state.pipes.delete(key);
+}
+
+// A betöltött modellt megtartjuk a gyors válaszokhoz, de ha a felhasználó
+// egy percig nem ír, elengedjük, hogy ne fogyjon el a telefon memóriája.
+let pipeIdleTimer = null;
+function schedulePipeRelease() {
+  clearTimeout(pipeIdleTimer);
+  pipeIdleTimer = setTimeout(async () => {
+    if (!state.busyChat && state.activePipeKey) await releasePipe(state.activePipeKey);
+  }, 60000);
 }
 
 let offlineMode = localStorage.getItem('offline') === '1';
@@ -915,7 +927,11 @@ async function sendChat(text, forcedMode) {
   const bubble = log.querySelector('.msg.assistant:last-child .bubble');
 
   try {
+    // Ha váltunk modellt, a régit elengedjük — egyszerre csak egy modell van a memóriában.
+    if (state.activePipeKey && state.activePipeKey !== modelKey) await releasePipe(state.activePipeKey);
     const pipe = await loadPipe(modelKey);
+    state.activePipeKey = modelKey;
+    clearTimeout(pipeIdleTimer);
     const messages = [{ role: 'system', content: systemPrompt(mode, modelKey) }];
     const isTiny = modelKey === 'tiny';
     // Telefonon és a két kis modellnél mintavétel nélkül generálunk: gyorsabb,
@@ -1003,7 +1019,7 @@ async function sendChat(text, forcedMode) {
     state.busyChat = false;
     sendBtn.disabled = false;
     sendBtn.textContent = 'Küldés';
-    if (phoneMode()) await releasePipe(modelKey);
+    schedulePipeRelease();
     chat.updatedAt = Date.now();
     persistChats();
     renderChat();
@@ -1622,6 +1638,7 @@ async function downloadModel(key) {
       if (def.special) await pipe.model.dispose?.();
       else await pipe.dispose?.();
       state.pipes.delete(pipeKey);
+      if (state.activePipeKey === pipeKey) state.activePipeKey = null;
     } else {
       setProgress(key, 1, 'Már betöltve');
     }
