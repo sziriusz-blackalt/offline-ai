@@ -51,7 +51,7 @@ A *Szigorú offline mód* kapcsolóval kikapcsolható minden hálózati modellk�
 
 ## Saját modell (Nexa HU)
 
-A v1.4.4-től az app képes egy **saját, magyarul finomhangolt modellt** is használni. A csevegőmező melletti gomb most a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van: `nexa_train.ipynb` és útmutató. A folyamat LoRA-val finomhangolja a nyílt Qwen3-0.6B bázist saját magyar mintákon, ONNX-be exportálja, 4 bitesre kvantálja, és a saját Hugging Face repódra tölti.
+A v1.4.5-től az app képes egy **saját, magyarul finomhangolt modellt** is használni. A csevegőmező melletti gomb most a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van: `nexa_train.ipynb` és útmutató. A folyamat LoRA-val finomhangolja a nyílt Qwen3-0.6B bázist saját magyar mintákon, ONNX-be exportálja, 4 bitesre kvantálja, és a saját Hugging Face repódra tölti.
 
 Használat: **Beállítások → Modellek → Saját Nexa modell** mezőbe írd be a repo nevét (pl. `sziriusz-blackalt/nexa-hu`), majd a megjelenő **🧠 Nexa HU** kártyán kattints a *Letöltés* gombra. A csevegés **Modell** legördülőjében ezután választható. Üres mező esetén a beépített Nova/Szikra modellek változatlanul működnek, és az „Összes letöltése” sem próbálja letölteni a saját modellt.
 
@@ -60,7 +60,7 @@ Használat: **Beállítások → Modellek → Saját Nexa modell** mezőbe írd 
 Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek külön letölthetők:
 
 - SmolLM2 135M Instruct (Szikra): ~117 MB
-- **SmolLM2 360M Instruct (Nova Lite): ~363 MB — telefonra ajánlott**
+- **SmolLM2 360M Instruct (Nova Lite): ~272 MB (q4f16) — telefonra ajánlott**
 - Qwen3 0.6B (Nova): ~570 MB (q4f16; ez a legjobb magyar, de nagyobb)
 - **Nexa HU 0.6B: ~420 MB** (opcionális, saját magyar adatokkal finomhangolt modell; lásd lent)
 - Qwen2.5-Coder 0.5B (Forge): ~555 MB (q4f16)
@@ -70,7 +70,9 @@ Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek k�
 - MODNet: ~25 MB
 - LFM2.5-VL 450M: ~350 MB
 
-Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet** modelleket letölteni (~430 MB összesen). A Nova és a Forge nagy modellek egyenként is letölthetők, de az „Összes letöltése” telefonon átugorja őket. A küldés többé nem indít el automatikusan hatalmas letöltést: ha a választott modell nincs kész, az app egy már letöltött kisebb modellel válaszol.
+Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet** modelleket letölteni (~340 MB összesen). A Nova és a Forge nagy modellek egyenként is letölthetők, de az „Összes letöltése” telefonon átugorja őket. A küldés többé nem indít el automatikusan hatalmas letöltést: ha a választott modell nincs kész, az app egy már letöltött kisebb modellel válaszol.
+
+A v1.4.5-től telefonon **30 másodperces időkeret** van a teljes válaszra (betöltéssel együtt). A rendszer rövid utasítást használ, csak az utolsó üzenetet tartja meg előzménynek, és legfeljebb 56 tokent generál; ha a keret lejár, a már megírt szöveget adja vissza és jelzi a rövidítést. A gyorsabb válaszhoz a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 
 ## Korlátok
 

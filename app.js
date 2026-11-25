@@ -21,7 +21,9 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.4-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.5-shell';
+// Telefonon a teljes válasz (betöltéssel együtt) legfeljebb ennyi ideig tarthat.
+const PHONE_TIME_BUDGET_MS = 28000;
 
 const MODEL_DEFS = {
   nexa: {
@@ -42,9 +44,10 @@ const MODEL_DEFS = {
   lite: {
     group: 'Csevegés', nick: 'Nova Lite', icon: '🌙', label: 'SmolLM2 360M Instruct', task: 'text-generation',
     model: 'onnx-community/SmolLM2-360M-Instruct-ONNX',
-    web: 'q8', wasm: 'q8', sizeMB: 363, override: true,
-    probes: ['onnx/model_quantized.onnx', 'onnx/model_q4.onnx'],
-    probe: 'onnx/model_quantized.onnx',
+    // A q4f16 (272 MB) kisebb és WASM-on is gyorsabb, mint a régi q8 (363 MB).
+    web: 'q4f16', wasm: 'q4f16', sizeMB: 272, override: true,
+    probes: ['onnx/model_q4f16.onnx', 'onnx/model_quantized.onnx'],
+    probe: 'onnx/model_q4f16.onnx',
     note: 'Telefonra ajánlott: sokkal jobb, mint a Szikra, és gyorsabb, mint a Nova.',
   },
   chat: {
@@ -161,6 +164,7 @@ const state = {
   files: { caption: null, matte: null, vlm: null },
   deferredPrompt: null,
   tinyWarned: false,
+  lastTimeUp: false,
 };
 
 /* ----------------------------- setup ----------------------------- */
@@ -816,6 +820,12 @@ on('#chatMode', 'change', (event) => {
 });
 
 function systemPrompt(mode, modelKey) {
+  // Telefonon minden extra token ideget vesz el a válaszidőből: rövid utasítás.
+  if (phoneMode()) {
+    return mode === 'code'
+      ? 'Answer in Hungarian. Give short, correct code with a brief explanation.'
+      : 'Answer briefly in correct Hungarian. Be honest.';
+  }
   if (mode === 'code') {
     const task = CODE_STYLES[$('#codeMode').value] || CODE_STYLES.write;
     const lang = $('#codeLang').value;
@@ -851,42 +861,64 @@ function buildChatPrompt(pipe, messages, modelKey) {
   return messages;
 }
 
-async function runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey) {
+async function runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey, deadline) {
   const input = buildChatPrompt(pipe, messages, modelKey);
   const asText = typeof input === 'string';
   let streamed = '';
+  let timeUp = false;
+
+  const checkDeadline = () => {
+    if (deadline && performance.now() > deadline) {
+      timeUp = true;
+      // A streamer hívása a generálási ciklusban történik: innen még
+      // le tudjuk állítani a modellt, és a már megírt szöveget megtartjuk.
+      throw new Error('NEXA_TIME_BUDGET');
+    }
+  };
 
   const streamer = new TextStreamer(pipe.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
+    token_callback_function: checkDeadline,
     callback_function: (chunk) => {
-      if (!bubble.isConnected) return;
       streamed += chunk;
       const current = chat.messages.at(-1);
-      current.content = stripThink(streamed);
-      bubble.textContent = current.content;
-      log.scrollTop = log.scrollHeight;
+      if (current) current.content = stripThink(streamed);
+      if (bubble.isConnected) {
+        bubble.textContent = current?.content || '';
+        log.scrollTop = log.scrollHeight;
+      }
+      checkDeadline();
     },
   });
 
-  const output = await pipe(input, {
-    ...options,
-    ...(asText ? { return_full_text: false } : {}),
-    streamer,
-  });
+  let output = null;
+  try {
+    output = await pipe(input, {
+      ...options,
+      ...(asText ? { return_full_text: false } : {}),
+      streamer,
+    });
+  } catch (err) {
+    if (!timeUp || String(err?.message || err) !== 'NEXA_TIME_BUDGET') throw err;
+  }
 
   let result = '';
-  const first = Array.isArray(output) ? output[0] : output;
-  if (Array.isArray(first)) result = first.at(-1)?.generated_text ?? '';
-  else result = first?.generated_text ?? '';
-  if (typeof result !== 'string') result = '';
-  result = stripThink(result);
+  if (output) {
+    const first = Array.isArray(output) ? output[0] : output;
+    if (Array.isArray(first)) result = first.at(-1)?.generated_text ?? '';
+    else result = first?.generated_text ?? '';
+    if (typeof result !== 'string') result = '';
+    result = stripThink(result);
+  }
   if (!result && streamed) result = stripThink(streamed);
+  state.lastTimeUp = timeUp;
   return result.trim();
 }
 
 async function sendChat(text, forcedMode) {
   if (state.busyChat) return toast('A modell még dolgozik, várj egy pillanatot.', 'info');
+  const requestStart = performance.now();
   const input = $('#chatInput');
   const userText = (text ?? input.value).trim();
   if (!userText) return;
@@ -929,6 +961,9 @@ async function sendChat(text, forcedMode) {
 
   const log = $('#chatLog');
   const bubble = log.querySelector('.msg.assistant:last-child .bubble');
+  // Betöltéssel és generálással együtt: telefonon 30 mp, asztalon 90 mp.
+  const deadline = requestStart + (phoneMode() ? PHONE_TIME_BUDGET_MS : 90000);
+  state.lastTimeUp = false;
 
   try {
     // Ha váltunk modellt, a régit elengedjük — egyszerre csak egy modell van a memóriában.
@@ -936,12 +971,16 @@ async function sendChat(text, forcedMode) {
     const pipe = await loadPipe(modelKey);
     state.activePipeKey = modelKey;
     clearTimeout(pipeIdleTimer);
+    if (performance.now() > deadline) {
+      throw new Error('A modell betöltése túl sokáig tartott. Válassz kisebb modellt (Szikra), vagy töltsd le újra a gyorsítótárba.');
+    }
     const messages = [{ role: 'system', content: systemPrompt(mode, modelKey) }];
     const isTiny = modelKey === 'tiny';
     // Telefonon és a két kis modellnél mintavétel nélkül generálunk: gyorsabb,
     // kevesebb a hibás/üres válasz, és kisebb a memóriahasználat.
     const greedy = isTiny || modelKey === 'lite' || phoneMode();
-    const history = isTiny ? 2 : 6;
+    // Az előzmények újrafeldolgozása telefonn nagyon drága: csak az utolsó üzenet kell.
+    const history = phoneMode() ? 1 : (isTiny ? 2 : 6);
     chat.messages.slice(0, -2).slice(-history).forEach((m) => {
       messages.push({ role: m.role, content: m.content });
     });
@@ -958,11 +997,12 @@ async function sendChat(text, forcedMode) {
     let safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
     if (phoneMode()) safeTemp = Math.min(safeTemp, 0.5);
     let maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 128, 64), 512);
-    if (phoneMode()) maxNewTokens = Math.min(maxNewTokens, 256);
+    // A hosszú válasz a telefonon nem fér bele a 30 másodperces keretbe.
+    if (phoneMode()) maxNewTokens = Math.min(maxNewTokens, 56);
 
     const options = greedy
       ? {
-          max_new_tokens: isTiny ? 64 : Math.min(maxNewTokens, 128),
+          max_new_tokens: phoneMode() ? Math.min(maxNewTokens, 56) : (isTiny ? 64 : Math.min(maxNewTokens, 128)),
           do_sample: false,
           repetition_penalty: 1.12,
         }
@@ -976,32 +1016,32 @@ async function sendChat(text, forcedMode) {
 
     let result = '';
     try {
-      result = await runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey);
+      result = await runChatGeneration(pipe, messages, options, chat, bubble, log, mode, modelKey, deadline);
     } catch (sampleErr) {
-      if (!options.do_sample) throw sampleErr;
+      if (!options.do_sample || performance.now() > deadline) throw sampleErr;
       // Egyes WebGPU/WASM hajtások a mintavételes generálást nem szeretik.
       // Determinista újrapróbálással a válasz még megmarad.
       console.warn('Mintavételes generálás hiba, újrapróbálás mintavétel nélkül:', sampleErr);
       const { temperature: _ignored, top_p: _ignoredTopP, ...fallback } = options;
       fallback.do_sample = false;
-      fallback.max_new_tokens = Math.min(maxNewTokens, 256);
+      fallback.max_new_tokens = phoneMode() ? 32 : Math.min(maxNewTokens, 256);
       chat.messages.at(-1).content = '…';
       if (bubble.isConnected) bubble.textContent = '…';
-      result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode, modelKey);
+      result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode, modelKey, deadline);
       toast('A mintavétel nem működött, mintavétel nélkül válaszoltam.', 'info');
     }
 
-    if (!result) {
+    if (!result && performance.now() < deadline) {
       // Előfordul, hogy a modell csak gondolkodási jeleket ír ki. Újrapróbáljuk
-      // rövidebb, mintavétel nélküli generálással, hogy mindenképpen kapjunk szöveget.
+      // rövidebb, mintavétel nélküli generálással — de nem az időkeret túllépése után.
       console.warn('Üres válasz, újrapróbálás rövidebb determinista generálással.');
       const { temperature: _t, top_p: _p, ...safe } = options;
       safe.do_sample = false;
-      safe.max_new_tokens = Math.min(maxNewTokens, 160);
+      safe.max_new_tokens = phoneMode() ? 24 : Math.min(maxNewTokens, 160);
       safe.repetition_penalty = 1.05;
       chat.messages.at(-1).content = '…';
       if (bubble.isConnected) bubble.textContent = '…';
-      result = await runChatGeneration(pipe, messages, safe, chat, bubble, log, mode, modelKey);
+      result = await runChatGeneration(pipe, messages, safe, chat, bubble, log, mode, modelKey, deadline);
       if (result) toast('Az első kísérlet üres volt, újrapróbáltam rövidebben.', 'info');
     }
 
@@ -1012,6 +1052,9 @@ async function sendChat(text, forcedMode) {
     chat.messages.at(-1).content = result;
     bubble.textContent = '';
     renderFormatted(bubble, result, mode === 'code');
+    if (state.lastTimeUp) {
+      toast('30 mp időkeret: rövidebb válasz. Gyorsabbhoz válassz ⚡ Szikrát a mező melletti gombbal.', 'info');
+    }
   } catch (err) {
     console.error(err);
     const message = `Hiba: ${err?.message || String(err)}. Ellenőrizd a Modellek fülön, hogy a modell le van-e töltve.`;
