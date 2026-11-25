@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.1-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.2-shell';
 
 const MODEL_DEFS = {
   nexa: {
@@ -1505,7 +1505,9 @@ async function estimateModel(key) {
 }
 
 async function isModelCached(key) {
-  if (state.modelInfo[key]?.cached === true) return true;
+  // Nem szabad a ModelRegistry generally "cached" jelzésére hagyatkozni:
+  // az néha csak a konfigfájlok alapján mond igent, és ilyenkor küldéskor
+  // indult el egy 570 MB-os letöltés. Mindig a tényleges súlyfájlt nézzük.
   const def = getDef(key);
   for (const file of def.probes || [def.probe]) {
     if (await isFileCached(def.model, file)) return true;
