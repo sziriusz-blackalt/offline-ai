@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.3-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.4-shell';
 
 const MODEL_DEFS = {
   nexa: {
@@ -603,7 +603,11 @@ const savedChatModel = localStorage.getItem('chatModel') || (phoneMode() ? 'lite
 if ($('#chatModel')) $('#chatModel').value = savedChatModel;
 on('#chatModel', 'change', (e) => {
   localStorage.setItem('chatModel', e.target.value);
+  syncModelButton();
+  renderModelMenu();
 });
+syncModelButton();
+renderModelMenu();
 
 /* ---------------------------- chat ------------------------------ */
 
@@ -1047,11 +1051,39 @@ on('#chatInput', 'input', updateComposerState);
 
 function setComposerMenu(which) {
   const plusOpen = which === 'plus';
-  const thinkOpen = which === 'think';
+  const modelOpen = which === 'model';
   $('#plusMenu').hidden = !plusOpen;
-  $('#thinkMenu').hidden = !thinkOpen;
+  $('#modelMenu').hidden = !modelOpen;
   $('#plusBtn')?.setAttribute('aria-expanded', String(plusOpen));
-  $('#thinkBtn')?.setAttribute('aria-expanded', String(thinkOpen));
+  $('#modelBtn')?.setAttribute('aria-expanded', String(modelOpen));
+}
+
+// A csevegőmező gombján mindig a jelenleg használt modell neve látszik.
+function syncModelButton() {
+  const key = $('#chatModel')?.value || 'chat';
+  const def = getDef(key);
+  const label = $('#modelLabel');
+  if (label) label.textContent = `${def.icon || '✨'} ${def.nick || key}`;
+  const btn = $('#modelBtn');
+  if (btn) btn.title = `Modell: ${def.label || key} — kattints a váltáshoz`;
+}
+
+// Csak csevegésre használható modellek; a Nexa HU csak akkor, ha be van állítva a repo.
+function renderModelMenu() {
+  const menu = $('#modelMenu');
+  if (!menu) return;
+  const current = $('#chatModel')?.value || 'chat';
+  menu.textContent = '';
+  for (const key of Object.keys(modelDefs())) {
+    const def = getDef(key);
+    if (def.group !== 'Csevegés') continue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.model = key;
+    btn.classList.toggle('active', key === current);
+    btn.textContent = `${def.icon || '✨'} ${def.nick || key} — ${def.label || key}`;
+    menu.appendChild(btn);
+  }
 }
 
 on('#plusBtn', 'click', (event) => {
@@ -1060,18 +1092,13 @@ on('#plusBtn', 'click', (event) => {
   setComposerMenu(open ? 'plus' : null);
   setProfileMenu(false);
 });
-on('#thinkBtn', 'click', (event) => {
+on('#modelBtn', 'click', (event) => {
   event.stopPropagation();
-  const open = $('#thinkMenu').hidden;
-  setComposerMenu(open ? 'think' : null);
+  const open = $('#modelMenu').hidden;
+  renderModelMenu();
+  setComposerMenu(open ? 'model' : null);
   setProfileMenu(false);
 });
-
-function chooseChatMode(mode) {
-  const select = $('#chatMode');
-  select.value = mode;
-  select.dispatchEvent(new Event('change', { bubbles: true }));
-}
 
 $$('[data-plus]').forEach((btn) => btn.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -1083,42 +1110,25 @@ $$('[data-plus]').forEach((btn) => btn.addEventListener('click', (event) => {
     switchView('voice');
     toast('Itt írod át beszédet szöveggé.', 'info');
   } else if (action === 'models') switchView('settings');
-}));
-
-$$('[data-think]').forEach((btn) => btn.addEventListener('click', (event) => {
-  event.stopPropagation();
-  const action = btn.dataset.think;
-  setComposerMenu(null);
-  if (action === 'code') {
-    chooseChatMode('code');
-    toast('Kód mód bekapcsolva.', 'info');
-    return;
-  }
-  if (action === 'advanced') {
+  else if (action === 'advanced') {
     const panel = $('#advancedPanel');
     panel.hidden = !panel.hidden;
     toast(panel.hidden ? 'Speciális beállítások elrejtve.' : 'Speciális beállítások megnyitva.', 'info');
-    return;
   }
-  const fast = action === 'fast';
-  const temp = fast ? '0' : '0.2';
-  const tokens = fast ? '64' : (smallDevice ? '256' : '384');
-  $('#chatTemp').value = temp;
-  $('#tempOut').textContent = temp;
-  $('#chatTokens').value = tokens;
-  $('#tokensOut').textContent = tokens;
-  localStorage.setItem('chatTemp', temp);
-  localStorage.setItem('chatTokens', tokens);
-  const modelSelect = $('#chatModel');
-  if (modelSelect) {
-    modelSelect.value = fast ? 'tiny' : 'chat';
-    modelSelect.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  chooseChatMode('chat');
-  toast(fast
-    ? 'Gyors próba: ⚡ Szikra. Nagyon hibás magyarul – értelmes válaszhoz válassz Novát.'
-    : 'Minőségi mód: ✨ Nova. Jobb magyar válaszok.', 'info');
 }));
+
+on('#modelMenu', 'click', (event) => {
+  const btn = event.target.closest('[data-model]');
+  if (!btn) return;
+  event.stopPropagation();
+  setComposerMenu(null);
+  const select = $('#chatModel');
+  if (!select) return;
+  select.value = btn.dataset.model;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  const def = getDef(select.value);
+  toast(`${def.icon || '✨'} ${def.nick || select.value} kiválasztva.`, 'info');
+});
 
 async function toggleMicToChat() {
   try {
@@ -1730,6 +1740,8 @@ function syncNexaOption() {
   const option = select?.querySelector('option[value="nexa"]');
   if (option) option.hidden = !nexaRepo();
   if (select && !nexaRepo() && select.value === 'nexa') select.value = 'chat';
+  syncModelButton();
+  renderModelMenu();
 }
 const nexaInput = $('#nexaRepo');
 if (nexaInput) {

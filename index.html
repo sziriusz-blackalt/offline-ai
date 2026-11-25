@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.4.3">
+  <link rel="stylesheet" href="styles.css?v=1.4.4">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version">v1.4.3</span></div>
+          <div class="profile-version">Nexa AI · <span id="version">v1.4.4</span></div>
         </div>
       </div>
     </aside>
@@ -186,22 +186,18 @@
               <button type="button" data-plus="image">Kép feltöltése</button>
               <button type="button" data-plus="voice">Hangfeltétel</button>
               <button type="button" data-plus="models">Modellek és beállítások</button>
+              <button type="button" data-plus="advanced">Speciális beállítások</button>
             </div>
-            <div id="thinkMenu" class="pop-menu composer-menu" hidden>
-              <button type="button" data-think="fast">Gyors válasz</button>
-              <button type="button" data-think="deep">Alapos gondolkodás</button>
-              <button type="button" data-think="code">Kód mód</button>
-              <button type="button" data-think="advanced">Speciális beállítások</button>
-            </div>
+            <div id="modelMenu" class="pop-menu composer-menu" hidden></div>
 
             <form id="chatForm" class="composer">
               <button id="plusBtn" class="composer-icon" type="button" aria-label="Hozzáadás" title="Hozzáadás">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
               </button>
               <textarea id="chatInput" rows="1" placeholder="Ask anything" autocomplete="off"></textarea>
-              <button id="thinkBtn" class="think-btn" type="button" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a4 4 0 0 0-4 4 3 3 0 0 0-1 5.8V17h10v-2.2A3 3 0 0 0 16 9a4 4 0 0 0-4-4Z"></path><path d="M9 20h6"></path></svg>
-                <span id="thinkLabel">Thinking</span>
+              <button id="modelBtn" class="model-btn" type="button" aria-expanded="false" title="Modell választása" aria-label="Modell választása">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"></path></svg>
+                <span id="modelLabel">✨ Nova</span>
               </button>
               <button id="micBtn" class="composer-icon" type="button" aria-label="Mikrofon" title="Mikrofon">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
@@ -382,6 +378,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.4.3"></script>
+  <script type="module" src="app.js?v=1.4.4"></script>
 </body>
 </html>
