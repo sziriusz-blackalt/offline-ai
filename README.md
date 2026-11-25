@@ -12,7 +12,7 @@ A repó **nyilvános**, a GitHub Pages tartósan kiszolgálja – a laptopnak ne
 
 | Funkció | Modell | Megjegyzés |
 |---|---|---|
-| 💬 Csevegés (magyar is) | SmolLM2 135M / Qwen3 0.6B | Streamelt válasz, több stílus |
+| 💬 Csevegés (magyar is) | SmolLM2 135M / Qwen3 0.6B / **Nexa HU** | Streamelt válasz, több stílus; a Nexa HU saját finomhangolt modell |
 | ⌘ Kód asszisztens | Qwen2.5-Coder 0.5B | Írás, magyarázat, hibakeresés |
 | 🎙️ Beszéd → szöveg | Whisper Tiny | Magyar, angol, német stb. |
 | 🔊 Szöveg → beszéd | Supertonic TTS | Angol hangok, WAV letöltés |
@@ -49,12 +49,19 @@ vagy bármely más statikus szerver. Utána: <http://localhost:8080/>
 
 A *Szigorú offline mód* kapcsolóval kikapcsolható minden hálózati modellkérés: ilyenkor a betöltés kizárólag a gyorsítótárból történik.
 
+## Saját modell (Nexa HU)
+
+A v1.4.0-tól az app képes egy **saját, magyarul finomhangolt modellt** is használni. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van: `nexa_train.ipynb` és útmutató. A folyamat LoRA-val finomhangolja a nyílt Qwen3-0.6B bázist saját magyar mintákon, ONNX-be exportálja, 4 bitesre kvantálja, és a saját Hugging Face repódra tölti.
+
+Használat: **Beállítások → Modellek → Saját Nexa modell** mezőbe írd be a repo nevét (pl. `sziriusz-blackalt/nexa-hu`), majd a megjelenő **🧠 Nexa HU** kártyán kattints a *Letöltés* gombra. A csevegés **Modell** legördülőjében ezután választható. Üres mező esetén a beépített Nova/Szikra modellek változatlanul működnek, és az „Összes letöltése” sem próbálja letölteni a saját modellt.
+
 ## Tárhelyigény
 
 Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek külön letölthetők:
 
 - SmolLM2 135M Instruct: ~170 MB
 - Qwen3 0.6B: ~880 MB (q4; a kisebb q4f16 változat gazdagabb eszközökön választható a Beállításokban)
+- **Nexa HU 0.6B: ~420 MB** (opcionális, saját magyar adatokkal finomhangolt modell; lásd lent)
 - Qwen2.5-Coder 0.5B: ~820 MB (q4)
 - Whisper Tiny: ~45 MB
 - Supertonic TTS: ~260 MB
