@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.4.7">
+  <link rel="stylesheet" href="styles.css?v=1.4.8">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version">v1.4.7</span></div>
+          <div class="profile-version">Nexa AI · <span id="version">v1.4.8</span></div>
         </div>
       </div>
     </aside>
@@ -139,9 +139,9 @@
                 <option value="chat" selected>✨ Nova · legjobb magyar (~570 MB)</option>
                 <option value="lite">🌙 Nova Lite · telefonra ajánlott (~270 MB)</option>
                 <option value="tiny">⚡ Szikra · gyors, de hibás (~117 MB)</option>
-                <option value="nexa" hidden>🧠 Nexa HU · saját modell (~420 MB)</option>
+                <option value="nexa">🧠 Nexa HU · saját modell (~20–80 MB)</option>
               </select>
-              <small class="hint">Telefonon a Nova Lite az alapértelmezett: gyors és értelmes. A Szikra nagyon kicsi, magyarul gyakran hibás. Kódhoz telefonon is a kiválasztott chatmodellt használja az app, így nem kell külön letölteni a Forge-ot.</small>
+              <small class="hint">Telefonon a Nova Lite az alapértelmezett: gyors és értelmes. A Szikra nagyon kicsi, magyarul gyakran hibás. A saját Nexa HU a csevegő Modell gombjáról is választható; a repo nevét a Beállításokban kell megadni, majd a Modellek kártyán letölteni. Kódhoz telefonon is a kiválasztott chatmodellt használja az app.</small>
             </label>
             <label>Stílus
               <select id="chatStyle">
@@ -378,6 +378,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.4.7"></script>
+  <script type="module" src="app.js?v=1.4.8"></script>
 </body>
 </html>

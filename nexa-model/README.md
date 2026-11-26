@@ -67,7 +67,7 @@ Ha a Wikipédia letöltése nem sikerül, a notebook kiírja, hogy kihagyta, és
 3. A **🧠 Nexa HU** kártyán kattints a **Letöltés** gombra.
 4. A csevegő **Modell** gombjából válaszd a **🧠 Nexa HU**-t.
 
-A mező üresen hagyása esetén az app továbbra is a beépített Nova/Nova Lite/Szikra modelleket használja; az „Összes letöltése” nem próbálja letölteni a saját modellt. A v1.4.7 óta **nincs válaszidőzítő és nincs rejtett tokenkorlát** sem.
+A mező üresen hagyása esetén az app továbbra is a beépített Nova/Nova Lite/Szikra modelleket használja; az „Összes letöltése” nem próbálja letölteni a saját modellt. A v1.4.8 óta **nincs válaszidőzítő és nincs rejtett tokenkorlát** sem.
 
 ## Hibaelhárítás
 
