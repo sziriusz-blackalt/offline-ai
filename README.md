@@ -53,11 +53,17 @@ A *Szigorú offline mód* kapcsolóval kikapcsolható minden hálózati modellk�
 
 ## Saját modell (Nexa HU)
 
-A v1.4.9-tól az app képes egy **saját, magyar adatokkal betanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van.
+A v1.4.9-tól az app képes egy **saját, magyar adatokkal betanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova, Nexa HU, Magyarusz és Forge. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van.
 
 A választott út a **nulláról tanított modell**: `nexa_scratch.ipynb`. Saját BPE tokenizáló, véletlen súlyokból indított transzformer, két szakaszú magyar tanítás (Wikipédia + saját minták + Aya + OPUS), majd ONNX/q4 export. Egy kb. 34M-paraméteres modell **nem éri el** a Qwen3-0.6B finomhangolásának minőségét, de a súlyok és a tokenizáló teljesen sajátok. Ha a lehető legjobb magyar tudás a cél, a `nexa_train.ipynb` erősebb alternatíva — mindkettő ugyanabba a Hugging Face repóba tud feltölteni.
 
 Használat: a csevegő **Modell** gombjából válaszd a **🧠 Nexa HU**-t. A repo mező üresen is jó: az app az alapértelmezett `sziriusz-blackalt/nexa-hu` repót használja. A **Beállítások → Modellek → Nexa HU** kártyán nyomj a *Letöltés* gombra; a mezőt csak akkor kell kitölteni, ha saját repo-d van. Az „Összes letöltése” nem próbálja automatikusan letölteni a még nem létező saját modellt.
+
+## Magyarusz — külön tanuló magyar AI
+
+A v1.5.3 óta a mellékelt önálló `magyarusz.html` is teljes értékű, külön letölthető modell. A csevegő **Modell** menüjéből a **🇭🇺 Magyarusz** kiválasztható, a **Beállítások → Modellek → Magyarusz → Letöltés** gombbal pedig le kell tölteni a csomagot — pont úgy, mint a Nova vagy a Forge esetében. Letöltés után hálózat nélkül is dolgozik: beszélget, kódot generál, számol, fordít, és tanítható a „Tanulj: kérdés => válasz” paranccsal. A tanult tudás a böngésző helyi tárolójában marad.
+
+A **🔨 Forge** szintén kiválasztható a Modell menüben; nem kell hozzá kódmódot kapcsolni. Telefonon, hálózat nélkül ha a kiválasztott Nova/Forge túl lassú, az app automatikusan egy már letöltött gyors modellre (Magyarusz / Szikra / Nova Lite) vált, és ezt értesítéssel jelzi.
 
 ## Tárhelyigény
 
@@ -68,6 +74,7 @@ Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek k�
 - Qwen3 0.6B (Nova): ~570 MB (q4f16; ez a legjobb magyar, de nagyobb)
 - **Nexa HU: ~20–50 MB** (opcionális, nulláról magyar adatokkal betanított modell; a Qwen3-alapú erősebb változat ~420 MB)
 - Qwen2.5-Coder 0.5B (Forge): ~555 MB (q4f16)
+- **Magyarusz: ~160 KB** (külön letölthető tanuló magyar AI-csomag)
 - Whisper Tiny: ~45 MB
 - Supertonic TTS: ~260 MB
 - Képleíró: ~190 MB

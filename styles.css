@@ -66,7 +66,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 
 [hidden] { display: none !important; }
 
-.app-shell { min-height: 100dvh; display: flex; }
+/* Fix képernyőmagasság: a felső és alsó sáv nem megy el a görgetéssel. */
+.app-shell { height: 100dvh; min-height: 100dvh; display: flex; overflow: hidden; }
 
 /* ----------------------------- sidebar ---------------------------- */
 
@@ -217,7 +218,9 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   background: var(--bg);
   transition: margin-left .2s ease;
 }
@@ -238,33 +241,31 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 }
 .workspace[data-wall="none"]::before { display: none; }
 .workspace[data-wall="aurora"] {
-  --wall-image: radial-gradient(ellipse at 15% 10%, rgba(16,163,127,.55), transparent 55%),
-                radial-gradient(ellipse at 85% 25%, rgba(91,157,255,.42), transparent 58%),
-                linear-gradient(135deg, #07110f, #05070f 60%, #10131c);
-  --wall-opacity: .62;
+  --wall-image: url('./backgrounds/aurora.svg');
+  --wall-opacity: .82;
 }
 .workspace[data-wall="dusk"] {
-  --wall-image: radial-gradient(ellipse at 75% 15%, rgba(245,158,107,.46), transparent 52%),
-                linear-gradient(160deg, #1b0f14, #08090f 65%, #121725);
-  --wall-opacity: .6;
+  --wall-image: url('./backgrounds/dusk.svg');
+  --wall-opacity: .82;
 }
+/* Valódi erdőkép: háttér, holdfény, köd és három réteg fenyő. */
 .workspace[data-wall="forest"] {
-  --wall-image: radial-gradient(ellipse at 20% 80%, rgba(74,222,128,.34), transparent 52%),
-                linear-gradient(155deg, #07160f, #040806 60%, #0b1a12);
-  --wall-opacity: .6;
+  --wall-image: url('./backgrounds/forest.svg');
+  --wall-opacity: .86;
 }
 .workspace[data-wall="graphite"] {
-  --wall-image: radial-gradient(circle at 50% 0%, rgba(255,255,255,.12), transparent 45%),
-                linear-gradient(160deg, #1c2025, #0b0d10 70%);
-  --wall-opacity: .5;
+  --wall-image: url('./backgrounds/graphite.svg');
+  --wall-opacity: .78;
 }
 .workspace[data-wall="custom"] {
   --wall-image: var(--user-bg, none);
   --wall-opacity: .8;
 }
 .workspace-head {
+  position: sticky; top: 0; z-index: 20;
   height: 56px; flex: 0 0 56px; display: flex; align-items: center; gap: 10px;
   padding: 0 20px; border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 .menu-btn { display: none; }
 .head-spacer { flex: 1; }
@@ -276,9 +277,9 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 .temp-badge {
   font-size: 11px; padding: 4px 8px; border-radius: 999px; background: var(--surface-2); color: #d7d7d7;
 }
-.main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.main { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 
-.view { display: none; flex: 1; min-height: 0; padding: 26px 28px; }
+.view { display: none; flex: 1; min-height: 0; padding: 26px 28px; overflow-y: auto; }
 .view.active { display: block; }
 .view-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
 .view-head h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.4px; }
@@ -291,8 +292,8 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 
 /* ------------------------------- chat ----------------------------- */
 
-.chat-view.active { display: flex; flex-direction: column; padding: 0; }
-.chat-heading { padding: 18px 24px 0; max-width: 850px; width: 100%; margin: 0 auto; }
+.chat-view.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.chat-heading { flex: 0 0 auto; padding: 18px 24px 0; max-width: 850px; width: 100%; margin: 0 auto; }
 .chat-heading h1 { margin: 0; font-size: 17px; font-weight: 600; }
 .chat-heading p { margin: 2px 0 0; }
 .chat-log {
@@ -336,7 +337,8 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 .advanced-clear { grid-column: 1 / -1; justify-self: start; }
 
 .composer-wrap {
-  position: relative; width: min(850px, calc(100% - 40px)); margin: 0 auto 24px;
+  position: relative; flex: 0 0 auto; z-index: 12;
+  width: min(850px, calc(100% - 40px)); margin: 0 auto 24px;
 }
 .composer {
   min-height: 58px; display: flex; align-items: center; gap: 6px;

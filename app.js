@@ -21,10 +21,20 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.2';
+const APP_VERSION = '1.5.3';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
+  magyarusz: {
+    group: 'Csevegés', nick: 'Magyarusz', icon: '🇭🇺',
+    label: 'Magyarusz · külön tanuló magyar AI (saját csomag)',
+    task: 'text-generation',
+    model: './ai/magyarusz.html',
+    probe: './ai/magyarusz.html',
+    web: 'local', wasm: 'local', sizeMB: 0.2, override: false,
+    local: true,
+    note: 'Külön, saját magyar AI: beszélgetik, kódot ír, és tanítod. A csomagot le kell tölteni; utána offline is működik.',
+  },
   nexa: {
     group: 'Csevegés', nick: 'Nexa HU', icon: '🧠', label: 'Nulláról tanított magyar modell (saját)', task: 'text-generation',
     model: 'sziriusz-blackalt/nexa-hu',
@@ -349,6 +359,8 @@ function stripThink(text) {
 }
 
 function modelUrl(model, file) {
+  // A Magyarusz nem HF-súly, hanem egy lokális, letölthető AI-csomag.
+  if (String(model).startsWith('./')) return new URL(file || model, import.meta.url).href;
   return `${env.remoteHost.replace(/\/$/, '')}/${model}/resolve/main/${file}`;
 }
 
@@ -932,6 +944,53 @@ async function runChatGeneration(pipe, messages, options, chat, bubble, log, mod
   return result.trim();
 }
 
+let magyaruszFrame = null;
+
+async function magyaruszGenerate(text, bubble) {
+  const def = getDef('magyarusz');
+  const url = modelUrl(def.model, def.probe);
+  if (!(await isFileCached(def.model, def.probe))) {
+    if (!navigator.onLine || offlineMode) {
+      throw new Error('A Magyarusz csomag nincs letöltve. Kapcsold be a netet, vagy töltsd le a Beállítások → Modellekben.');
+    }
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`A Magyarusz csomag letöltése nem sikerült (${response.status}).`);
+    const cache = await caches.open(env.cacheKey);
+    await cache.put(url, response.clone());
+  }
+
+  if (!magyaruszFrame) {
+    magyaruszFrame = document.createElement('iframe');
+    magyaruszFrame.hidden = true;
+    magyaruszFrame.title = 'Magyarusz AI';
+    const ready = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('A Magyarusz csomag nem indult el.')), 15000);
+      magyaruszFrame.addEventListener('load', () => { clearTimeout(timer); resolve(); }, { once: true });
+    });
+    magyaruszFrame.src = url;
+    document.body.appendChild(magyaruszFrame);
+    await ready;
+  }
+
+  const api = magyaruszFrame.contentWindow?.Magyarusz;
+  if (!api?.ready) throw new Error('A Magyarusz csomag nem érhető el ebben a böngészőben.');
+  if (bubble?.isConnected) bubble.textContent = '…';
+  const output = await api.reply(text);
+  if (output?.llm) throw new Error('A Magyarusz külső Ollama modellt kér. Itt csak a beépített, letöltött tudás érhető el.');
+  return String(output?.t ?? output ?? '').trim();
+}
+
+function finishChat(chat, sendBtn) {
+  state.busyChat = false;
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Küldés';
+  schedulePipeRelease();
+  chat.updatedAt = Date.now();
+  persistChats();
+  renderChat();
+  renderChatList();
+}
+
 async function sendChat(text, forcedMode) {
   if (state.busyChat) return toast('A modell még dolgozik, várj egy pillanatot.', 'info');
   const input = $('#chatInput');
@@ -940,9 +999,9 @@ async function sendChat(text, forcedMode) {
 
   const chat = activeChat();
   const mode = forcedMode || (chat.mode === 'auto' ? detectChatMode(userText) : chat.mode);
-  // Telefonon a kód is a kiválasztott chatmodellt használja: így nem kell
-  // külön 555 MB-os Forge-ot letölteni csak azért, mert kódot kérünk.
-  let modelKey = mode === 'code' && !phoneMode() ? 'code' : $('#chatModel').value;
+  // A felhasználó által kiválasztott modell minden módban érvényes.
+  // A Forge mostantól a Modell menüben is kiválasztható, nem csak automatikus kódmód.
+  let modelKey = $('#chatModel').value || 'chat';
   if (state.downloading.has(modelKey)) return toast('Ez a modell még töltődik, várj egy pillanatot.', 'info');
 
   // Ha van internet és nincs bekapcsolva a szigorú offline mód, bármelyik
@@ -962,6 +1021,15 @@ async function sendChat(text, forcedMode) {
   }
   if (canDownload && !cached) {
     toast(`${getDef(modelKey).nick} nincs még letöltve — most letöltjük. A böngészőben láthatod a haladást.`, 'info');
+  }
+  // Offline + telefon: a nagy modell (Nova/Forge) CPU-n nagyon lassú.
+  // Ha van már gyors, letöltött modell, az válaszol — ezt jelezzük is.
+  if ((!navigator.onLine || offlineMode) && phoneMode() && (modelKey === 'chat' || modelKey === 'code')) {
+    const fast = await findFastChatModel();
+    if (fast) {
+      toast(`${getDef(modelKey).nick} offline lassú a telefonon — ${getDef(fast).nick} válaszol.`, 'info');
+      modelKey = fast;
+    }
   }
   state.busyChat = true;
   const sendBtn = $('#chatSend');
@@ -984,6 +1052,27 @@ async function sendChat(text, forcedMode) {
 
   const log = $('#chatLog');
   const bubble = log.querySelector('.msg.assistant:last-child .bubble');
+
+  // A Magyarusz nem Transformers-modell, hanem egy külön, letölthető AI-csomag.
+  if (modelKey === 'magyarusz') {
+    try {
+      const result = await magyaruszGenerate(userText, bubble);
+      if (!result) throw new Error('A Magyarusz nem írt szöveget.');
+      chat.messages.at(-1).content = result;
+      bubble.textContent = '';
+      renderFormatted(bubble, result, false);
+    } catch (err) {
+      console.error(err);
+      const message = `Hiba: ${friendlyModelError(err, modelKey)}`;
+      chat.messages.at(-1).content = message;
+      log.querySelector('.msg.assistant:last-child')?.classList.add('err');
+      bubble.textContent = message;
+      toast('A Magyarusz válasza nem sikerült.', 'error');
+    } finally {
+      finishChat(chat, sendBtn);
+    }
+    return;
+  }
 
   try {
     // Ha váltunk modellt, a régit elengedjük — egyszerre csak egy modell van a memóriában.
@@ -1081,14 +1170,7 @@ async function sendChat(text, forcedMode) {
     bubble.textContent = message;
     toast('A válasz generálása nem sikerült.', 'error');
   } finally {
-    state.busyChat = false;
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Küldés';
-    schedulePipeRelease();
-    chat.updatedAt = Date.now();
-    persistChats();
-    renderChat();
-    renderChatList();
+    finishChat(chat, sendBtn);
   }
 }
 
@@ -1138,7 +1220,7 @@ function renderModelMenu() {
   menu.textContent = '';
   for (const key of Object.keys(MODEL_DEFS)) {
     const def = getDef(key);
-    if (def.group !== 'Csevegés') continue;
+    if (def.group !== 'Csevegés' && def.group !== 'Kód') continue;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.dataset.model = key;
@@ -1567,7 +1649,7 @@ async function estimateModel(key) {
   const dtype = await resolveDtype(key, device);
   const options = { device, dtype };
 
-  if (navigator.onLine && !offlineMode && !def.special) {
+  if (navigator.onLine && !offlineMode && !def.special && !def.local) {
     try {
       const files = await ModelRegistry.get_pipeline_files(def.task, def.model, options);
       const metas = await Promise.all(files.map((f) => ModelRegistry.get_file_metadata(def.model, f).catch(() => null)));
@@ -1603,7 +1685,17 @@ async function isModelCached(key) {
 
 // Csak olyan modellre váltsunk, amely tényleg a gyorsítótárban van.
 async function findCachedChatModel() {
-  for (const key of ['lite', 'tiny', 'chat', 'nexa']) {
+  for (const key of ['lite', 'magyarusz', 'tiny', 'chat', 'nexa']) {
+    if (!modelDefs()[key]) continue;
+    if (await isModelCached(key)) return key;
+  }
+  return null;
+}
+
+// Telefonon, internet nélkül a nagy modell percekig is dolgozhat.
+// Ilyenkor egy már letöltött kis/gyors modell válaszol — látható értesítéssel.
+async function findFastChatModel() {
+  for (const key of ['magyarusz', 'tiny', 'lite']) {
     if (!modelDefs()[key]) continue;
     if (await isModelCached(key)) return key;
   }
@@ -1662,12 +1754,24 @@ async function refreshModels() {
       del.className = 'btn btn-ghost';
       del.textContent = 'Gyorsítótár törlése';
       del.addEventListener('click', async () => {
-        try {
-          await ModelRegistry.clear_pipeline_cache(def.task, def.model, {
-            device: await resolveDevice(),
-            dtype: await resolveDtype(key, await resolveDevice()),
-          });
-        } catch { /* régi modellnél nem elérhető */ }
+        if (def.local) {
+          // A Magyarusz külön letölthető csomag, nem Transformers-pipeline.
+          const url = modelUrl(def.model, def.probe);
+          for (const name of [env.cacheKey, SHELL_CACHE]) {
+            try { await (await caches.open(name)).delete(url); } catch { /* cache nem elérhető */ }
+          }
+          if (magyaruszFrame) {
+            try { magyaruszFrame.remove(); } catch { /* már nincs */ }
+            magyaruszFrame = null;
+          }
+        } else {
+          try {
+            await ModelRegistry.clear_pipeline_cache(def.task, def.model, {
+              device: await resolveDevice(),
+              dtype: await resolveDtype(key, await resolveDevice()),
+            });
+          } catch { /* régi modellnél nem elérhető */ }
+        }
         toast(`${def.nick} gyorsítótára törölve.`, 'ok');
         refreshModels();
       });
@@ -1686,6 +1790,18 @@ async function downloadModel(key) {
   if (btn) { btn.disabled = true; btn.textContent = 'Letöltés…'; }
   setProgress(key, 0, 'Indítás');
   try {
+    if (def.local) {
+      const url = modelUrl(def.model, def.probe);
+      const cache = await caches.open(env.cacheKey);
+      if (!(await cache.match(url))) {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`A csomag letöltése nem sikerült (${response.status}).`);
+        await cache.put(url, response.clone());
+      }
+      setProgress(key, 1, 'Kész');
+      toast(`${def.nick} készen áll offline használatra.`, 'ok');
+      return;
+    }
     // A telefon gyakran nem a hálózat, hanem a böngésző tárhelykorlátja miatt bukik meg.
     if (navigator.storage?.estimate) {
       const { usage = 0, quota = 0 } = await navigator.storage.estimate();

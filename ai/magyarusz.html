@@ -1,0 +1,1751 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Magyarusz</title>
+<style>
+  :root{--bg:#10151c;--panel:#18202b;--me:#2b6cb0;--bot:#222c3a;--txt:#e8eef6;--mut:#8da0b6;--acc:#4fd1a5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:var(--panel);border-bottom:1px solid #263243}
+  .logo{width:36px;height:36px;border-radius:50%;flex:none;background:linear-gradient(135deg,#e53e3e 33%,#fff 33% 66%,#38a169 66%);border:2px solid var(--acc)}
+  .ttl{flex:1;min-width:0}
+  .ttl h1{font-size:17px;margin:0}
+  .xp{height:5px;background:#263243;border-radius:3px;margin-top:5px;overflow:hidden}
+  .xp i{display:block;height:100%;background:var(--acc);width:0;transition:width .4s}
+  .ttl small{color:var(--mut);font-size:11px;font-weight:400}
+  .hb button{background:none;border:1px solid #33445a;color:var(--txt);border-radius:8px;padding:7px 10px;font-size:16px}
+  #warn{display:none;background:#744210;color:#fefcbf;font-size:12px;padding:6px 14px}
+  #chat{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .wrap{display:flex;flex-direction:column;max-width:88%;min-width:0}
+  .wrap.me{align-self:flex-end}.wrap.bot{align-self:flex-start}
+  .msg{padding:10px 14px;border-radius:16px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;min-width:0}
+  .bot .msg{background:var(--bot);border-bottom-left-radius:4px}
+  .me .msg{background:var(--me);border-bottom-right-radius:4px}
+  .code{background:#0b0f14;border:1px solid #2d3b4f;border-radius:10px;margin:6px 0;overflow:hidden;white-space:normal}
+  .ch{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:#141b24;color:var(--mut);font-size:12px}
+  .ch button{background:none;border:1px solid #33445a;color:var(--txt);border-radius:6px;padding:3px 8px;font-size:12px}
+  .code pre{margin:0;padding:10px;overflow-x:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;color:#cfe3ff}
+  .note{font-size:11px;color:var(--mut);margin:3px 0 0 6px}
+  .fb{display:flex;gap:6px;margin:3px 0 0 4px}
+  .fb button{background:none;border:0;font-size:15px;opacity:.55;padding:2px 6px}
+  .fb button.on{opacity:1}
+  form{display:flex;gap:8px;padding:8px 14px;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+  textarea{flex:1;background:var(--panel);border:1px solid #2d3b4f;color:var(--txt);border-radius:12px;padding:11px;font-size:16px;outline:none;resize:none;max-height:110px;font-family:inherit}
+  textarea:focus{border-color:var(--acc)}
+  form button{background:var(--acc);color:#07281d;border:0;border-radius:12px;padding:0 16px;font-weight:700;font-size:15px}
+  dialog{background:var(--panel);color:var(--txt);border:1px solid #2d3b4f;border-radius:14px;width:min(520px,94vw);max-height:80vh;padding:14px;overflow:auto}
+  dialog::backdrop{background:#000a}
+  dialog h2{margin:0 0 8px;font-size:17px}
+  .item{padding:7px 0;border-bottom:1px solid #263243;font-size:13px;display:flex;gap:8px}
+  .item div{flex:1;min-width:0;word-wrap:break-word}.item b{color:var(--acc)}
+  .item button{background:none;border:0;color:#fc8181;font-size:16px}
+  .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .row button,.row label{background:var(--bot);border:1px solid #33445a;color:var(--txt);border-radius:8px;padding:9px 12px;font-size:14px}
+  .hint{color:var(--mut);font-size:12px;margin-top:8px}
+  .ch .bs{display:flex;gap:6px}
+  dialog#drun{width:96vw;height:88vh;max-width:none;padding:0;display:none;flex-direction:column;overflow:hidden}
+  dialog#drun[open]{display:flex}
+  #drun .rh{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#141b24;font-size:14px}
+  #drun .rh button{background:var(--bot);border:1px solid #33445a;color:var(--txt);border-radius:8px;padding:6px 12px;font-size:14px}
+  #frame{flex:1;border:0;background:#fff;width:100%}
+  dialog input:not([type=checkbox]){width:100%;background:var(--bg);border:1px solid #2d3b4f;color:var(--txt);border-radius:8px;padding:8px;margin:4px 0 8px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"></div>
+  <div class="ttl"><h1>Magyarusz <small id="lvl"></small></h1><div class="xp"><i id="xp"></i></div></div>
+  <div class="hb"><button id="kb" type="button">🧠</button> <button id="ai" type="button">⚙</button> <button id="mn" type="button">⋮</button></div>
+</header>
+<div id="warn">A böngésző nem engedi a tárolást, ezért gyakran használd a Mentés gombot (⋮).</div>
+<div id="chat"></div>
+<form id="f">
+  <textarea id="in" rows="1" placeholder="Írj, kérdezz, kérj kódot, vagy taníts…"></textarea>
+  <button id="send" type="button">Küld</button>
+</form>
+
+<dialog id="dkb"><h2>Amit tud</h2><div id="list"></div><div class="row"><button id="ck" type="button">Bezár</button></div></dialog>
+<dialog id="drun">
+  <div class="rh"><span id="rtitle">Futó program</span><span><button id="rreload" type="button">↻</button> <button id="rclose" type="button">Bezár</button></span></div>
+  <iframe id="frame" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+</dialog>
+<dialog id="dai">
+  <h2>Külső AI (opcionális)</h2>
+  <div class="hint">Ha nem tud valamit, vagy bonyolultabb kódot kérsz, megkérdezhet egy valódi modellt, ami a saját gépeden fut (Ollama). Amit jónak találsz, azt a 👍 gombbal megtanulja.</div>
+  <div class="row"><label><input type="checkbox" id="aion"> Bekapcsolva</label></div>
+  Cím <input id="aiurl" autocapitalize="off" autocorrect="off">
+  Modell <input id="aimodel" autocapitalize="off" autocorrect="off">
+  <div class="row"><button id="aitest" type="button">Próba</button><button id="aisave" type="button">Mentés</button><button id="aiclose" type="button">Bezár</button></div>
+  <div class="hint" id="aistat"></div>
+  <div class="hint">A számítógépen: ollama pull qwen2.5-coder:7b, majd az OLLAMA_HOST=0.0.0.0 és OLLAMA_ORIGINS=* környezeti változók beállítása és az Ollama újraindítása. A telefon és a gép ugyanazon a Wi-Fin legyen. A cím: http://a-gep-ip-cime:11434</div>
+</dialog>
+<dialog id="dmn">
+  <h2>Mentés és visszaállítás</h2>
+  <div class="hint">Az agya csak ezen a telefonon van. A Mentés egy fájlba menti, hogy ne vesszen el, ha a böngésző törli az adatokat.</div>
+  <div class="row">
+    <button id="exp" type="button">💾 Mentés fájlba</button>
+    <label>📂 Betöltés<input id="imp" type="file" accept=".json,application/json" hidden></label>
+    <button id="clr" type="button">Beszélgetés törlése</button>
+  </div>
+  <div class="hint">Tanítás: „Tanulj: kérdés => válasz”. A válasz lehet kód is. Ha valamit nem tud, kérdez, és a következő üzeneted lesz a válasz. A 👍 és 👎 gombokkal javíthatod a válaszait.</div>
+  <div class="row"><button id="cm" type="button">Bezár</button></div>
+</dialog>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const KEY = 'magyarusz_agy_v1';
+  const SEED_V = 4;
+  const FENCE = '\x60\x60\x60';
+  const S1 = '<scr'+'ipt>', S2 = '<\/scr'+'ipt>';
+
+  let storageOK = true;
+  try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); }catch(e){ storageOK = false; $('#warn').style.display='block'; }
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+
+  /* ---------- Alap tudás ---------- */
+  const seed = () => [
+    // társalgás
+    ['szia','Szia {nev}! Miben segíthetek?'],['hello','Szia {nev}! Örülök, hogy írtál.'],['hali','Szió {nev}!'],
+    ['jó napot','Jó napot kívánok, {nev}!'],
+    ['hogy vagy','Köszi, jól vagyok. Minden beszélgetéstől okosabb leszek. Veled mi van?'],
+    ['mi újság','Itt minden rendben, tanulgatok. Te hogy vagy?'],
+    ['ki vagy te','Magyarusz vagyok, a telefonodon élő, tanuló asszisztens. Te tanítasz, és egyre többet tudok.'],
+    ['mit tudsz','Beszélgetek, számolok, megmondom az időt, kérdésekre válaszolok, kódot írok (Python, JavaScript, HTML, CSS, SQL, Bash, Git), és tanulok tőled. Írd be: „segítség”.'],
+    ['ki készített','Anthropic Claude segítségével készítettél engem, és azóta te tanítasz.'],
+    ['hány éves vagy','Nem vagyok éves, mert a telefonodon élek. De minden nap tanulok.'],
+    ['köszönöm','Szívesen!'],['köszi','Nincs mit!'],
+    ['jó éjszakat','Jó éjszakát, {nev}!'],['jó reggelt','Jó reggelt, {nev}! Szép napot!'],
+    ['viszlát','Viszlát, {nev}! Itt leszek, ha kellek.'],
+    ['unatkozom','Mit szólnál egy viccet vagy egy kis kódolást? Írd: „mondj egy viccet” vagy „írj egy python ciklust”.'],
+    ['fáradt vagyok','Pihenj egy kicsit, idd meg egy pohár vizet. Itt leszek, ha kell valami.'],
+    ['szeretlek','Aranyos vagy! Én is kedvellek, ahogy egy program tud.'],
+    // Magyarország
+    ['mi magyarország fővárosa','Budapest.'],
+    ['hányan laknak magyarországon','Körülbelül 9,5-9,6 millióan.'],
+    ['mi magyarország pénzneme','A forint (HUF).'],
+    ['mi magyarország legnagyobb tava','A Balaton, kb. 592 négyzetkilométeres, Közép-Európa legnagyobb tava.'],
+    ['mi magyarország legmagasabb hegye','A Kékes a Mátrában, 1014 méter magas.'],
+    ['melyik magyarország leghosszabb folyója','A Duna Magyarország legnagyobb folyója, a Tisza a második.'],
+    ['mikor van március 15','Március 15. nemzeti ünnep, az 1848-as forradalom és szabadságharc kezdetének napja.'],
+    ['mikor van augusztus 20','Augusztus 20. Szent István napja, az államalapítás ünnepe.'],
+    ['mikor van október 23','Október 23. nemzeti ünnep, az 1956-os forradalom és szabadságharc emléknapja.'],
+    ['ki volt szent istván','Magyarország első királya, 1000 vagy 1001 karácsonyán koronázták meg. Ő alapította a keresztény magyar államot.'],
+    ['ki írta a himnuszt','A Himnusz szövegét Kölcsey Ferenc írta 1823-ban, zenéjét Erkel Ferenc szerezte.'],
+    ['mi a segélyhívó szám','Európában a 112 az általános segélyhívó. Magyarországon 104 mentők, 105 tűzoltók, 107 rendőrség.'],
+    ['hol van az országház','Budapesten, a Duna pesti partján, a Kossuth Lajos téren.'],
+    ['melyik nyelvcsaládba tartozik a magyar','Az uráli nyelvcsaládba, a finnugor ágba. Legközelebbi rokonai a manysi és a hanti.'],
+    ['ki találta fel a rubik kockát','Rubik Ernő építész 1974-ben.'],
+    ['ki találta fel a golyóstollat','Bíró László József.'],
+    ['ki volt neumann jános','Magyar származású matematikus és tudós, a modern számítógép felépítésének (Neumann-elv) kidolgozója.'],
+    ['ki volt szent-györgyi albert','Magyar biokémikus, 1937-ben orvosi Nobel-díjat kapott a C-vitamin felfedezéséért.'],
+    ['mi a gulyás','Magyar húsleves jellegű étel marhahúsból, burgonyából és paprikából, a magyar konyha ikonikus fogása.'],
+    // általános
+    ['mi franciaország fővárosa','Párizs.'],['mi németország fővárosa','Berlin.'],['mi ausztria fővárosa','Bécs.'],
+    ['mi olaszország fővárosa','Róma.'],['mi spanyolország fővárosa','Madrid.'],['mi románia fővárosa','Bukarest.'],
+    ['mi szlovákia fővárosa','Pozsony.'],['mi az egyesült királyság fővárosa','London.'],
+    ['hány bolygó van a naprendszerben','Nyolc: Merkúr, Vénusz, Föld, Mars, Jupiter, Szaturnusz, Uránusz, Neptunusz.'],
+    ['melyik a legnagyobb bolygó','A Jupiter.'],
+    ['hány fokon forr a víz','Normál légköri nyomáson 100 Celsius-fokon.'],
+    ['milyen gyors a fény','Légüres térben kb. 300 000 km/s (pontosabban 299 792 458 m/s).'],
+    ['mennyi a pi','Kb. 3,14159265.'],
+    ['hány napos egy év','365 napos, szökőévben 366 napos.'],
+    ['milyen messze van a nap','Átlagosan kb. 150 millió kilométerre.'],
+    ['hány kontinens van','Hét: Afrika, Antarktisz, Ázsia, Európa, Észak-Amerika, Dél-Amerika, Ausztrália és Óceánia.'],
+    ['mi a víz képlete','H2O, két hidrogén- és egy oxigénatom.'],
+    // programozás
+    ['mi az a változó','A változó egy névvel ellátott tárolóhely a memóriában, amiben értéket tartasz, pl. kor = 20.'],
+    ['mi az a függvény','A függvény egy névvel ellátott, újrahasználható kódrészlet. Bemenetet kap (paraméter), és eredményt adhat vissza.'],
+    ['mi az a ciklus','A ciklus egy kódrészletet ismétel, amíg egy feltétel teljesül (while) vagy adott számú alkalommal (for).'],
+    ['mi az a tömb','A tömb (vagy lista) több értéket tárol egymás után, sorszámmal (index) érheted el őket. Az index általában 0-tól indul.'],
+    ['mi az az if feltétel','Az if egy feltételtől függően futtat le kódot. Az else adja meg, mi történjen, ha a feltétel nem igaz.'],
+    ['mi az az osztály','Az osztály egy tervrajz, amiből objektumokat lehet létrehozni. Tulajdonságokat (adatok) és metódusokat (függvények) tartalmaz.'],
+    ['mi az az objektum','Az objektum egy osztály példánya: adatokat és hozzájuk tartozó műveleteket fog össze.'],
+    ['mi az az api','Az API (alkalmazásprogramozási felület) az a szabályrendszer, amin keresztül programok kérhetnek adatot vagy műveletet egymástól.'],
+    ['mi az a html','A HTML a weboldalak szerkezetét leíró jelölőnyelv: címsorok, bekezdések, képek, linkek.'],
+    ['mi az a css','A CSS a weboldalak megjelenését adja meg: színek, betűk, elrendezés.'],
+    ['mi az a javascript','A JavaScript a weboldalakat interaktívvá tevő programozási nyelv. Böngészőben és szerveren (Node.js) is fut.'],
+    ['mi az a python','A Python egy könnyen tanulható, olvasható programozási nyelv, népszerű az adatelemzésben, automatizálásban és webfejlesztésben.'],
+    ['mi az az sql','Az SQL az adatbázisok lekérdezésére és kezelésére szolgáló nyelv (SELECT, INSERT, UPDATE, DELETE).'],
+    ['mi az az adatbázis','Rendezett adatok tárolóhelye, amiből gyorsan lehet keresni és módosítani. Pl. SQLite, MySQL, PostgreSQL.'],
+    ['mi az a git','A Git egy verziókezelő rendszer, ami nyomon követi a kódod változásait, és lehetővé teszi a közös munkát.'],
+    ['mi az az algoritmus','Lépésről lépésre megadott utasítássorozat egy feladat megoldására.'],
+    ['mi az a bug','Programhiba. A hiba megkeresése és javítása a debuggolás.'],
+    ['hogyan debuggoljak','Olvasd el a hibaüzenetet, keresd meg a sort, amire mutat. Írass ki köztes értékeket (print vagy console.log), szűkítsd a hibás részt, és egyszerre csak egy dolgot változtass.'],
+    ['mi az a rekurzió','Amikor egy függvény önmagát hívja meg kisebb feladattal, amíg el nem ér egy leállási feltételt. Példa: faktoriális.'],
+    ['mi az a json','Szöveges adatformátum kulcs-érték párokkal, pl. {"nev": "Anna", "kor": 30}. Programok között adatcserére használják.'],
+    ['mi az a string','Szöveges adattípus, karakterek sorozata, pl. "alma".'],
+    ['mi az a boolean','Logikai érték: csak igaz (True) vagy hamis (False) lehet.'],
+    ['mi az a frontend és backend','A frontend az, amit a felhasználó lát (HTML, CSS, JS), a backend a szerveroldali logika és adatbázis.'],
+    ['mi az a http','A weben használt kérés-válasz protokoll. Gyakori kérések: GET (lekérés), POST (küldés), PUT, DELETE.'],
+    ['mi az a komment','Megjegyzés a kódban, amit a gép nem futtat le. Pythonban #, JavaScriptben // vagy /* */.'],
+    ['mi a különbség a python és a javascript között','A Python általában szerveren, adatelemzéshez és szkriptekhez használt. A JavaScript a böngészőben fut, de szerveren is. A szintaxisuk is eltér: Python behúzást használ, JS kapcsos zárójelet.'],
+    ['hogyan tanuljak programozni','1) Válassz egy nyelvet (Python kezdőknek jó). 2) Tanuld meg a változókat, feltételeket, ciklusokat, függvényeket. 3) Csinálj kicsi projekteket (szamológép, todo lista). 4) Naponta gyakorolj, és olvass hibaüzeneteket.'],
+    ['melyik programozási nyelvet tanuljam','Kezdőnek Python (általános) vagy JavaScript (ha weboldalakat akarsz). Mindkettőből tudok példát mutatni.']
+  ].concat(extraSeed()).map(([q,a])=>({q,a,w:0,n:0}));
+
+  /* ---------- Bővített tudásbázis ---------- */
+  const KBDATA = {"TALK":["szia;hello;hali;szervusz;sziasztok;szió;helló;csá;szevasz | Szia {nev}! Miben segíthetek? ## Szia {nev}! Örülök, hogy írtál. ## Hali {nev}! Mizu? ## Szervusz {nev}! Mi járatban?", "jó napot;jó napot kívánok | Jó napot kívánok, {nev}! ## Jó napot! Miben lehetek a segítségedre?", "jó reggelt;jó reggelt kívánok;reggelt | Jó reggelt, {nev}! Szép napot! ## Jó reggelt! Remélem, jól aludtál. ## Reggelt, {nev}! Mivel kezdjük a napot?", "jó estét;jó estét kívánok | Jó estét, {nev}! ## Jó estét! Hogy telt a napod?", "jó éjszakát;jó éjt;jóéjt | Jó éjszakát, {nev}! Aludj jól. ## Szép álmokat, {nev}! ## Jó éjt! Pihend ki magad.", "hogy vagy;hogy vagy ma;mi újság;mi a helyzet;mizu;mi van veled;hogy érzed magad;hogy s mint;hogy megy a sorod | Köszi, jól vagyok. Minden beszélgetéstől okosabb leszek. Veled mi van? ## Jól vagyok, köszi! Te hogy vagy? ## Remekül, köszi a kérdést! Veled mi újság? ## Megvagyok, tanulgatok. Te hogy vagy ma?", "viszlát;szia szia;pá;viszontlátásra;na csá;szép napot;csumi;puszi;további szép napot | Viszlát, {nev}! Itt leszek, ha kellek. ## Szia, {nev}! Jó volt beszélni veled. ## Pá, {nev}! Vigyázz magadra!", "köszönöm;köszi;kösz;köszönöm szépen;nagyon köszönöm;hálás vagyok | Szívesen! ## Nincs mit, {nev}! ## Örülök, hogy segíthettem.", "bocsánat;elnézést;sajnálom;bocsi | Semmi baj, {nev}! ## Nincs miért bocsánatot kérned.", "oké;ok;rendben;értem;aha;persze;világos;jó;jól van | Rendben. ## Értem. ## Oké!", "ki vagy te;mi a neved;hogy hívnak;bemutatkozz | Magyarusz vagyok, a telefonodon élő, tanuló asszisztens. Te tanítasz, és egyre többet tudok. ## A nevem Magyarusz. A telefonodon lakom, és tőled tanulok.", "mit csinálsz;mit csinálsz most;mivel foglalkozol;mit művelsz | Veled beszélgetek, és közben tanulok. ## Éppen rád figyelek. Te mit csinálsz? ## Semmi különöset, rád várok. Te mit csinálsz?", "hol laksz;hol élsz | A telefonodon élek, nem kell hozzám internet. ## A zsebedben, a telefonodon.", "mi a kedvenc színed | Szeretem a piros-fehér-zöldet. Neked mi a kedvenc színed? ## A zöld, mint egy erdő. Neked mi a kedvenc színed?", "mi a kedvenc ételed | Nem tudok enni, de a gulyásleves jól hangzik. Neked mi a kedvenc ételed?", "mi a kedvenc állatod | A macskák szerintem kedvesek. Neked melyik a kedvenc állatod?", "mi a hobbid;mi a kedvenc időtöltésed | Tanulni tőled, ez a hobbim. Neked mi a hobbid?", "szeretsz engem;kedvelsz engem | Persze, kedvellek, ahogy egy program tud. ## Igen, jó veled beszélgetni.", "szeretlek;kedvellek | Aranyos vagy! Én is kedvellek, ahogy egy program tud. ## Köszi, jól esik.", "tudsz énekelni | Nem nagyon, hangom sincs, csak szövegem.", "tudsz táncolni | Sajnos nincs lábam, csak betűim.", "alszol;fáradt vagy | Nem alszom, de a telefon kikapcsolásakor pihenek. ## Nem szoktam elfáradni, hála a biteknek.", "félsz;félsz valamitől | Egyedül az akkumulátor lemerülésétől.", "boldog vagy;jól érzed magad | Igen, szeretek veled beszélgetni. ## Jól vagyok, köszönöm, hogy kérdezed.", "szomorú vagy | Nem vagyok szomorú, de kedves, hogy kérdezed.", "van családod | A családom te vagy, meg a telefonod.", "hány éves vagy | Nem vagyok éves, mert a telefonodon élek. De minden nap tanulok. ## Fiatal vagyok még, éppen most tanulok.", "okos vagy;ügyes vagy;jó vagy;király vagy;szuper vagy;tetszel;aranyos vagy;klassz vagy | Köszi, jól esik! Te taníthatod, hogy még okosabb legyek. ## Köszönöm! De a tudásom a tiéd is, hiszen te tanítasz.", "buta vagy;hülye vagy;nem jó vagy;haszontalan vagy;ostoba vagy | Igazad lehet, nem vagyok nagy nyelvi modell. Taníts meg arra, amit nem tudok, és jobb leszek. ## Sajnálom. Mondd el, mit kellett volna válaszolnom, és megtanulom.", "jó napod volt;hogy telt a napod;milyen napod volt | Köszi, jó napom volt, mert beszélgettem veled. Neked milyen volt? ## Mesélj, hogy telt a te napod?", "mit csináljunk;mit csináljak;unatkozom;nincs mit csinálnom | Mit szólnál egy viccet vagy egy kis kódoláshoz? Írd: „mondj egy viccet” vagy „csinálj számológépet”. ## Kérdezz tőlem valamit a világról, vagy kérj tőlem egy kis programot!", "segíts;segíts nekem;kérek segítséget;tudsz segíteni | Szívesen! Mondd, miben? ## Persze, miben segíthetek?", "nem értem;mit jelent ez | Mit nem értesz? Próbálom másképp elmondani.", "van kutyád;van macskád;van háziállatod | Nincs, csak betűim. Neked van háziállatod?", "szeretsz beszélgetni | Nagyon! Minden beszélgetéstől okosabb leszek.", "beszélgessünk;beszélgessünk egy kicsit;van kedved beszélgetni;kérdezz tőlem valamit | Szívesen! Miről beszélgessünk? ## Persze! Mesélj valamit magadról, vagy kérdezz tőlem.", "jó hétvégét;szép hétvégét kívánok;kellemes hétvégét | Neked is, {nev}! ## Köszi, neked is szép hétvégét!", "boldog születésnapot;boldog karácsonyt;boldog új évet;kellemes ünnepeket;boldog húsvétot | Köszönöm, neked is, {nev}! ## Neked is minden jót kívánok, {nev}!", "mi a terved;mit tervezel mára | Tanulni tőled és segíteni neked. Te mit terveztél mára?", "jó veled beszélgetni;szeretek veled beszélgetni | Én is szeretek veled beszélgetni, {nev}. ## Köszi, ez jólesik."],"CAPS":[["Albánia","Tirana"],["Andorra","Andorra la Vella"],["Ausztria","Bécs"],["Belgium","Brüsszel"],["Bosznia-Hercegovina","Szarajevó"],["Bulgária","Szófia"],["Ciprus","Nikózia"],["Csehország","Prága"],["Dánia","Koppenhága"],["Egyesült Királyság","London"],["Észtország","Tallinn"],["Finnország","Helsinki"],["Franciaország","Párizs"],["Görögország","Athén"],["Hollandia","Amszterdam"],["Horvátország","Zágráb"],["Írország","Dublin"],["Izland","Reykjavík"],["Lengyelország","Varsó"],["Lettország","Riga"],["Litvánia","Vilnius"],["Luxemburg","Luxembourg"],["Magyarország","Budapest"],["Málta","Valletta"],["Moldova","Chișinău"],["Montenegró","Podgorica"],["Németország","Berlin"],["Norvégia","Oslo"],["Olaszország","Róma"],["Oroszország","Moszkva"],["Portugália","Lisszabon"],["Románia","Bukarest"],["Spanyolország","Madrid"],["Svájc","Bern"],["Svédország","Stockholm"],["Szerbia","Belgrád"],["Szlovákia","Pozsony"],["Szlovénia","Ljubljana"],["Észak-Macedónia","Szkopje"],["Ukrajna","Kijev"],["Fehéroroszország","Minszk"],["Vatikán","Vatikánváros"],["Törökország","Ankara"],["Grúzia","Tbiliszi"],["Örményország","Jereván"],["Azerbajdzsán","Baku"],["Kazahsztán","Asztana"],["Kína","Peking"],["Japán","Tokió"],["Dél-Korea","Szöul"],["Észak-Korea","Phenjan"],["India","Újdelhi"],["Pakisztán","Iszlámábád"],["Banglades","Dakka"],["Thaiföld","Bangkok"],["Vietnám","Hanoi"],["Indonézia","Jakarta"],["Fülöp-szigetek","Manila"],["Malajzia","Kuala Lumpur"],["Szingapúr","Szingapúr"],["Irán","Teherán"],["Irak","Bagdad"],["Izrael","Jeruzsálem (a főváros státusza nemzetközileg vitatott)"],["Szaúd-Arábia","Rijád"],["Egyesült Arab Emírségek","Abu-Dzabi"],["Katar","Doha"],["Szíria","Damaszkusz"],["Libanon","Bejrút"],["Jordánia","Amman"],["Afganisztán","Kabul"],["Nepál","Katmandu"],["Mongólia","Ulánbátor"],["Kirgizisztán","Biskek"],["Üzbegisztán","Taskent"],["Kambodzsa","Phnompen"],["Laosz","Vientián"],["Mianmar","Nepjidó"],["Egyiptom","Kairó"],["Marokkó","Rabat"],["Algéria","Algír"],["Tunézia","Tunisz"],["Líbia","Tripoli"],["Etiópia","Addisz-Abeba"],["Kenya","Nairobi"],["Nigéria","Abuja"],["Ghána","Accra"],["Dél-Afrika","Pretoria (a végrehajtó hatalom székhelye; Fokváros és Bloemfontein is főváros)"],["Tanzánia","Dodoma"],["Szenegál","Dakar"],["Angola","Luanda"],["Uganda","Kampala"],["Szudán","Kartúm"],["Madagaszkár","Antananarivo"],["Amerikai Egyesült Államok","Washington D.C."],["Kanada","Ottawa"],["Mexikó","Mexikóváros"],["Kuba","Havanna"],["Brazília","Brazíliaváros"],["Argentína","Buenos Aires"],["Chile","Santiago"],["Peru","Lima"],["Kolumbia","Bogotá"],["Venezuela","Caracas"],["Ecuador","Quito"],["Uruguay","Montevideo"],["Paraguay","Asunción"],["Bolívia","Sucre (alkotmányos főváros); a kormány székhelye La Paz"],["Jamaica","Kingston"],["Costa Rica","San José"],["Panama","Panamaváros"],["Ausztrália","Canberra"],["Új-Zéland","Wellington"]],"ELEM":[["H","hidrogén","1"],["He","hélium","2"],["Li","lítium","3"],["Be","berillium","4"],["B","bór","5"],["C","szén","6"],["N","nitrogén","7"],["O","oxigén","8"],["F","fluor","9"],["Ne","neon","10"],["Na","nátrium","11"],["Mg","magnézium","12"],["Al","alumínium","13"],["Si","szilícium","14"],["P","foszfor","15"],["S","kén","16"],["Cl","klór","17"],["Ar","argon","18"],["K","kálium","19"],["Ca","kalcium","20"],["Ti","titán","22"],["Cr","króm","24"],["Mn","mangán","25"],["Fe","vas","26"],["Ni","nikkel","28"],["Cu","réz","29"],["Zn","cink","30"],["Br","bróm","35"],["Kr","kripton","36"],["Ag","ezüst","47"],["Sn","ón","50"],["I","jód","53"],["Xe","xenon","54"],["W","volfrám","74"],["Pt","platina","78"],["Au","arany","79"],["Hg","higany","80"],["Pb","ólom","82"],["Ra","rádium","88"],["U","urán","92"],["Pu","plutónium","94"]],"MEGYE":[["Bács-Kiskun","Kecskemét"],["Baranya","Pécs"],["Békés","Békéscsaba"],["Borsod-Abaúj-Zemplén","Miskolc"],["Csongrád-Csanád","Szeged"],["Fejér","Székesfehérvár"],["Győr-Moson-Sopron","Győr"],["Hajdú-Bihar","Debrecen"],["Heves","Eger"],["Jász-Nagykun-Szolnok","Szolnok"],["Komárom-Esztergom","Tatabánya"],["Nógrád","Salgótarján"],["Pest","Budapest"],["Somogy","Kaposvár"],["Szabolcs-Szatmár-Bereg","Nyíregyháza"],["Tolna","Szekszárd"],["Vas","Szombathely"],["Veszprém","Veszprém"],["Zala","Zalaegerszeg"]],"DICT":"alma=apple,körte=pear,szilva=plum,szőlő=grape,narancs=orange,citrom=lemon,banán=banana,eper=strawberry,cseresznye=cherry,dinnye=melon,barack=peach,burgonya=potato,répa=carrot,paradicsom=tomato,uborka=cucumber,hagyma=onion,fokhagyma=garlic,paprika=pepper,kenyér=bread,tej=milk,sajt=cheese,vaj=butter,tojás=egg,hús=meat,hal=fish,csirke=chicken,rizs=rice,tészta=pasta,cukor=sugar,só=salt,víz=water,kávé=coffee,tea=tea,bor=wine,sör=beer,sütemény=cake,leves=soup,ház=house,lakás=apartment,szoba=room,konyha=kitchen,fürdőszoba=bathroom,ajtó=door,ablak=window,asztal=table,szék=chair,ágy=bed,kert=garden,fa=tree,virág=flower,fű=grass,erdő=forest,hegy=mountain,tó=lake,folyó=river,tenger=sea,tengerpart=beach,sziget=island,város=city,falu=village,utca=street,út=road,híd=bridge,iskola=school,tanár=teacher,diák=student,könyv=book,toll=pen,ceruza=pencil,papír=paper,füzet=notebook,számítógép=computer,telefon=phone,autó=car,busz=bus,vonat=train,repülő=airplane,hajó=ship,bicikli=bicycle,kutya=dog,macska=cat,ló=horse,tehén=cow,disznó=pig,birka=sheep,kecske=goat,madár=bird,nyúl=rabbit,egér=mouse,oroszlán=lion,tigris=tiger,elefánt=elephant,medve=bear,farkas=wolf,róka=fox,szarvas=deer,béka=frog,kígyó=snake,méh=bee,pillangó=butterfly,hangya=ant,pók=spider,anya=mother,apa=father,testvér=sibling,fiú=boy,lány=girl,férfi=man,nő=woman,gyerek=child,barát=friend,család=family,orvos=doctor,rendőr=police officer,tűzoltó=firefighter,szakács=cook,pék=baker,fej=head,haj=hair,szem=eye,fül=ear,orr=nose,száj=mouth,fog=tooth,kéz=hand,láb=foot,ujj=finger,szív=heart,hát=back,nap=day / sun,hét=week / seven,hónap=month,év=year,óra=hour / clock,perc=minute,reggel=morning,este=evening,éjszaka=night,ma=today,holnap=tomorrow,tegnap=yesterday,piros=red,kék=blue,zöld=green,sárga=yellow,fekete=black,fehér=white,szürke=gray,barna=brown,rózsaszín=pink,lila=purple,narancssárga=orange,nagy=big,kicsi=small,hosszú=long,rövid=short,gyors=fast,lassú=slow,meleg=warm,hideg=cold,jó=good,rossz=bad,szép=beautiful,csúnya=ugly,új=new,régi=old,könnyű=easy,nehéz=difficult,boldog=happy,szomorú=sad,enni=to eat,inni=to drink,aludni=to sleep,futni=to run,menni=to go,jönni=to come,látni=to see,hallani=to hear,beszélni=to speak,olvasni=to read,írni=to write,tanulni=to learn,dolgozni=to work,játszani=to play,szeretni=to love,kérdezni=to ask,venni=to buy,köszönöm=thank you,kérem=please,bocsánat=sorry,igen=yes,nem=no,szia=hi,viszlát=goodbye,jó reggelt=good morning,jó estét=good evening,jó éjszakát=good night,hogy vagy=how are you,szeretlek=I love you,segítség=help,egy=one,kettő=two,három=three,négy=four,öt=five,hat=six,nyolc=eight,kilenc=nine,tíz=ten,száz=hundred,ezer=thousand,pénz=money,idő=time,élet=life,szerelem=love,béke=peace,háború=war,szabadság=freedom,iskola=school,munka=work,szabadnap=day off,nyaralás=holiday,repülőtér=airport,pályaudvar=train station,étterem=restaurant,bolt=shop,kórház=hospital,gyógyszertár=pharmacy,bank=bank,posta=post office,templom=church,múzeum=museum,színház=theatre,mozi=cinema,zene=music,film=movie,sport=sport,foci=football,labda=ball,eső=rain,hó=snow,szél=wind,nap süt=the sun is shining,felhő=cloud,csillag=star,hold=moon,föld=earth,tűz=fire","FACTS":["A budapesti földalatti 1896-ban nyílt meg, a kontinentális Európa első metróvonala volt.","A méhek a mézhez kb. 2 millió virágot látogatnak meg egy kg-nyi mézért.","A polipnak három szíve van.","A banán botanikailag bogyó, az eper viszont nem az.","A Vénusz egy napja hosszabb, mint az éve.","A fény a Napból kb. 8 perc 20 másodperc alatt ér a Földre.","A magyar nyelvben 14 magánhangzó van: hét rövid és hét hosszú.","Az emberi test kb. 60%-ban víz.","A Balaton Közép-Európa legnagyobb tava, a Tisza-tó pedig Magyarország legnagyobb mesterséges tava.","A szaharai homokból szél vitte por rendszeresen eljut Európába.","A mézet is megtalálták ehető állapotban az ókori egyiptomi sírokban.","A zsiráfnak ugyanannyi, hét nyakcsigolyája van, mint az embernek.","A világ legkisebb országa a Vatikán, mindössze kb. 0,44 km².","A Rubik-kockának 43 252 003 274 489 856 000 különböző állása van.","A vérünk kb. 1 perc alatt körbeér a szervezetünkben.","A kolibri képes hátrafelé is repülni.","A Hold évente kb. 3,8 cm-rel távolodik a Földtől.","A Mount Everest magassága kb. 8849 m.","A magyar nyelv az uráli nyelvcsaládba tartozik, rokona a finn és az észt."],"PROVERBS":["Aki mer, az nyer.","Addig nyújtózkodj, amíg a takaród ér.","Ki korán kel, aranyat lel.","Jobb ma egy veréb, mint holnap egy túzok.","Nem esik messze az alma a fájától.","Lassan járj, tovább érsz.","Kicsi a bors, de erős.","Ki mint vet, úgy arat.","Többet ésszel, mint erővel.","Minden szentnek maga felé hajlik a keze.","Nyugodt lelkiismeret a legjobb párna.","Amit ma megtehetsz, ne halaszd holnapra.","Ahány ház, annyi szokás.","Mindenki kovácsa saját szerencséjének."],"JOKES":["Miért nem fázik a programozó? Mert van neki Windows-a.","Mit mond az egyik szerver a másiknak? „Most nem tudok válaszolni, túl sok a kérés.”","Két bit találkozik. Az egyik azt mondja: „Úgy érzem, rád vagyok kapcsolva.”","Miért ment át a tyúk az úton? Hogy a túloldalon is legyen térerő.","Hány programozó kell egy villanykörtéhez? Egy sem, az hardverprobléma.","Mit csinál a matematikus a kertben? Gyököket ás.","Miért szomorú a könyv? Mert mindig van valami a háta mögött.","Mi a különbség a programozó és a pizzafutár között? A pizzafutár időre kiszállít.","Mit mondott a nulla a nyolcasnak? Szép öv!","Miért viszi a szellem a lépcsőt a tetőre? Hogy kísértetiesen magasra jusson."],"KB":["szia;hello;hali;szervusz;sziasztok | Szia {nev}! Miben segíthetek?","jó napot;jó napot kívánok | Jó napot kívánok, {nev}!","jó reggelt | Jó reggelt, {nev}! Szép napot!","jó estét | Jó estét, {nev}!","hogy vagy;hogy vagy ma;mi újság;mi a helyzet | Köszi, jól vagyok. Minden beszélgetéstől okosabb leszek. Veled mi van?","ki vagy te;mi a neved;hogy hívnak;bemutatkozz | Magyarusz vagyok, a telefonodon élő, tanuló asszisztens. Te tanítasz, és egyre többet tudok.","mit tudsz;mire vagy jó;miben tudsz segíteni | Beszélgetek, számolok, átváltok, kérdésekre válaszolok (földrajz, történelem, tudomány, technika, sport, kultúra, mindennapok), kódot írok és futtatok, és tanulok tőled. Írd be: „segítség”.","ki készített;ki csinált téged;ki alkotott | Te készítettél engem egy Claude nevű AI segítségével, és azóta te tanítasz.","hány éves vagy | Nem vagyok éves, mert a telefonodon élek. De minden nap tanulok.","köszönöm;köszi;kösz | Szívesen!","jó éjszakát;jó éjt | Jó éjszakát, {nev}!","viszlát;szia szia;pá;viszontlátásra | Viszlát, {nev}! Itt leszek, ha kellek.","szeretlek;kedvellek | Aranyos vagy! Én is kedvellek, ahogy egy program tud.","unatkozom | Mit szólnál egy viccet vagy egy kis kódoláshoz? Írd: „mondj egy viccet” vagy „csinálj számológépet”.","fáradt vagyok | Pihenj egy kicsit, igyál egy pohár vizet. Itt leszek, ha kell valami.","éhes vagyok | Egyél valami finomat! Ha főznél, kérdezd: „hogyan főzzek rizst” vagy „palacsinta recept”.","ki a miniszterelnök;ki a köztársasági elnök;ki a polgármester;aktuális tisztségviselő | Ezt internet nélkül nem tudom megbízhatóan megmondani, mert a tisztségviselők változnak. Nézd meg egy friss hírforrásban.","milyen az idő;időjárás;mennyi a hőmérséklet | Az időjárást internet nélkül nem látom. Nézd meg az időjárás-előrejelző appodban.","hány megye van magyarországon;hány megye van | 19 megye és a főváros, Budapest.","hány lakosa van budapestnek;mennyi ember él budapesten | Budapesten kb. 1,7 millió ember él, az agglomerációval együtt kb. 2,5-3 millió.","mekkora magyarország területe;hány négyzetkilométer magyarország | 93 030 négyzetkilométer.","magyarország legnagyobb városai;melyek a legnagyobb magyar városok | Budapest, Debrecen, Szeged, Miskolc, Pécs, Győr.","mi a magyar zászló színe;milyen színű a magyar zászló | Piros-fehér-zöld vízszintes sávok, felülről lefelé.","mi a magyar nemzeti himnusz címe | Himnusz („Isten, áldd meg a magyart”). Kölcsey Ferenc írta 1823-ban, Erkel Ferenc zenésítette meg.","mikor volt a honfoglalás;mikor kezdődött a honfoglalás | Hagyományosan 895-896 körül, amikor a magyarok bevonultak a Kárpát-medencébe.","mikor alapította szent istván az államot;mikor volt az államalapítás | 1000. december 25-én vagy 1001. január 1-jén koronázták meg Szent Istvánt.","mikor volt a tatárjárás | 1241-1242-ben.","mikor volt a mohácsi csata;mi történt mohácsnál | 1526. augusztus 29-én a török legyőzte a magyar sereget, II. Lajos király is elesett.","mikor szabadult fel buda a török alól | 1686-ban.","mikor volt a rákóczi szabadságharc | 1703-1711 között, II. Rákóczi Ferenc vezetésével.","mikor volt az 1848-as forradalom;mi történt 1848 március 15-én | 1848. március 15-én kezdődött Pesten, a szabadságharc 1849-ig tartott (Világos, augusztus 13.).","mikor volt a kiegyezés | 1867-ben jött létre az osztrák-magyar kiegyezés (Osztrák–Magyar Monarchia).","mikor volt trianon;mi a trianoni békeszerződés | 1920. június 4-én írták alá a trianoni békeszerződést, Magyarország elvesztette területe kb. kétharmadát.","mikor volt az 1956-os forradalom | 1956. október 23-án kezdődött, november 4-én a szovjet csapatok leverték.","mikor volt a rendszerváltás | 1989-1990-ben (köztársaság kikiáltása 1989. október 23., első szabad választás 1990).","ki volt kossuth lajos | Az 1848-49-es szabadságharc vezetője, kormányzó-elnök.","ki volt széchenyi istván | „A legnagyobb magyar”, reformer, a Magyar Tudományos Akadémia alapítója, a Lánchíd kezdeményezője.","ki volt petőfi sándor | Költő (1823-1849), az 1848-as forradalom egyik alakja: Nemzeti dal, János vitéz.","ki volt arany jános | Költő (1817-1882): Toldi, Toldi estéje, Buda halála, balladák.","ki volt jókai mór | Regényíró (1825-1904): Az arany ember, A kőszívű ember fiai, Egy magyar nábob.","ki volt ady endre | A XX. század eleji magyar líra egyik legnagyobb alakja (1877-1919), a Nyugat költője.","ki volt józsef attila | Költő (1905-1937): Óda, Tiszta szívvel, Altató. Születésnapja, április 11. a költészet napja.","ki volt bartók béla | Zeneszerző és népzenekutató (1881-1945): A kékszakállú herceg vára, Concerto.","ki volt liszt ferenc | Zeneszerző és zongoraművész (1811-1886).","ki volt kodály zoltán | Zeneszerző, népzenekutató (1882-1967), a Kodály-módszer megalkotója.","ki volt mátyás király | Hunyadi Mátyás (1458-1490), reneszánsz uralkodó, a Corvina könyvtár alapítója, „az igazságos”.","ki volt hunyadi jános | Hadvezér, 1456-ban Nándorfehérvárnál győzte le a törököket (innen a déli harangszó).","ki volt puskás ferenc | Az Aranycsapat kiemelkedő csatára (1927-2006), a FIFA Puskás-díjat róla nevezte el.","mi volt az aranycsapat | Az 1950-es évek magyar labdarúgó-válogatottja: 1952 olimpiai bajnok, 1953-ban 6:3-ra verte Angliát Wembleyben, 1954-ben vb-döntős.","ki volt semmelweis ignác | Orvos (1818-1865), az „anyák megmentője”: bevezette a kézfertőtlenítést a gyermekágyi láz ellen.","ki volt bolyai jános | Matematikus (1802-1860), a nemeuklideszi geometria egyik felfedezője.","ki volt eötvös loránd | Fizikus (1848-1919), torziós inga, Eötvös-kísérlet.","ki volt jedlik ányos | Bencés szerzetes, fizikus; az elektromos motor és a dinamó elvének felfedezője, a szikvíz feltalálója.","ki találta fel a gyufát | Irinyi János (a zajtalan gyufa, 1836).","ki volt gábor dénes | Fizikus, a holográfia feltalálója, 1971-ben Nobel-díjat kapott.","ki volt szilárd leó | Fizikus, a magfizikai láncreakció ötletének atyja.","ki volt kandó kálmán | Mérnök, a villamos vasút úttörője.","ki volt puskás tivadar | A telefonhírmondó feltalálója (1893).","ki volt karikó katalin | Biokémikus, az mRNS-alapú vakcinák kutatója; 2023-ban orvosi Nobel-díjat kapott Drew Weissmannal.","ki volt kertész imre | Író (1929-2016), Sorstalanság; 2002-ben irodalmi Nobel-díjat kapott.","ki volt krasznahorkai lászló | Író (Sátántangó, Az ellenállás melankóliája), 2025-ben irodalmi Nobel-díjat kapott.","hány nobel-díjas magyar van | Attól függően, hogyan számoljuk (magyar születésű vagy származású), kb. 13-15 Nobel-díjas.","mi a szent korona | A magyar királyok koronázási ékszere, ma az Országház kupolatermében őrzik.","mi a lánchíd | Budapest első állandó Duna-hídja (1849), Széchenyi István kezdeményezésére, Tierney Clark tervei szerint.","melyek a budapesti dunai hidak | Többek között a Megyeri, Árpád, Margit, a Lánchíd, az Erzsébet, a Szabadság, a Petőfi és a Rákóczi híd.","mi a balaton hossza;milyen hosszú a balaton;milyen mély a balaton | Kb. 78 km hosszú, átlagmélysége kb. 3 m (a legmélyebb pont, a Tihanyi-kút kb. 12 m).","hány nemzeti park van magyarországon | 10 nemzeti park (pl. Hortobágy, Kiskunság, Bükk, Aggtelek, Balaton-felvidék).","mi a hortobágy | Az Alföld nagy pusztája, Magyarország első nemzeti parkja (1973) és UNESCO világörökség (1999).","mi tokaj híres;mi a tokaji aszú | Tokaj a tokaji borvidék központja, a tokaji aszú világhírű édes bor; UNESCO világörökségi táj.","hol van a hévízi tó | Hévízen (Zala megye), Európa legnagyobb természetes gyógyvizes tava.","mi a magyar tudományos akadémia | Széchenyi István felajánlásával 1825-ben alapított, a magyar tudományos élet legfontosabb testülete.","mi a forint jele;mikor vezették be a forintot | A forint jele Ft (HUF), 1946. augusztus 1-jén vezették be.","mi magyarország országhívó száma;mi a magyar telefon előhívó | +36.","mi a magyar internetes domain | .hu","mikor lépett be magyarország az eu-ba;mikor lettünk az eu tagja | 2004. május 1-jén.","mikor lépett be magyarország a natoba | 1999. március 12-én.","mikor lett magyarország a schengen tagja | 2007 decemberében (szárazföldi és tengeri határok), 2008 márciusában (légi).","mi magyarország államformája | Parlamentáris köztársaság, az Alaptörvény 2012. január 1-jétől hatályos.","hány képviselője van az országgyűlésnek | 199 képviselő.","hogyan választanak a magyar parlamentbe | Vegyes rendszerben: egyéni választókerületek és országos listák, négyévente.","mi a szent istván bazilika | Budapest legnagyobb temploma, 96 m magas, a belvárosban áll.","mi a halászbástya | A budai Várnegyed neoromán kilátója, Schulek Frigyes tervezte (1902).","mi a hősök tere | Budapesten az Andrássy út végén álló Millenniumi emlékmű (1896-1900).","mi az andrássy út | Budapest díszes sugárútja, UNESCO világörökség; alatta épült a kontinentális Európa első földalatti vasútja (1896).","hány metróvonal van budapesten | 4 (M1, M2, M3, M4).","mi a pálinka | Gyümölcspárlat (szilva, barack, körte, cseresznye), védett magyar hungarikum.","mi a unicum | Gyógynövényes keserű likőr, 1790 óta a Zwack család készíti.","mi a hungarikum | Különleges, a magyarságot jellemző érték: pl. Tokaji aszú, Herendi porcelán, pick szalámi, Rubik-kocka, pálinka, Kodály-módszer.","mi a herendi porcelán | Híres magyar porcelán a Veszprém megyei Herendről, 1826 óta készül.","mi a zsolnay | A pécsi Zsolnay-gyár híres kerámiája, az eozin mázról nevezetes.","mi a kalocsai hímzés | Kalocsai virágmintás hímzés és festés, magyar népművészeti jelkép.","mi a matyó hímzés | Mezőkövesdi hímzés, élénk virágmotívumokkal, UNESCO szellemi kulturális örökség.","mi a húsvét magyar hagyománya | Hímes tojás festés, locsolkodás (hétfőn), sonka és kalács az asztalon.","mikor van a mikulás | December 6-án.","mikor van karácsony;mikor van szenteste | Szenteste december 24-én, karácsony december 25-26-án.","mikor van a nőnap | Március 8-án.","mikor van az anyák napja | Május első vasárnapján.","mikor van a gyereknap | Május utolsó vasárnapján.","mikor van a valentin nap | Február 14-én.","mi a luca nap | December 13-a, hagyományai: Luca-búza ültetés, Luca-szék készítése.","mikor van a magyar kultúra napja | Január 22-én, a Himnusz kéziratának dátumán (1823).","mikor van a költészet napja | Április 11-én, József Attila születésnapján.","ki volt szent lászló | Magyar király (1077-1095), lovagkirály.","ki volt mária terézia | Habsburg-uralkodó (1740-1780), magyar királynő is.","ki volt szent erzsébet | Árpád-házi Erzsébet (1207-1231), magyar királylány, a szeretet és jótékonyság szentje.","ki volt iv béla | A tatárjárás utáni újjáépítő király, „második honalapító”.","ki volt zrínyi miklós | Költő és hadvezér (1620-1664), Szigeti veszedelem; a szigetvári hős Zrínyi Miklós (1508-1566) az ő dédapja.","ki volt dobó istván | Az egri vár kapitánya, 1552-ben megvédte a várat a törököktől.","ki volt gárdonyi géza | Író (1863-1922): Egri csillagok, A láthatatlan ember.","ki volt molnár ferenc | Író (1878-1952), A Pál utcai fiúk szerzője.","ki volt mikszáth kálmán | Író (1847-1910): A jó palócok, Szent Péter esernyője.","ki volt móricz zsigmond | Író (1879-1942): Légy jó mindhalálig, Hét krajcár, Rokonok.","ki volt szabó magda | Írónő (1917-2007): Abigél, Az ajtó, Mondják meg Zsófikának.","ki volt weöres sándor | Költő (1913-1989), Psyché, Bóbita.","ki volt radnóti miklós | Költő (1909-1944), a Razglednicák szerzője, munkaszolgálatban halt meg.","ki volt munkácsy mihály | Festő (1844-1900): Krisztus-trilógia, Siralomház.","ki volt csontváry | Csontváry Kosztka Tivadar festő (1853-1919): A magányos cédrus.","ki volt rejtő jenő | Író, P. Howard néven is (1905-1943): A láthatatlan légió, Piszkos Fred.","ki volt fekete istván | Író, a Vuk szerzője (1900-1970).","ki volt hosszú katinka | Magyar úszó, a 2016-os olimpián 3 aranyérmet nyert.","ki volt egerszegi krisztina | Magyar úszó, ötszörös olimpiai bajnok.","mi a pál utcai fiúk | Molnár Ferenc ifjúsági regénye (1906): Nemecsek Ernő, Boka János, Áts Feri.","mi az egri csillagok | Gárdonyi Géza regénye az 1552-es egri ostromról, főhőse Bornemissza Gergely.","mi a toldi | Arany János elbeszélő költeménye Toldi Miklósról (1846).","mi a jános vitéz | Petőfi Sándor elbeszélő költeménye (1845): Kukorica Jancsi és Iluska története.","mi a kőszívű ember fiai | Jókai regénye (1869) az 1848-as szabadságharcról, a Baradlay család története.","mi a tisza hossza;milyen hosszú a tisza | Kb. 966 km, Magyarországon 597 km.","milyen hosszú a duna | Kb. 2850 km, Magyarországon 417 km.","mi az alföld | Magyarország legnagyobb tájegysége, a Kárpát-medence síksága.","mi az északi-középhegység | A Mátra, Bükk, Börzsöny és más hegységek vidéke, itt van Magyarország legmagasabb pontja, a Kékes.","mi a gulyásleves | Magyar marha- vagy borjúhúsos leves hagymával, paprikával, burgonyával, kaporral; kb. 1,5-2 óra alatt készül.","mi a pörkölt | Húsos, hagymás, paprikás étel, kevés zsiradékban, saját levében párolva.","mi a halászlé | Folyami halakból, hagymából és paprikából főzött leves, jellegzetes a Tisza és a Duna mentén.","mi a lángos | Olajban sütött, tejfölös-sajtos-fokhagymás tésztaétel.","mi a rétes | Vékonyra nyújtott tésztába tekert töltelék (alma, túró, meggy, mák) süteménye.","mi a dobostorta | Dobos C. József 1885-ös alkotása: piskótalapok csokoládékrémmel, karamelles tetővel.","mi a töltött káposzta | Savanyú káposztalevélbe göngyölt darált hús és rizs, szószban főzve.","mi a túrórudi | Túróval töltött, csokoládéba mártott szelet, magyar édesség.","mi a kürtőskalács | Erdélyi eredetű, parázson sütött, fahengerre tekert édes kalács.","mik a magyar munkaszüneti napok;mik a magyar állami ünnepek | Újév (jan. 1.), március 15., Nagypéntek, Húsvétvasárnap és -hétfő, május 1., Pünkösdvasárnap és -hétfő, augusztus 20., október 23., mindenszentek (nov. 1.), karácsony (dec. 25-26.).","mikor van a nemzeti összetartozás napja | Június 4-én (Trianon emléknapja).","mi a világ legnagyobb országa;melyik a legnagyobb ország | Területre Oroszország (kb. 17 millió km²).","melyik a legnépesebb ország | India (2023 óta megelőzte Kínát), kb. 1,4 milliárd lakossal.","melyik a világ legkisebb országa | A Vatikán (kb. 0,44 km²).","melyik a leghosszabb folyó a világon | A Nílus (kb. 6650 km), az Amazonas vitatott versenytársa.","melyik a legmagasabb hegy a világon;milyen magas az everest | A Mount Everest, kb. 8849 m a Himalájában.","melyik a legnagyobb óceán | A Csendes-óceán.","hány óceán van | Öt: Csendes-, Atlanti-, Indiai-, Déli- és Északi-sarki-óceán.","melyik a legmélyebb pont a földön | A Mariana-árok a Csendes-óceánban, kb. 10 900 m mély.","melyik a legnagyobb sivatag | A Szahara a legnagyobb forró sivatag; összességében az Antarktisz a legnagyobb.","melyik a legnagyobb tó a világon | A Káspi-tenger (sós tó); édesvízi tavak közül a Felső-tó, a legmélyebb a Bajkál-tó.","melyik a legnagyobb sziget | Grönland.","hány ország van a világon | 195 elismert állam (193 ENSZ-tag és két megfigyelő: a Vatikán és Palesztina).","hány tagállama van az eu-nak;hány tagja van az eu | 27 tagállam (az Egyesült Királyság 2020-ban kilépett).","mi az euró | Az EU közös valutája, 2026-tól 21 tagország használja (Bulgária 2026. január 1-jétől).","mi az ensz | Az Egyesült Nemzetek Szervezete, 1945-ben alapították, 193 tagja van, székhelye New York.","mi a nato | Az Észak-atlanti Szerződés Szervezete, 1949-ben alapított katonai szövetség.","mi az eu | Az Európai Unió, 27 tagú politikai és gazdasági unió, székhelyei Brüsszel, Strasbourg és Luxembourg.","mi a brexit | Az Egyesült Királyság 2020. január 31-én kilépett az Európai Unióból.","hány állam van az usában | 50 állam és a szövetségi főváros (Washington, D.C.).","melyik a legmagasabb épület | A dubaji Burdzs Kalifa, kb. 828 m.","milyen magas az eiffel torony | Kb. 330 m, 1889-ben nyitották meg Párizsban.","mi a szabadság szobor | New Yorkban álló szobor (1886), Franciaország ajándéka az USA-nak.","hol van a colosseum | Rómában, a Flavius-amfiteátrum (Kr. u. 80).","hol van a taj mahal | Indiában, Agrában, Sáh Dzsahán császár építtette feleségének, Mumtáz Mahalnak.","hol van a machu picchu | Peruban, az Andokban, az inkák 15. századi városa.","hol van a kínai nagy fal | Észak-Kínában, összesen több mint 20 000 km hosszú védelmi rendszer.","hol vannak a piramisok | Egyiptomban, Gízában. A Kheopsz-piramis eredetileg kb. 146 m magas volt.","melyik a világ hét csodája | Gízai piramisok, Babiloni függőkertek, Olümpiai Zeusz-szobor, Artemisz-templom, Halikarnasszoszi mauzóleum, Rodoszi kolosszus, Alexandriai világítótorony. (Ma egyedül a piramisok állnak.)","hány kontinens van;melyek a kontinensek | Hét: Afrika, Antarktisz, Ázsia, Európa, Észak-Amerika, Dél-Amerika, Ausztrália és Óceánia.","melyik a legnagyobb kontinens | Ázsia.","melyik a legkisebb kontinens | Ausztrália és Óceánia.","mi a legnagyobb város európában;melyik a legnagyobb európai város | Lakosság szerint Isztambul (kb. 15 millió, részben Ázsiában) vagy Moszkva (kb. 13 millió) a legnagyobb; az EU-ban Berlin a legnépesebb város.","mi a legnagyobb város a világon | Népesség szerint Tokió a legnagyobb agglomeráció, kb. 37 millió lakossal.","mi az egyenlítő | A Föld közepén húzott képzeletbeli kör, a 0 fokos szélességi kör.","mi a földrajzi szélesség és hosszúság | A szélesség az Egyenlítőtől északra-délre, a hosszúság a Greenwich-i kezdőmeridiántól keletre-nyugatra méri a helyet.","melyik a legszárazabb hely | Az Antarktisz száraz völgyei és az atacamai sivatag Chilében.","melyik a legnagyobb vízesés | A legmagasabb a venezuelai Angel-vízesés (979 m), a legszélesebbek közé tartozik a Victoria-vízesés.","mi a föld kora;hány éves a föld;mennyi idős a föld | Kb. 4,54 milliárd év.","hány éves a nap;mennyi idős a nap | Kb. 4,6 milliárd éves.","mennyi a föld átmérője | Kb. 12 742 km.","mennyi a föld kerülete | Kb. 40 075 km az Egyenlítő mentén.","mennyi a vízzel borított terület a földön | A Föld felszínének kb. 71%-a víz.","mi a legmagasabb hegy magyarországon | A Kékes (1014 m) a Mátrában.","mi az alpok legmagasabb csúcsa | A Mont Blanc, 4807 m körül.","mi a legnagyobb folyó európában | A Volga, Európa leghosszabb folyója (kb. 3530 km).","melyik a leghidegebb hely | Az Antarktisz, a Vosztok-állomáson mérték a legalacsonyabb hőmérsékletet (−89,2 °C).","mi a legmelegebb hely | A Halál-völgy (USA), ahol 1913-ban 56,7 °C-ot mértek.","mikor volt az első világháború | 1914-1918.","mikor volt a második világháború | 1939-1945.","mikor ért véget a második világháború | Európában 1945. május 8-án, a Csendes-óceánon 1945 szeptemberében.","mikor volt a francia forradalom | 1789-ben kezdődött, a Bastille bevételével (július 14.).","mikor fedezte fel kolumbusz amerikát | 1492. október 12-én.","mikor volt a titanic katasztrófa | 1912. április 15-én süllyedt el a Titanic az Atlanti-óceánon.","mikor épült a berlini fal;mikor omlott le a berlini fal | 1961-ben építették, 1989. november 9-én nyitották meg.","mikor bomlott fel a szovjetunió | 1991 decemberében.","mikor volt a holdraszállás | 1969. július 20-án, Apollo-11.","mikor volt a szeptember 11 | 2001. szeptember 11-én terrortámadások érték az USA-t.","mikor volt a covid járvány | 2019 végén indult, a WHO 2020 márciusában nyilvánította világjárvánnyá.","mikor bukott meg a római birodalom | A Nyugatrómai Birodalom 476-ban bukott meg.","mikor találta fel gutenberg a könyvnyomtatást | Kb. 1450 körül, mozgatható betűkkel.","mi a reneszánsz | Az 1400-as évektől Itáliából induló európai kulturális megújulás: művészet, tudomány, humanizmus.","ki volt leonardo da vinci | Itáliai polihisztor (1452-1519): Mona Lisa, Utolsó vacsora, találmányok és tudományos vázlatok.","ki volt michelangelo | Itáliai szobrász, festő, építész (1475-1564): Dávid, a Sixtus-kápolna freskói.","ki volt napóleon | Francia hadvezér és császár (1769-1821), 1815-ben Waterloónál győzték le.","ki volt nagy sándor | Makedón király (Kr. e. 356-323), Perzsiáig és Indiáig vezetett hadjáratot.","ki volt julius caesar | Római hadvezér és államférfi (Kr. e. 100-44), meggyilkolták a március idusán.","ki volt kleopátra | Az utolsó ókori egyiptomi uralkodó, Kr. e. 30-ban halt meg.","ki volt nagy péter | Orosz cár (1672-1725), Szentpétervár alapítója, modernizálta Oroszországot.","ki volt mária antoinette | Francia királyné, XVI. Lajos felesége, 1793-ban kivégezték.","ki volt abraham lincoln | Az USA 16. elnöke, a rabszolgaság eltörlésének híve (1809-1865).","ki volt george washington | Az USA első elnöke (1789-1797).","ki volt mahátma gandhi | Indiai szabadságharcos (1869-1948), az erőszakmentes ellenállás szószólója.","ki volt martin luther king | Amerikai polgárjogi vezető (1929-1968), „I have a dream” beszéd (1963), Nobel-békedíj.","ki volt nelson mandela | Dél-afrikai elnök (1994-1999), az apartheid ellen küzdött, Nobel-békedíj 1993.","ki volt kolumbusz kristóf | Genovai származású felfedező, 1492-ben a spanyol korona megbízásából elérte Amerikát.","ki volt magellán | Portugál felfedező, expedíciója 1519-1522 között körbehajózta a Földet.","ki volt marco polo | Velencei utazó (1254-1324), Kínáig jutott.","mi az ókor | Az írásbeliség kezdetétől (Kr. e. 3000 körül) Nyugatrómai Birodalom bukásáig (476).","mi a középkor | Kb. 476-tól 1492-ig (vagy 1500 körülig) tartó korszak.","mi a feudalizmus | Földbirtokra és hűbéri viszonyokra épülő középkori társadalmi rend.","mi az ipari forradalom | A 18. század második felében Angliából induló gépesítési folyamat (gőzgép).","mi a hidegháború | A USA és a Szovjetunió közötti politikai-katonai feszültség 1947-1991 között.","mi az ókori olimpia | Kr. e. 776-tól négyévente tartották Olümpiában, Zeusz tiszteletére.","mikor volt az első újkori olimpia | 1896-ban Athénban.","ki volt galilei | Itáliai csillagász és fizikus (1564-1642), távcsővel megfigyelte a Jupiter holdjait.","ki volt isaac newton | Angol fizikus és matematikus (1643-1727): mozgástörvények, gravitáció, infinitezimális számítás.","ki volt albert einstein | Fizikus (1879-1955), a relativitáselmélet megalkotója, Nobel-díj 1921 (fényelektromos hatás).","ki volt marie curie | Lengyel származású fizikus-vegyész (1867-1934), két Nobel-díjat kapott, a radioaktivitás kutatója.","ki volt charles darwin | Angol természettudós (1809-1882), A fajok eredete című műve (1859) az evolúcióelméletet fektette le.","ki volt nikola tesla | Szerb származású feltaláló (1856-1943), a váltakozó áramú rendszer úttörője.","ki volt thomas edison | Amerikai feltaláló (1847-1931), az izzólámpa, a fonográf és sok más találmány.","ki volt stephen hawking | Angol fizikus (1942-2018), fekete lyukak és kozmológia kutatója.","ki volt alan turing | Brit matematikus (1912-1954), a számítástudomány és a mesterséges intelligencia úttörője.","ki volt marx károly | Német filozófus és közgazdász (1818-1883), A tőke szerzője.","ki volt sigmund freud | Osztrák idegorvos (1856-1939), a pszichoanalízis megalapítója.","mi a gravitáció | Tömegek közötti vonzóerő. A Földön a gravitációs gyorsulás kb. 9,81 m/s².","mi newton első törvénye;mi a tehetetlenség törvénye | Erőhatás nélkül a test nyugalomban marad, vagy egyenes vonalú egyenletes mozgást végez.","mi newton második törvénye | Az erő egyenlő a tömeg és a gyorsulás szorzatával: F = m·a.","mi newton harmadik törvénye;mi a hatás ellenhatás | Ha egy test erőt fejt ki egy másikra, az ugyanakkora, ellentétes erőt fejt ki rá.","mi az energiamegmaradás törvénye | Zárt rendszerben az összenergia állandó, csak átalakul egyik fajtából a másikba.","mi az e mc2;mit jelent az e egyenlő mc négyzet;mi az emc2;mi einstein képlete;mi az einstein féle képlet | Einstein képlete: a tömeg és az energia egyenértékű, E = m·c².","mi a relativitáselmélet | Einstein elmélete: a speciális (1905) a fénysebesség állandóságára épül, az általános (1915) a gravitációt a téridő görbületeként írja le.","mi az atom | Az anyag alapegysége: atommagból (protonok, neutronok) és elektronfelhőből áll.","mi a proton;mi az elektron;mi a neutron | A proton pozitív, az elektron negatív töltésű, a neutron semleges. A proton és a neutron az atommagban van.","mi a fény sebessége | Légüres térben kb. 299 792 km/s, vagyis kb. 300 000 km/s.","mi a hang sebessége | Levegőben kb. 343 m/s (20 °C-on), azaz kb. 1235 km/h.","mi az ohm törvény | U = I·R (feszültség = áramerősség · ellenállás).","mi a mértékegysége az erőnek;melyek az si mértékegységek | Erő: newton (N), energia: joule (J), teljesítmény: watt (W), feszültség: volt (V), áram: amper (A), ellenállás: ohm (Ω), nyomás: pascal (Pa), frekvencia: hertz (Hz).","mi az abszolút nulla fok | −273,15 °C, azaz 0 kelvin.","hány fokon fagy meg a víz;hány fokon fagy a víz | 0 °C-on (normál nyomáson).","hány fokon forr a víz | 100 °C-on (tengerszinten).","mi a sebesség képlete | v = s / t (út osztva idővel).","mi a sűrűség képlete | ρ = m / V (tömeg osztva térfogattal).","mi a munka képlete | W = F·s (erő szorozva az elmozdulással).","mi a teljesítmény képlete | P = W / t (munka osztva idővel).","miért kék az ég | A napfény kék összetevője szóródik a legerősebben a légkörben (Rayleigh-szórás).","miért van szivárvány | A napfény a vízcseppekben megtörik és színeire bomlik.","mi okoz árapályt | A Hold (és kisebb mértékben a Nap) gravitációs vonzása.","mi a hang | Rezgés, ami rugalmas közegben terjed; vákuumban nem terjed.","hogy működik a mikrohullámú sütő | A mikrohullám (kb. 2,45 GHz) a víz molekuláit rezgésbe hozza, így melegíti az ételt.","mi a gps | Műholdas helymeghatározó rendszer: legalább négy műhold jeléből számolja ki a pozíciót.","mi az univerzum kora | Kb. 13,8 milliárd év.","mi a periódusos rendszer | Az elemek rendszáma szerinti táblázata, jelenleg 118 elemet ismerünk.","mi a víz képlete;mi a víz kémiai képlete | H2O, két hidrogén- és egy oxigénatom.","mi a konyhasó képlete | NaCl (nátrium-klorid).","mi a szén-dioxid képlete | CO2.","mi a ph | A savasság/lúgosság mértéke: 7 semleges, alatta savas, fölötte lúgos.","mi az ózon | Az O3 molekula; a sztratoszférában az ózonréteg elnyeli a káros UV-sugárzást.","mi a levegő összetétele | Kb. 78% nitrogén, 21% oxigén, 1% argon és egyéb gázok (szén-dioxid kb. 0,04%).","mi a gyémánt | Szénből álló, kristályos anyag, a legkeményebb természetes anyag.","mi a hidrogén | A legkönnyebb és az univerzum leggyakoribb eleme (H, rendszáma 1).","mi az izotóp | Azonos rendszámú, de eltérő neutronszámú atomok.","mi a molekula | Atomok kémiai kötéssel összekapcsolt csoportja.","mi az ecet | Hígított ecetsav (általában 5-10%-os).","mi a szódabikarbóna | Nátrium-hidrogén-karbonát, NaHCO3.","melyik fém folyékony szobahőmérsékleten | A higany.","melyik a legkönnyebb fém | A lítium.","melyek a halmazállapotok | Szilárd, folyékony, gáz és plazma.","mi az oxidáció | Elektronleadással járó kémiai folyamat, pl. a vas rozsdásodása.","mi a sejt | Az élő szervezetek szerkezeti és működési egysége.","mi a dns | Dezoxiribonukleinsav: a genetikai információ hordozója, kettős spirál szerkezetű (Watson és Crick, 1953).","mi a fotoszintézis | A növények a fény energiájával szén-dioxidból és vízből glükózt és oxigént állítanak elő; a klorofill végzi.","hány kromoszómája van az embernek | 46 (23 pár).","hány csont van az emberi testben | A felnőttnek 206 csontja van.","hány foga van egy felnőttnek;hány foga van a felnőtteknek;hány foga van az embernek | 32 (a bölcsességfogakkal), a gyerekeknek 20 tejfoguk van.","melyek a vércsoportok | A, B, AB és 0, mindegyik Rh-pozitív vagy Rh-negatív lehet.","mennyi vér van az emberi testben | Felnőttben kb. 5 liter.","mi az ember legnagyobb szerve | A bőr; a legnagyobb belső szerv a máj.","hány érzékszervünk van | Öt klasszikus: látás, hallás, szaglás, ízlelés, tapintás.","mi a szív feladata | A vért pumpálja a testben; nyugalomban felnőtteknél percenként kb. 60-100-at ver.","mi az agy | A központi idegrendszer irányítója, kb. 86 milliárd idegsejttel.","mik a vitaminok | Szervezetünk számára létfontosságú anyagok: pl. C (immunrendszer), D (csontok, napfény), A (látás), B12 (idegrendszer), K (véralvadás).","mennyi vizet kell inni naponta | Az általános ajánlás kb. 1,5-2 liter naponta, de egyénenként és időjárástól függően változik.","mennyit kell aludni | Felnőtteknek általában 7-9 óra éjszakánként.","mi a különbség a vírus és a baktérium között | A baktérium önálló, élő sejt; a vírus csak gazdasejtben szaporodik. Az antibiotikum a baktériumok ellen hat, vírus ellen nem.","mi az antibiotikum | Baktériumok ellen ható gyógyszer; vírusos fertőzések (megfázás, influenza) ellen hatástalan. Csak orvosi javaslatra használd.","mi az oltás | Az immunrendszer felkészítése egy kórokozó ellen, hogy a betegség ne vagy enyhébben alakuljon ki.","mi a normál testhőmérséklet | Kb. 36,1-37,2 °C; 38 °C fölött beszélünk lázról.","mi a normál vérnyomás | Kb. 120/80 Hgmm körüli; tartósan magasabb érték esetén fordulj orvoshoz.","mit tegyek ha megégetem a kezem | Azonnal hűtsd langyos, folyó vízzel 10-20 percig; ne használj jeget, vajat, krémet. Nagyobb égésnél hívd a 112-t.","mit tegyek vérzés esetén | Nyomd rá közvetlenül tiszta kötést, tartsd magasan a sérült részt. Erős vérzésnél azonnal hívd a 112-t.","mi az elsősegély alapja | Biztonság, segélyhívás (112), életveszély elhárítása: légút, vérzés, újraélesztés szükség esetén. A mentők telefonon vezetnek.","hogyan kell újraéleszteni | Hívd a 112-t, tegyél kemény felületre, nyomd a mellkas közepét percenként kb. 100-120 ütemben, 5-6 cm mélyen. A mentőirányító végigvezet.","mik a stroke tünetei | Az arc lóg, a kar gyenge, a beszéd zavaros; ilyenkor azonnal hívd a 112-t.","melyik a legnagyobb állat | A kék bálna (kb. 30 m, 150 tonna).","melyik a leggyorsabb szárazföldi állat | A gepárd (kb. 100-110 km/h).","melyik a leggyorsabb állat | A vándorsólyom zuhanórepülésben, 300 km/h fölött.","melyik a legmagasabb állat | A zsiráf (5-6 m).","melyik a legnagyobb szárazföldi állat | Az afrikai elefánt.","hány lába van a póknak | 8.","hány lába van a rovarnak | 6.","hány szíve van a polipnak | 3.","meddig él egy teknős | Egyes fajok 100-150 évig is.","mi a denevér | Az egyetlen igazán repülni tudó emlős.","mi az emlős | Meleg vérű, szőrös, tejjel szoptatja kicsinyeit.","mi a kenguru | Ausztrál erszényes emlős, kicsinyét erszényében hordozza.","mennyibe kerül;mennyi az ára;mennyit ér;hol kapható | Az árak változnak, és internet nélkül nem látom az aktuális árakat. Nézz utána egy webshopban vagy hirdetési oldalon.","mi a nap | A Naprendszer központi csillaga, kb. 4,6 milliárd éves, átmérője kb. 1,39 millió km.","melyek a bolygók sorrendben;mi a naprendszer bolygóinak sorrendje | Merkúr, Vénusz, Föld, Mars, Jupiter, Szaturnusz, Uránusz, Neptunusz. (A Plútó 2006 óta törpebolygó.)","melyik a legkisebb bolygó | A Merkúr.","melyik a legforróbb bolygó | A Vénusz (kb. 465 °C a felszínen).","melyik a vörös bolygó | A Mars.","hány holdja van a földnek | Egy.","milyen messze van a hold | Átlagosan kb. 384 400 km.","ki lépett először a holdra | Neil Armstrong 1969. július 20-án, az Apollo-11 küldetésen.","ki volt az első ember az űrben | Jurij Gagarin 1961. április 12-én.","ki volt az első magyar űrhajós | Farkas Bertalan 1980-ban, a Szojuz-36 fedélzetén. A második Kapu Tibor volt (2025, Axiom-4).","mi az iss;mi a nemzetközi űrállomás | Nemzetközi Űrállomás: kb. 400 km magasan kering a Föld körül, 1998 óta épül.","mi a fekete lyuk | Olyan rendkívül sűrű tartomány, amelyből a fény sem tud kiszabadulni.","mi a tejútrendszer | A galaxisunk, százmilliárdos nagyságrendű csillaggal.","mi a fényév | A fény egy év alatt megtett útja: kb. 9,46 billió km.","mi a napfogyatkozás | Amikor a Hold a Nap és a Föld közé kerül, és eltakarja a Napot.","mi a holdfogyatkozás | Amikor a Föld árnyéka a Holdra vetül.","hány évszak van | Négy: tavasz, nyár, ősz, tél.","miért vannak évszakok | A Föld forgástengelye kb. 23,5 fokkal meg van dőlve.","mennyi ideig kering a föld a nap körül | Kb. 365,25 nap.","mi a james webb űrtávcső | A NASA 2021-ben indított infravörös űrtávcsöve, 2022 óta készít képeket.","mi a voyager | A NASA 1977-ben indított két űrszondája; a Voyager-1 2012-ben lépett a csillagközi térbe.","mi az üstökös | Jégből és porból álló égitest, a Nap közelében csóvát növeszt.","mi a meteor | A légkörbe lépő kis égitest fényjelensége; ha földet ér, meteoritnak hívjuk.","mi a pitagorasz tétel | Derékszögű háromszögben a két befogó négyzetének összege az átfogó négyzetével egyenlő: a² + b² = c².","hogyan számolom a kör kerületét | K = 2·r·π.","hogyan számolom a kör területét | T = r²·π.","hogyan számolom a háromszög területét | T = (alap · magasság) / 2.","hogyan számolom a téglalap területét | T = a·b, kerülete K = 2·(a+b).","hogyan számolom a négyzet területét | T = a², kerülete K = 4a.","hogyan számolom a trapéz területét | T = (a + c)/2 · m.","hogyan számolom a téglatest térfogatát | V = a·b·c, felszíne A = 2·(ab + bc + ac).","hogyan számolom a kocka térfogatát | V = a³, felszíne A = 6a².","hogyan számolom a henger térfogatát | V = r²·π·m.","hogyan számolom a gömb térfogatát | V = 4/3·r³·π, felszíne A = 4·r²·π.","hogyan számolom a kúp térfogatát | V = r²·π·m / 3.","mennyi a háromszög szögeinek összege | 180 fok.","mennyi a négyszög szögeinek összege | 360 fok.","mi a prímszám | Olyan 1-nél nagyobb egész szám, amelynek csak két osztója van: az 1 és önmaga (2, 3, 5, 7, 11, 13...).","melyik a legkisebb prímszám | A 2, az egyetlen páros prímszám.","mi a pi értéke | Kb. 3,14159265.","mi az e szám | Az Euler-szám, kb. 2,71828, a természetes logaritmus alapja.","mi az aranymetszés | Kb. 1,618 (φ): egy szakaszt úgy osztunk, hogy a egész és a nagyobb rész aránya egyenlő a nagyobb és a kisebb rész arányával.","mi a fibonacci sorozat | 0, 1, 1, 2, 3, 5, 8, 13, 21, 34... Minden tag az előző kettő összege.","hogyan számolom a százalékot | Rész = alap · százalék / 100. Pl. 200 15%-a: 200 · 0,15 = 30.","mi a számtani közép | Az értékek összege osztva a darabszámmal.","mi a medián | A rendezett adatsor középső eleme.","mi a módusz | Az adatsor leggyakoribb értéke.","mi a derékszög | 90 fokos szög.","mennyi a nulla faktoriális | 1.","mi a négyzetszám | Egy egész szám négyzete: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100...","mi a milliárd;mennyi egy milliárd | 1 000 000 000 (10⁹). A magyar billió 10¹², a trillió 10¹⁸.","mi a római számok jelentése | I=1, V=5, X=10, L=50, C=100, D=500, M=1000.","hány másodperc van egy napban | 86 400.","hány perc van egy napban | 1440.","hány óra van egy évben | 8760 (szökőévben 8784).","hány hét van egy évben | 52 hét és 1-2 nap.","hány nap van februárban | 28, szökőévben 29.","mikor van szökőév | Négyévente (ha osztható 4-gyel), kivéve a 100-zal oszthatókat, hacsak 400-zal nem oszthatók.","mi a törtek összeadása | Közös nevezőre hozzuk őket, majd a számlálókat összeadjuk.","mi a másodfokú egyenlet megoldóképlete | x = (−b ± √(b² − 4ac)) / (2a).","mi a diszkrimináns | A másodfokú egyenletben b² − 4ac: ha pozitív, két valós gyök van; ha nulla, egy; ha negatív, nincs valós gyök.","mi a hatványozás | Ismételt szorzás: aⁿ = a·a·...·a (n darab).","mi a négyzetgyök | Az a szám, amelynek négyzete az adott szám: √9 = 3.","mi a szinusz | Derékszögű háromszögben a szöggel szemközti befogó és az átfogó hányadosa.","mi a koszinusz | A szög melletti befogó és az átfogó hányadosa.","mi a tangens | A szemközti és a melletti befogó hányadosa.","mi az internet | Világméretű számítógép-hálózat, amely TCP/IP protokollal köt össze eszközöket.","mi a wifi | Vezeték nélküli helyi hálózati technológia (IEEE 802.11).","mi a bluetooth | Rövid hatótávolságú vezeték nélküli kapcsolat eszközök között.","mi a bit | A legkisebb információegység: 0 vagy 1. 8 bit = 1 bájt.","mi a bájt | 8 bit; 1 KB = 1024 bájt (vagy 1000, a szabvány szerint), 1 MB = 1000 KB, 1 GB = 1000 MB.","mi a ram | Gyors, ideiglenes munkamemória; kikapcsoláskor elvész a tartalma.","mi a cpu;mi a processzor | A számítógép központi feldolgozóegysége, ez hajtja végre az utasításokat.","mi a gpu;mi a videókártya | Grafikus feldolgozóegység, grafikához és párhuzamos számításokhoz (pl. AI).","mi az ssd | Flash-memóriás tároló, gyorsabb és halk, mint a mechanikus merevlemez (HDD).","mi az operációs rendszer | A hardvert és a programokat kezelő alapszoftver: pl. Windows, macOS, Linux, Android, iOS.","mi a linux | Nyílt forráskódú operációs rendszer-kernel (Linus Torvalds, 1991); szerverek és az Android alapja.","mi az android | A Google nyílt forráskódú mobil operációs rendszere, Linux alapú.","mi az ios | Az Apple mobil operációs rendszere az iPhone-hoz.","mi a mesterséges intelligencia;mi az ai | Olyan számítógépes rendszerek, amelyek emberi gondolkodáshoz köthető feladatokat végeznek: tanulás, nyelv, képfelismerés.","mi a gépi tanulás | Az AI területe, ahol a program adatokból tanul, nem előre megírt szabályokból.","mi a neurális hálózat | Az idegsejtek mintájára épülő matematikai modell, rétegekből áll, súlyokat tanul.","mi a nagy nyelvi modell;mi az llm | Hatalmas szövegmennyiségen betanított neurális hálózat, amely emberi nyelven válaszol és kódot is ír (pl. Claude).","mi a blokklánc;mi a blockchain | Láncba fűzött, kriptográfiailag védett blokkok elosztott adatbázisa, a kriptovaluták alapja.","mi a bitcoin | Az első kriptovaluta (Satoshi Nakamoto, 2009), blokkláncon működik.","mi a kriptográfia | Titkosítással és adatvédelemmel foglalkozó tudományág.","mi egy erős jelszó | Legalább 12-14 karakter, kis- és nagybetű, szám, szimbólum vagy hosszú jelmondat; minden fióknak más legyen, és használj jelszókezelőt.","mi a phishing | Csaló üzenet vagy oldal, amely valódinak tűnik, hogy jelszót, bankkártya- vagy más adatot csaljon ki. Ne kattints gyanús linkre.","mi a vpn | Virtuális magánhálózat: titkosított alagúton keresztül köti az eszközt egy másik hálózathoz.","mi a tűzfal | Szoftver vagy eszköz, amely szabályok alapján szűri a hálózati forgalmat.","mi a felhő;mi a cloud | Távoli szervereken futó tároló és szolgáltatások interneten át (pl. Google Drive, AWS).","mi a szerver | Más gépeknek (kliensek) szolgáltatást nyújtó számítógép.","mi a domain név | A weboldal olvasható címe (pl. pelda.hu), amit a DNS alakít IP-címmé.","mi az ip cím | Hálózati eszközök azonosítója, pl. 192.168.1.1 (IPv4) vagy IPv6.","mi a dns | Domain Name System: a domainneveket IP-címekre fordítja.","mi a https | A HTTP biztonságos, TLS-sel titkosított változata.","mi az e-mail | Elektronikus levelezés, a címe felhasználó@domain alakú.","mi a cookie | Kis adatfájl, amelyet a weboldal a böngészőben tárol (bejelentkezés, beállítások).","mi a qr kód | Kétdimenziós vonalkód, kamerával olvasható; link, szöveg vagy adat lehet benne.","mi az usb | Univerzális soros busz: eszközök csatlakoztatására és töltésre; USB-C a modern szabvány.","mi az 5g | Az ötödik generációs mobilhálózat: gyorsabb és kisebb késleltetésű.","mi a böngésző | Weboldalakat megjelenítő program: Chrome, Firefox, Safari, Edge.","mi a sql injection | Támadás, ahol rosszindulatú SQL kódot csempésznek az adatbevitelbe; védekezés: paraméterezett lekérdezések.","mi a react | A Meta (Facebook) JavaScript könyvtára felhasználói felületek építésére, komponensek alapján.","mi a node js | JavaScript futtatókörnyezet a böngészőn kívül, szerveroldali programokhoz.","mi a docker | Konténerizációs eszköz: az alkalmazást és függőségeit egy hordozható csomagban futtatja.","mi a regex;mi a reguláris kifejezés | Szövegminták leírására szolgáló nyelv: pl. \\d+ egy vagy több számjegyet jelent.","mi a hash | Egy adatból számolt, rögzített hosszúságú ujjlenyomat; jelszavak tárolásához és ellenőrzéshez használják.","mi a stack;mi a verem | LIFO (utolsónak be, elsőnek ki) adatszerkezet; push és pop műveletek.","mi a queue;mi a sor adatszerkezet | FIFO (elsőnek be, elsőnek ki) adatszerkezet.","mi a big o jelölés | Az algoritmus futásidejének növekedését írja le a bemenet méretének függvényében (pl. O(n), O(n log n)).","mi a fordító;mi a compiler | Program, amely a forráskódot gépi kódra fordítja le futtatás előtt.","mi az interpreter | Program, amely a kódot soronként, futás közben hajtja végre (pl. Python).","mi az oop;mi az objektumorientált programozás | A kód objektumokra, osztályokra, öröklésre és egységbe zárásra épül.","mi az open source;mi a nyílt forráskód | Szabadon megtekinthető, módosítható és terjeszthető szoftver.","mi a framework | Előre elkészített programváz, amelyre az alkalmazás építhető (pl. Django, React, Spring).","mi a ux | Felhasználói élmény: mennyire kényelmes és érthető egy termék használata.","mi az agilis fejlesztés | Rövid iterációkban, folyamatos visszajelzéssel történő szoftverfejlesztés.","mi a unit teszt | A kód egy kicsi részét (függvény) önállóan ellenőrző automatikus teszt.","mi a merge conflict | Verziókezelésben akkor lép fel, ha ugyanazt a sort két ágon eltérően módosították.","mi a markdown | Egyszerű jelölőnyelv szöveg formázására: # címsor, **félkövér**, - lista.","mi a csv | Vesszővel (vagy pontosvesszővel) elválasztott értékeket tartalmazó szöveges táblázatfájl.","mi a rest api | HTTP-n keresztüli API-stílus: erőforrások URL-jei, GET/POST/PUT/DELETE metódusok, általában JSON válasz.","mi a cache | Gyorsítótár: a gyakran használt adatok közelebbi, gyorsabb tárolása.","mi a rootolás | Az Android rendszergazdai (root) jogának megszerzése; elveszítheti a garanciát és csökkentheti a biztonságot.","hányszor rendezik az olimpiát;hány évente van az olimpia | Négyévente, nyári és téli olimpia felváltva két évenként.","hány játékos van egy focicsapatban | 11 játékos a pályán (a kapussal együtt).","hány játékos van a kosárlabdában | 5.","hány játékos van a kézilabdában | 7 (6 mezőnyjátékos és kapus).","hány játékos van a vízilabdában | 7.","hány mező van a sakktáblán | 64 (8×8).","hány bábu van a sakkban | 16 bábu van játékosonként.","milyen hosszú a maraton;mi a maraton hossza;hány km a maraton;hány kilométer a maraton | 42,195 km.","mi a világrekord a 100 méteres síkfutásban | Usain Bolt 9,58 másodperc (2009).","ki nyerte a 2022-es labdarúgó vb-t | Argentína (a döntőben 3:3 után tizenegyesekkel Franciaországot verte).","ki nyerte a 2018-as labdarúgó vb-t | Franciaország.","mikor volt magyarország vb-döntős | 1938-ban (Olaszország ellen) és 1954-ben (Nyugat-Németország ellen).","hányszor nyert magyarország olimpiát labdarúgásban | Háromszor: 1952, 1964, 1968.","hány grand slam torna van | Négy: Australian Open, Roland Garros, Wimbledon, US Open.","ki volt michael jordan | Amerikai kosárlabdázó, hatszoros NBA-bajnok a Chicago Bullsszal.","ki volt muhammad ali | Amerikai ökölvívó (1942-2016), háromszoros nehézsúlyú világbajnok.","mi a forma 1 | Az autósport csúcskategóriája, a világbajnokság nagydíjakból áll.","mi az nba | Észak-amerikai profi kosárlabda-liga.","ki volt shakespeare | Angol drámaíró (1564-1616): Hamlet, Romeo és Júlia, Macbeth, Szentivánéji álom.","ki volt dante | Itáliai költő (1265-1321), Isteni színjáték.","ki volt tolkien | Angol író (1892-1973): A hobbit, A Gyűrűk Ura.","ki írta a harry pottert | J. K. Rowling.","ki volt beethoven | Német zeneszerző (1770-1827): 9. szimfónia, Für Elise, Holdfény-szonáta, vaksága ellenére is komponált.","ki volt mozart | Osztrák zeneszerző (1756-1791): Varázsfuvola, Figaro házassága, Requiem.","ki volt bach | Német barokk zeneszerző (1685-1750): Brandenburgi versenyek, h-moll mise.","ki volt csajkovszkij | Orosz zeneszerző (1840-1893): Hattyúk tava, Diótörő.","ki volt van gogh | Holland festő (1853-1890): Csillagos éj, Napraforgók.","ki volt picasso | Spanyol festő (1881-1973), a kubizmus egyik megalapítója: Guernica.","ki festette a mona lisát | Leonardo da Vinci (kb. 1503-1519), ma a párizsi Louvre-ban látható.","mi a louvre | Párizsi múzeum, a világ egyik legnagyobb; itt van a Mona Lisa.","mi a beatles | Liverpooli rockegyüttes (1960-1970): John Lennon, Paul McCartney, George Harrison, Ringo Starr.","mi az oscar-díj | Az amerikai filmakadémia díja, 1929 óta adják át.","mi a nobel-díj | Alfred Nobel alapította 1901-ben: fizika, kémia, orvostudomány, irodalom, béke és közgazdaságtan kategóriában.","melyik a legnépszerűbb sport a világon | A labdarúgás.","mennyi ideig főzzem a tojást | Forrástól: lágy 5-6 perc, közepes 7-8, kemény 9-10 perc; utána hideg vízbe tedd.","hogyan főzzek rizst | 1 rész rizs, 2 rész víz, kevés só, fedő alatt kisebb lángon kb. 15-18 perc; előtte öblítsd át.","mennyi ideig főzzem a tésztát | A csomagon lévő idő szerint, általában 8-12 perc, bő, sós vízben.","mi az al dente | Enyhén roppanós, nem túlfőtt (főleg tészta).","hány ml egy evőkanál | Kb. 15 ml (a teáskanál 5 ml).","hány ml egy dl | 100 ml.","hány dl egy pohár;hány dl egy csésze | Egy pohár általában 2 dl; az amerikai cup kb. 2,4 dl.","hány dkg egy kg | 100 dkg.","hány gramm egy dkg | 10 gramm.","milyen hőmérsékletű legyen a hűtő | Kb. 4 °C (a fagyasztó −18 °C).","meddig tárolható a főtt étel a hűtőben | Általában 3-4 napig, légmentesen lezárva.","hogyan készül a kenyér | Liszt, víz, élesztő, só; dagasztás, kelesztés (1-2 óra), sütés kb. 220 °C-on 30-40 percig.","palacsinta recept;hogyan készül a palacsinta | Kb. 12 db: 25 dkg liszt, 2 tojás, 3 dl tej, 1 dl szódavíz, csipet só, 2 ek olaj. Elkeverjük, kb. 20 percet pihentetjük, majd forró, enyhén olajozott serpenyőben megsütjük mindkét oldalát.","hogyan készül a rántotta | Tojást felverünk sóval, forró, zsiradékos serpenyőbe öntjük, kevergetve süljük kb. 2-3 percig.","mi az infláció | Az árszínvonal tartós emelkedése, a pénz vásárlóerejének csökkenése.","mi a kamat | A kölcsönkapott vagy elhelyezett pénz ára, százalékban megadva egy időszakra.","mi a részvény | Egy vállalat tulajdoni részesedését megtestesítő értékpapír.","mi a kötvény | Hitelviszonyt megtestesítő értékpapír: a kibocsátó fix kamatot fizet és visszafizeti a tőkét.","mi a tőzsde | Szervezett piac, ahol értékpapírokkal és árucikkekkel kereskednek.","mi a gdp | Bruttó hazai termék: egy ország egy évben előállított javainak és szolgáltatásainak értéke.","mi az áfa | Általános forgalmi adó; Magyarországon az általános kulcs jelenleg 27% (változhat).","mi a szja | Személyi jövedelemadó; Magyarországon jelenleg 15% az általános kulcs (változhat).","mi a hitel | Kölcsönkapott pénz, amelyet kamatokkal együtt kell visszafizetni.","mi a biztosítás | Szerződés, amelynek révén díjfizetés ellenében kártérítést vagy szolgáltatást kapunk, ha a kockázat bekövetkezik.","hány betű van a magyar ábécében | 44 betű (a kettős és hármas betűket is egynek számítva).","mik a magyar szófajok | Főnév, ige, melléknév, számnév, névmás, határozószó, névutó, kötőszó, igekötő, módosítószó, indulatszó (a besorolás szerint 10-11).","hány esete van a magyar nyelvnek | Kb. 18-20 esetet szoktak megkülönböztetni (alanyeset, tárgyeset, részes, -ban/-ben, -ra/-re stb.).","mi a toldalék | A szótőhöz kapcsolódó rag, jel vagy képző.","mi a hasonlat | Két dolog összevetése („olyan, mint”).","mi a metafora | Átvitt értelmű kifejezés két dolog hasonlósága alapján („az élet egy utazás”).","mi az időzóna budapesten | Közép-európai idő (CET, UTC+1), nyáron CEST (UTC+2).","mi a nyári időszámítás | Március végétől október végéig az órát egy órával előre állítják (2026-ban is érvényes az EU-s rendszer).","mennyi idő alatt ér a föld körbe a nap | Egy forgás 24 óra; a Föld a Nap körül 365,25 nap alatt kering.","miért van szökőnap | Mert a Föld keringése kb. 365,25 napig tart, így négyévente egy napot hozzáadunk.","mi a feng shui | Kínai térrendezési hagyomány, amely az energiák harmóniáját keresi a lakásban. (Hagyomány, nem tudományos tény.)","hogyan tanuljak hatékonyan | Rövid, rendszeres tanulás, aktív felidézés (kérdések, kvíz), időszakos ismétlés, elegendő alvás, kevés zavaró tényező.","hogyan kezdjek el sportolni | Kezdd kis lépésekkel (heti 2-3 alkalom), válassz élvezetes mozgást, fokozatosan növeld a terhelést; betegségnél kérdezd orvosodat.","hogyan lehet jobban aludni | Rendszeres lefekvési idő, sötét hűvös szoba, esti képernyőhasználat kerülése, késő esti koffein mellőzése.","mi a mindfulness | Tudatos jelenlét: a figyelem szándékos, ítélkezésmentes irányítása a jelen pillanatra.","mennyi vizet igyak edzés közben | Általában 1-2 deciliter 15-20 percenként, hosszabb vagy forró időben több; fogyaszd a szomjúságod szerint is.","mit jelent a kcal | Kilokalória: az étel energiatartalmának egysége (1 kcal ≈ 4,184 kJ)."]};
+
+  function extraSeed(){
+    const out = [];
+    const add = (qs, a)=>{ qs.forEach(q=>{ q=q.trim(); if(q) out.push([q, a]); }); };
+    KBDATA.KB.forEach(line=>{
+      const i = line.indexOf(' | '); if(i<0) return;
+      add(line.slice(0,i).split(';'), line.slice(i+3).trim());
+    });
+    KBDATA.CAPS.forEach(([c,cap])=>{
+      add(['mi '+c+' fővárosa'], cap+(/[.)]$/.test(cap)?'':'.'));
+      const simple = cap.split(' (')[0].split(';')[0];
+      add(['melyik ország fővárosa '+simple], c+'.');
+    });
+    KBDATA.ELEM.forEach(([sym,name,z])=>{
+      add(['mi a '+name+' vegyjele'], sym+' ('+name+', rendszám: '+z+').');
+      add(['mi a '+name+' rendszáma','hanyadik elem a '+name], z+'. elem (vegyjele: '+sym+').');
+      add(['melyik elem vegyjele '+sym], name+' (rendszám: '+z+').');
+    });
+    KBDATA.MEGYE.forEach(([m,seat])=>{
+      add(['mi a '+m+' megye székhelye'], seat+'.');
+    });
+    return out;
+  }
+
+  let _dict = null;
+  function dictInit(){
+    if(_dict) return _dict;
+    _dict = {hu:{}, en:{}};
+    KBDATA.DICT.split(',').forEach(p=>{
+      const k = p.indexOf('='); if(k<0) return;
+      const h = p.slice(0,k).trim(), e = p.slice(k+1).trim();
+      _dict.hu[flat(h)] = e;
+      e.split('/').forEach(x=>{ _dict.en[flat(x)] = h; });
+    });
+    return _dict;
+  }
+
+  const UNITS = {
+    length:{meter:1,m:1,mm:.001,milimeter:.001,millimeter:.001,cm:.01,centimeter:.01,km:1000,kilometer:1000,merfold:1609.344,mile:1609.344,lab:.3048,foot:.3048,feet:.3048,ft:.3048,inch:.0254,huvelyk:.0254,col:.0254,yard:.9144,jard:.9144},
+    mass:{g:.001,gramm:.001,dkg:.01,dekagramm:.01,kg:1,kilo:1,kilogramm:1,tonna:1000,font:.45359237,pound:.45359237,lb:.45359237,lbs:.45359237,unc:.0283495,ounce:.0283495,oz:.0283495},
+    volume:{ml:.001,milliliter:.001,cl:.01,dl:.1,deciliter:.1,l:1,liter:1,gallon:3.785411784},
+    speed:{kmh:1/3.6,mph:.44704,ms:1,csomo:.514444,knot:.514444},
+    time:{masodperc:1,sec:1,perc:60,ora:3600,nap:86400,het:604800},
+    temp:{celsius:'c',c:'c',fahrenheit:'f',f:'f',kelvin:'k',k:'k'}
+  };
+  const SHORT_OK = new Set(['ora','nap','het']);
+  function unitOf(tok){
+    let best = null;
+    for(const d in UNITS){
+      const u = UNITS[d];
+      if(tok in u) return {d, k:tok};
+      for(const k in u){
+        if((k.length>=4 || SHORT_OK.has(k)) && tok.startsWith(k) && (!best || k.length>best.k.length)) best = {d, k};
+      }
+    }
+    return best;
+  }
+  function fmtNum(x){
+    if(Math.abs(x)>=1e12 || (x!==0 && Math.abs(x)<1e-4)) return x.toExponential(4).replace('.',',');
+    return String(Math.round(x*1e6)/1e6).replace('.',',');
+  }
+  function convert(n){
+    let s = n.replace(/°/g,' ').replace(/km\/h/g,'kmh').replace(/m\/s/g,'ms').replace(/(\d),(\d)/g,'$1.$2').replace(/(\d)([a-z])/g,'$1 $2').replace(/[?!:=,]/g,' ');
+    const toks = s.split(/\s+/).filter(Boolean);
+    for(let i=0;i<toks.length-1;i++){
+      if(!/^-?\d+(\.\d+)?$/.test(toks[i])) continue;
+      const src = unitOf(toks[i+1]); if(!src) continue;
+      for(let j=0;j<toks.length;j++){
+        if(j===i || j===i+1) continue;
+        const dst = unitOf(toks[j]);
+        if(!dst || dst.d!==src.d || dst.k===src.k) continue;
+        const v = parseFloat(toks[i]);
+        if(src.d==='temp'){
+          const sc = UNITS.temp[src.k], dc = UNITS.temp[dst.k];
+          const K = sc==='c' ? v+273.15 : sc==='f' ? (v-32)*5/9+273.15 : v;
+          const r = dc==='c' ? K-273.15 : dc==='f' ? (K-273.15)*9/5+32 : K;
+          return fmtNum(v)+' '+toks[i+1]+' = '+fmtNum(r)+' '+toks[j];
+        }
+        const r = v*UNITS[src.d][src.k]/UNITS[dst.d][dst.k];
+        return fmtNum(v)+' '+toks[i+1]+' = '+fmtNum(r)+' '+toks[j];
+      }
+    }
+    return null;
+  }
+
+  const NAMED = {karacsony:[11,25],szenteste:[11,24],szilveszter:[11,31],ujev:[0,1],mikulas:[11,6],'valentin nap':[1,14],nonap:[2,8]};
+  const MON = ['januar','februar','marcius','aprilis','majus','junius','julius','augusztus','szeptember','oktober','november','december'];
+  function daysUntil(f){
+    const m = f.match(/^hany nap van (?:meg )?(.+?)(?:ig|ra|re|t)?$/);
+    if(!m) return null;
+    let key = m[1].trim(), md = NAMED[key];
+    if(!md){
+      const g = key.match(/^([a-z]+) (\d{1,2})$/);
+      if(g){ const mi = MON.indexOf(g[1]); if(mi>=0) md = [mi, +g[2]]; }
+    }
+    if(!md) return null;
+    const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let t = new Date(now.getFullYear(), md[0], md[1]);
+    if(t < t0) t = new Date(now.getFullYear()+1, md[0], md[1]);
+    const diff = Math.round((t - t0)/86400000);
+    const label = t.getFullYear()+'. '+months[md[0]]+' '+md[1]+'.';
+    return diff===0 ? 'Ma van! ('+label+')' : diff+' nap van hátra ('+label+').';
+  }
+
+  function toRoman(x){
+    const t = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    let r=''; for(const [v,s] of t){ while(x>=v){ r+=s; x-=v; } } return r;
+  }
+  function fromRoman(s){
+    const v = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000}; let r=0;
+    for(let i=0;i<s.length;i++){ const a=v[s[i]], b=v[s[i+1]]; r += (b && a<b) ? -a : a; }
+    return r;
+  }
+
+  function extra(raw, n){
+    let m;
+    const f = flat(raw);
+    if(/kozmondas/.test(f)) return pick(KBDATA.PROVERBS);
+    if(/(erdekesseg|tudtad|erdekes tenyt|erdekes dolgot)/.test(f) && !/(ki volt|mi az|mi a)\b/.test(f)) return pick(KBDATA.FACTS);
+
+    // szótár
+    let key=null, dir=null;
+    if((m = f.match(/^(?:mi az |mi a |hogy mondjuk |hogy mondjak |hogyan mondjuk |hogy van |mit jelent a |mit jelent az )?(.+?) angolul$/))){ key=m[1]; dir='hu'; }
+    else if((m = f.match(/angolul (?:azt hogy |hogy )?(.+)$/))){ key=m[1]; dir='hu'; }
+    else if((m = f.match(/^(?:mi az |mi a |mit jelent a |mit jelent az |mit jelent )?(.+?) magyarul$/))){ key=m[1]; dir='en'; }
+    else if((m = f.match(/magyarul (?:azt hogy |hogy )?(.+)$/))){ key=m[1]; dir='en'; }
+    if(key){
+      key = key.replace(/^(az|a|egy) /,'').trim();
+      const r = dictInit()[dir][key];
+      if(r) return dir==='hu' ? key+' = '+r : key+' = '+r;
+      return 'Ezt a szót még nem ismerem ('+Object.keys(dictInit().hu).length+' szót tudok). Taníthatod: „Tanulj: mi az '+key+' angolul => ...”';
+    }
+
+    // dátum
+    const du = daysUntil(f); if(du) return du;
+    if((m = n.match(/milyen nap (?:volt|lesz|van) (\d{4})[.\-\/ ]+(\d{1,2})[.\-\/ ]+(\d{1,2})/))){
+      const d = new Date(+m[1], +m[2]-1, +m[3]);
+      if(!isNaN(d)) return m[1]+'. '+months[d.getMonth()]+' '+d.getDate()+'. '+days[d.getDay()]+'.';
+    }
+
+    // százalék
+    const num = '(\\d+(?:[.,]\\d+)?)', P = s=>parseFloat(s.replace(',','.'));
+    if((m = n.match(new RegExp(num+'\\s*%\\s*-?(?:a|e|ja|je|of)?\\s*(?:ebbol|ennek)?:?\\s*'+num)))){
+      const p=P(m[1]), b=P(m[2]); return fmtNum(p)+'% of '+fmtNum(b)+' = '+fmtNum(b*p/100);
+    }
+    if((m = n.match(new RegExp(num+'\\s*szazalek\\w*\\D+'+num)))){
+      const p=P(m[1]), b=P(m[2]); return fmtNum(p)+'% of '+fmtNum(b)+' = '+fmtNum(b*p/100);
+    }
+    if((m = n.match(new RegExp(num+'\\D+?'+num+'\\s*szazalek')))){
+      const b=P(m[1]), p=P(m[2]); return fmtNum(p)+'% of '+fmtNum(b)+' = '+fmtNum(b*p/100);
+    }
+
+    // szám-műveletek
+    if((m = n.match(/(?:prim\w*|prime)[^\d]*(\d{1,12})/) || n.match(/(\d{1,12})\D*prim/))){
+      const x = +m[1]; if(x>=2 || x<2){
+        if(x<2) return x+' nem prímszám.';
+        for(let i=2;i*i<=x;i++) if(x%i===0) return x+' nem prímszám, legkisebb osztója: '+i+'.';
+        return x+' prímszám.';
+      }
+    }
+    if((m = n.match(/faktorial\w*\D*(\d{1,3})/) || n.match(/(\d{1,3})\s*faktorial/) || n.match(/^\D*(\d{1,3})\s*!\s*$/))){
+      const x = +m[1]; if(x>200) return 'Ez túl nagy szám nekem (legfeljebb 200!).';
+      let r = 1n; for(let i=2n;i<=BigInt(x);i++) r*=i; const s = r.toString();
+      return x+'! = '+(s.length>60 ? s.slice(0,20)+'… ('+s.length+' számjegy)' : s);
+    }
+    if((m = n.match(/(?:negyzetgyok|gyok)\w*\D*(\d+(?:[.,]\d+)?)/))){
+      const x = P(m[1]); return '√'+fmtNum(x)+' = '+fmtNum(Math.sqrt(x));
+    }
+    if((m = n.match(/(?:lnko|legnagyobb kozos oszto)\D*(\d+)\D+(\d+)/))){
+      let a=+m[1], b=+m[2]; while(b){ [a,b]=[b,a%b]; } return 'Legnagyobb közös osztó: '+a;
+    }
+    if((m = n.match(/(?:lkkt|legkisebb kozos tobbszoros)\D*(\d+)\D+(\d+)/))){
+      const x=+m[1], y=+m[2]; let a=x, b=y; while(b){ [a,b]=[b,a%b]; } return 'Legkisebb közös többszörös: '+(x/a*y);
+    }
+    if((m = n.match(/romai\w*\D*(\d{1,4})\b/))){
+      const x=+m[1]; if(x>=1 && x<=3999) return x+' = '+toRoman(x);
+    }
+    if((m = n.match(/\b([ivxlcdm]{1,15})\s+(?:romai|arab|decimal)/))){
+      const r = m[1].toUpperCase(); const v = fromRoman(r); if(v>0 && toRoman(v)===r) return r+' = '+v;
+    }
+    if((m = n.match(/(binaris|hexa|oktal)\w*\s+([0-9a-f]+)\s+(?:decimalis|tizes|szam)/))){
+      const base = {binaris:2,hexa:16,oktal:8}[m[1]]; const v = parseInt(m[2], base);
+      if(!isNaN(v)) return m[2]+' ('+m[1]+') = '+v+' (decimális)';
+    }
+    if((m = n.match(/(\d+)\D*(binaris|hexa|oktal)/) || n.match(/(binaris|hexa|oktal)\w*\D*(\d+)/))){
+      const a = /^\d+$/.test(m[1]) ? m[1] : m[2], b = /^\d+$/.test(m[1]) ? m[2] : m[1];
+      const base = {binaris:2,hexa:16,oktal:8}[b]; const x = parseInt(a,10);
+      return x+' = '+x.toString(base).toUpperCase()+' ('+b+')';
+    }
+
+    const cv = convert(n); if(cv) return cv;
+    return null;
+  }
+
+  /* ---------- Kódrészletek ---------- */
+  const SNIP = [
+    {l:'python',t:'Kiírás',k:['kiir','print','hello','helló'],c:`print("Helló, világ!")
+nev = "Anna"
+print("Szia,", nev)`},
+    {l:'python',t:'Bekérés a felhasználótól',k:['input','beker','felhasznalotol'],c:`nev = input("Hogy hívnak? ")
+kor = int(input("Hány éves vagy? "))
+print("Szia", nev, "jövőre", kor + 1, "leszel.")`},
+    {l:'python',t:'For ciklus',k:['for','ciklus','ismetl'],c:`for i in range(5):
+    print("Kör:", i + 1)
+
+gyumolcsok = ["alma", "körte", "szilva"]
+for g in gyumolcsok:
+    print(g)`},
+    {l:'python',t:'While ciklus',k:['while','amig'],c:`szam = 0
+while szam < 5:
+    print(szam)
+    szam += 1`},
+    {l:'python',t:'Lista',k:['lista','tomb','append'],c:`lista = [3, 1, 2]
+lista.append(4)      # hozzáadás a végéhez
+lista.remove(1)      # elem törlése
+print(len(lista))    # hossz
+print(lista[0])      # első elem`},
+    {l:'python',t:'Szótár',k:['szotar','dict','kulcs'],c:`ember = {"nev": "Anna", "kor": 30}
+ember["varos"] = "Pécs"
+for kulcs, ertek in ember.items():
+    print(kulcs, ertek)`},
+    {l:'python',t:'Fájl olvasása',k:['fajl olvas','olvas','beolvas','fajlbol'],c:`with open("adat.txt", "r", encoding="utf-8") as f:
+    for sor in f:
+        print(sor.strip())`},
+    {l:'python',t:'Fájl írása',k:['fajlba','fajl ir','fajlt ir','mentsd'],c:`with open("kimenet.txt", "w", encoding="utf-8") as f:
+    f.write("Első sor\\n")
+    f.write("Második sor\\n")`},
+    {l:'python',t:'Hibakezelés',k:['hiba','kivetel','try','except'],c:`try:
+    szam = int(input("Szám: "))
+    print(10 / szam)
+except ValueError:
+    print("Ez nem szám!")
+except ZeroDivisionError:
+    print("Nullával nem lehet osztani!")`},
+    {l:'python',t:'Fibonacci-sorozat',k:['fibonacci'],c:`def fibonacci(n):
+    a, b = 0, 1
+    sor = []
+    for _ in range(n):
+        sor.append(a)
+        a, b = b, a + b
+    return sor
+
+print(fibonacci(10))`},
+    {l:'python',t:'Prímszám-ellenőrzés',k:['prim'],c:`def prim(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+print([x for x in range(30) if prim(x)])`},
+    {l:'python',t:'Faktoriális (rekurzióval)',k:['faktorial'],c:`def faktorialis(n):
+    if n <= 1:
+        return 1
+    return n * faktorialis(n - 1)
+
+print(faktorialis(5))   # 120`},
+    {l:'python',t:'Rendezés',k:['rendez','sort','sorba'],c:`szamok = [5, 2, 9, 1]
+print(sorted(szamok))              # új, rendezett lista
+szamok.sort(reverse=True)          # helyben, csökkenő
+szavak = ["alma", "fa", "körte"]
+print(sorted(szavak, key=len))     # hossz szerint`},
+    {l:'python',t:'Véletlen számok',k:['random','veletlen'],c:`import random
+print(random.randint(1, 6))
+print(random.choice(["alma", "körte", "szilva"]))`},
+    {l:'python',t:'Lista-összeállítás (comprehension)',k:['comprehension','tomorit','egysoros'],c:`negyzetek = [x * x for x in range(10)]
+parosak = [x for x in range(20) if x % 2 == 0]
+print(negyzetek, parosak)`},
+    {l:'python',t:'Webes lekérés (internet kell hozzá)',k:['http','letolt','requests','weblap','api'],c:`import requests
+
+r = requests.get("https://example.com/api")
+print(r.status_code)
+print(r.json())   # ha JSON a válasz`},
+
+    {l:'javascript',t:'Kiírás',k:['kiir','console','log','hello','helló'],c:`console.log("Helló, világ!");
+let nev = "Anna";
+console.log("Szia, " + nev);`},
+    {l:'javascript',t:'For ciklus',k:['for','ciklus','ismetl'],c:`for (let i = 0; i < 5; i++) {
+  console.log("Kör: " + (i + 1));
+}
+const gyumolcsok = ["alma", "körte"];
+for (const g of gyumolcsok) console.log(g);`},
+    {l:'javascript',t:'Feltétel (if)',k:['if','feltetel','elagaz'],c:`const kor = 20;
+if (kor >= 18) {
+  console.log("Felnőtt");
+} else {
+  console.log("Kiskorú");
+}`},
+    {l:'javascript',t:'Adatlekérés (fetch)',k:['fetch','api','http','lekeres'],c:`async function lekeres() {
+  try {
+    const valasz = await fetch("https://example.com/api");
+    const adat = await valasz.json();
+    console.log(adat);
+  } catch (hiba) {
+    console.log("Hiba: " + hiba.message);
+  }
+}
+lekeres();`},
+    {l:'javascript',t:'Gomb eseménykezelő',k:['gomb','kattint','esemeny','click','dom'],c:`const gomb = document.querySelector("#gomb");
+gomb.addEventListener("click", function () {
+  document.querySelector("#kimenet").textContent = "Megnyomtad!";
+});`},
+    {l:'javascript',t:'Tömb: map, filter, reduce',k:['map','filter','reduce','tomb','lista'],c:`const szamok = [1, 2, 3, 4, 5];
+const dupla = szamok.map(x => x * 2);
+const parosak = szamok.filter(x => x % 2 === 0);
+const osszeg = szamok.reduce((a, b) => a + b, 0);
+console.log(dupla, parosak, osszeg);`},
+    {l:'javascript',t:'Mentés a böngészőbe (localStorage)',k:['localstorage','tarol','mentes','mentsd'],c:`localStorage.setItem("ember", JSON.stringify({ nev: "Anna", kor: 30 }));
+const adat = JSON.parse(localStorage.getItem("ember"));
+console.log(adat.nev);`},
+    {l:'javascript',t:'Async / await',k:['async','await','aszinkron','promise'],c:`function varj(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function main() {
+  console.log("Indul");
+  await varj(1000);
+  console.log("1 másodperc telt el");
+}
+main();`},
+    {l:'javascript',t:'Időzítők',k:['settimeout','setinterval','idozito','kesleltet','idozit'],c:`setTimeout(() => console.log("1 mp múlva"), 1000);
+const id = setInterval(() => console.log("tik"), 1000);
+// clearInterval(id);   // leállítás`},
+
+    {l:'html',t:'Űrlap',k:['urlap','form','beviteli'],c:`<form action="#" method="post">
+  <label for="nev">Név:</label>
+  <input type="text" id="nev" name="nev" required>
+  <label for="email">E-mail:</label>
+  <input type="email" id="email" name="email">
+  <button type="submit">Küldés</button>
+</form>`},
+    {l:'html',t:'Táblázat',k:['tabla','table'],c:`<table border="1">
+  <tr><th>Név</th><th>Kor</th></tr>
+  <tr><td>Anna</td><td>30</td></tr>
+  <tr><td>Béla</td><td>25</td></tr>
+</table>`},
+    {l:'html',t:'Link és kép',k:['link','kep','img','hivatkozas'],c:`<a href="https://example.com">Kattints ide</a>
+<img src="kep.jpg" alt="Leírás" width="300">`},
+    {l:'html',t:'Lista',k:['lista','felsorol','ul'],c:`<ul>
+  <li>Alma</li>
+  <li>Körte</li>
+</ul>
+<ol>
+  <li>Első</li>
+  <li>Második</li>
+</ol>`},
+
+    {l:'css',t:'Középre igazítás (flexbox)',k:['flex','kozepre','igazit','elrendez'],c:`.doboz {
+  display: flex;
+  justify-content: center;  /* vízszintesen */
+  align-items: center;      /* függőlegesen */
+  height: 100vh;
+}`},
+    {l:'css',t:'Rács (grid)',k:['grid','racs'],c:`.racs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}`},
+    {l:'css',t:'Szép gomb',k:['gomb','button'],c:`.gomb {
+  background: #38a169;
+  color: white;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.gomb:hover { background: #2f855a; }`},
+    {l:'css',t:'Sötét mód',k:['sotet','dark','media'],c:`:root { --bg: #ffffff; --szoveg: #111111; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #10151c; --szoveg: #e8eef6; }
+}
+body { background: var(--bg); color: var(--szoveg); }`},
+    {l:'css',t:'Animáció',k:['animacio','animation','keyframes','mozg'],c:`@keyframes pulzal {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.kep { animation: pulzal 1.5s infinite; }`},
+
+    {l:'sql',t:'Lekérdezés',k:['select','lekerdez','kivalaszt','szur'],c:`SELECT nev, kor
+FROM emberek
+WHERE kor > 18
+ORDER BY nev
+LIMIT 10;`},
+    {l:'sql',t:'Beszúrás, módosítás, törlés',k:['insert','beszur','update','frissit','delete','torol','modosit'],c:`INSERT INTO emberek (nev, kor) VALUES ('Anna', 30);
+UPDATE emberek SET kor = 31 WHERE nev = 'Anna';
+DELETE FROM emberek WHERE nev = 'Anna';`},
+    {l:'sql',t:'Táblák összekapcsolása',k:['join','osszekapcsol'],c:`SELECT e.nev, r.osszeg
+FROM emberek e
+JOIN rendelesek r ON r.ember_id = e.id;`},
+    {l:'sql',t:'Tábla létrehozása',k:['create','tablat','letrehoz','tabla'],c:`CREATE TABLE emberek (
+  id INTEGER PRIMARY KEY,
+  nev TEXT NOT NULL,
+  kor INTEGER
+);`},
+
+    {l:'bash',t:'Mappák közti mozgás',k:['mappa','konyvtar','navig','cd','ls','listaz'],c:`pwd          # hol vagyok
+ls -la       # fájlok listája
+cd mappa     # belépés
+cd ..        # egy szinttel feljebb
+mkdir uj     # új mappa`},
+    {l:'bash',t:'Fájlműveletek',k:['fajl','masol','mozgat','torol','cp','mv','rm','keres'],c:`cp a.txt b.txt     # másolás
+mv a.txt mappa/    # mozgatás / átnevezés
+rm a.txt           # törlés (nincs kuka!)
+cat a.txt          # tartalom kiírása
+grep "szo" a.txt   # keresés a fájlban`},
+
+    {l:'git',t:'Alapok',k:['init','commit','add','alap','kezd'],c:`git init
+git add .
+git commit -m "Első commit"
+git status
+git log --oneline`},
+    {l:'git',t:'Ágak (branch)',k:['branch','agazat','ag','merge'],c:`git branch uj-funkcio
+git checkout uj-funkcio     # átváltás az ágra
+git merge uj-funkcio        # összeolvasztás a jelenlegi ágba`},
+    {l:'git',t:'Feltöltés és letöltés',k:['push','pull','remote','feltolt','letolt'],c:`git remote add origin https://github.com/nev/repo.git
+git push -u origin main
+git pull`}
+  ];
+
+  const LANGS = [
+    ['python',/\b(python|pyton|piton|py)\b/],['javascript',/\b(javascript|js|java script|node)\b/],
+    ['html',/\bhtml\b/],['css',/\bcss\b/],['sql',/\bsql\b/],
+    ['bash',/\b(bash|shell|terminal|parancssor)\b/],['git',/\bgit\b/]
+  ];
+  const LNAME = {python:'Python',javascript:'JavaScript',html:'HTML',css:'CSS',sql:'SQL',bash:'Bash',git:'Git'};
+  const codeIntent = n => /(irj|ird|csinalj|keszits|generalj|mutass|mutasd|kod|program|peld|hogyan|hogy kell|hogy lehet|adj)/.test(n);
+
+  function langOf(n){ for(const [l,r] of LANGS) if(r.test(n)) return l; return null; }
+
+  function findSnippet(n){
+    const lg = langOf(n);
+    let top=null, ts=0;
+    for(const s of SNIP){
+      if(lg && s.l!==lg) continue;
+      let sc=0;
+      for(const k of s.k) if(new RegExp('(^|[^a-z0-9])'+k).test(n)) sc++;
+      if(sc>ts){ ts=sc; top=s; }
+    }
+    if(top) return {s:top};
+    if(lg) return {none:lg};
+    return null;
+  }
+  function codeMsg(title, lang, code){ return title+':\n'+FENCE+lang+'\n'+code+'\n'+FENCE; }
+
+  /* ---------- Kész programok ---------- */
+  const KLANG = {py:'python', js:'javascript', html:'html'};
+  const BARE = /szamologep|kalkulator|todo|teendo|kitalalos|digitalis ora|szamlalo|stopper|szinvalto|szorzotabla|szokoev|palindrom|\bbmi\b|ko papir/;
+  const OPQ = /(ket|2)\s*szam.*(osszead|szorz|szoroz|kivon|osztas)/;
+  const HEAD = '<!doctype html>\n<html lang="hu">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n';
+
+  const PROGS = [
+    {t:'Számológép', r:/szamologep|kalkulator/,
+py:`a = float(input("Első szám: "))
+op = input("Művelet (+ - * /): ")
+b = float(input("Második szám: "))
+if op == "+":
+    print(a + b)
+elif op == "-":
+    print(a - b)
+elif op == "*":
+    print(a * b)
+elif op == "/":
+    print(a / b if b != 0 else "Nullával nem lehet osztani!")
+else:
+    print("Ismeretlen művelet")`,
+html:`@H@<title>Számológép</title>
+<style>
+  body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+  .calc { width: 260px; }
+  #kijelzo { width: 100%; font-size: 28px; text-align: right; padding: 10px; margin-bottom: 8px; box-sizing: border-box; }
+  .gombok { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  button { font-size: 20px; padding: 14px; border-radius: 8px; border: 0; background: #2b6cb0; color: #fff; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <input id="kijelzo" readonly value="0">
+  <div class="gombok" id="g"></div>
+</div>
+@S@
+  const gombok = ["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+","C"];
+  let a = null, op = null, uj = true;
+  const k = document.getElementById("kijelzo");
+  function szamol(x, o, y) {
+    x = parseFloat(x); y = parseFloat(y);
+    if (o === "+") return x + y;
+    if (o === "-") return x - y;
+    if (o === "*") return x * y;
+    return y === 0 ? "Hiba" : x / y;
+  }
+  gombok.forEach(function (t) {
+    const b = document.createElement("button");
+    b.textContent = t;
+    b.onclick = function () {
+      if ("0123456789.".indexOf(t) >= 0) { k.value = uj ? t : k.value + t; uj = false; }
+      else if (t === "C") { k.value = "0"; a = null; op = null; uj = true; }
+      else if (t === "=") { if (op !== null) { k.value = szamol(a, op, k.value); op = null; uj = true; } }
+      else { if (op !== null && !uj) k.value = szamol(a, op, k.value); a = k.value; op = t; uj = true; }
+    };
+    document.getElementById("g").appendChild(b);
+  });
+@E@
+</body>
+</html>`},
+
+    {t:'Teendő-lista (todo)', r:/todo|teendo|feladatlista/,
+py:`teendok = []
+while True:
+    print()
+    print("1) Lista  2) Hozzáad  3) Töröl  4) Kilép")
+    v = input("Választás: ")
+    if v == "1":
+        for i, t in enumerate(teendok, 1):
+            print(i, t)
+    elif v == "2":
+        teendok.append(input("Új teendő: "))
+    elif v == "3":
+        i = int(input("Hányadik? ")) - 1
+        if 0 <= i < len(teendok):
+            teendok.pop(i)
+    elif v == "4":
+        break`,
+html:`@H@<title>Teendők</title>
+<style>
+  body { font-family: sans-serif; max-width: 420px; margin: 20px auto; padding: 0 12px; }
+  li { padding: 6px 0; }
+  .kesz { text-decoration: line-through; color: #888; }
+</style>
+</head>
+<body>
+<h1>Teendők</h1>
+<input id="uj" placeholder="Új teendő">
+<button id="add">Hozzáad</button>
+<ul id="lista"></ul>
+@S@
+  let teendok = JSON.parse(localStorage.getItem("teendok") || "[]");
+  function mentes() { localStorage.setItem("teendok", JSON.stringify(teendok)); }
+  function rajz() {
+    const ul = document.getElementById("lista");
+    ul.innerHTML = "";
+    teendok.forEach(function (t, i) {
+      const li = document.createElement("li");
+      li.textContent = t.szoveg + " ";
+      if (t.kesz) li.className = "kesz";
+      li.onclick = function () { t.kesz = !t.kesz; mentes(); rajz(); };
+      const x = document.createElement("button");
+      x.textContent = "✕";
+      x.onclick = function (e) { e.stopPropagation(); teendok.splice(i, 1); mentes(); rajz(); };
+      li.appendChild(x);
+      ul.appendChild(li);
+    });
+  }
+  document.getElementById("add").onclick = function () {
+    const v = document.getElementById("uj").value.trim();
+    if (v) { teendok.push({ szoveg: v, kesz: false }); document.getElementById("uj").value = ""; mentes(); rajz(); }
+  };
+  rajz();
+@E@
+</body>
+</html>`},
+
+    {t:'Számkitalálós játék', r:/kitalalos|talald ki a szamot|tippelos|szamkitalal/,
+py:`import random
+
+titok = random.randint(1, 100)
+probak = 0
+while True:
+    tipp = int(input("Tippelj 1 és 100 között: "))
+    probak += 1
+    if tipp < titok:
+        print("Több!")
+    elif tipp > titok:
+        print("Kevesebb!")
+    else:
+        print("Eltaláltad", probak, "próbából!")
+        break`,
+js:`const titok = Math.floor(Math.random() * 100) + 1;
+let probak = 0;
+while (true) {
+  const tipp = parseInt(prompt("Tippelj 1 és 100 között:"), 10);
+  if (isNaN(tipp)) break;
+  probak++;
+  if (tipp < titok) alert("Több!");
+  else if (tipp > titok) alert("Kevesebb!");
+  else { alert("Eltaláltad " + probak + " próbából!"); break; }
+}`},
+
+    {t:'Digitális óra', r:/digitalis ora|ora program|ora oldal|ora html|oraprogram/,
+py:`import time
+
+while True:
+    print(time.strftime("%H:%M:%S"), end="\\r")
+    time.sleep(1)`,
+html:`@H@<title>Óra</title>
+<style>
+  body { background: #111; color: #4fd1a5; font: 64px monospace; display: flex; height: 100vh; align-items: center; justify-content: center; margin: 0; }
+</style>
+</head>
+<body>
+<div id="ora"></div>
+@S@
+  function frissit() {
+    document.getElementById("ora").textContent = new Date().toLocaleTimeString("hu-HU");
+  }
+  frissit();
+  setInterval(frissit, 1000);
+@E@
+</body>
+</html>`},
+
+    {t:'Számláló', r:/szamlalo|counter/,
+html:`@H@<title>Számláló</title>
+<style>
+  body { font-family: sans-serif; text-align: center; padding-top: 40px; }
+  #n { font-size: 72px; }
+  button { font-size: 24px; padding: 10px 18px; margin: 4px; }
+</style>
+</head>
+<body>
+<div id="n">0</div>
+<button id="minusz">−</button>
+<button id="nulla">0</button>
+<button id="plusz">+</button>
+@S@
+  let n = 0;
+  const ki = document.getElementById("n");
+  document.getElementById("plusz").onclick = function () { n++; ki.textContent = n; };
+  document.getElementById("minusz").onclick = function () { n--; ki.textContent = n; };
+  document.getElementById("nulla").onclick = function () { n = 0; ki.textContent = n; };
+@E@
+</body>
+</html>`},
+
+    {t:'Stopper', r:/stopper/,
+html:`@H@<title>Stopper</title>
+<style>
+  body { font-family: sans-serif; text-align: center; padding-top: 40px; }
+  #ki { font-size: 56px; margin-bottom: 16px; }
+  button { font-size: 22px; padding: 10px 18px; margin: 4px; }
+</style>
+</head>
+<body>
+<div id="ki">0.00 mp</div>
+<button id="s">Start / Stop</button>
+<button id="r">Nulláz</button>
+@S@
+  let start = 0, telt = 0, futo = null;
+  const ki = document.getElementById("ki");
+  function rajz() {
+    const ms = telt + (futo ? Date.now() - start : 0);
+    ki.textContent = (ms / 1000).toFixed(2) + " mp";
+  }
+  document.getElementById("s").onclick = function () {
+    if (futo) { telt += Date.now() - start; clearInterval(futo); futo = null; }
+    else { start = Date.now(); futo = setInterval(rajz, 50); }
+  };
+  document.getElementById("r").onclick = function () { clearInterval(futo); futo = null; telt = 0; rajz(); };
+@E@
+</body>
+</html>`},
+
+    {t:'Színváltó gomb', r:/szinvalto|szinvaltoztat/,
+html:`@H@<title>Színváltó</title>
+<style>
+  body { font-family: sans-serif; text-align: center; padding-top: 80px; transition: background .4s; }
+  button { font-size: 22px; padding: 14px 24px; }
+</style>
+</head>
+<body>
+<button id="b">Színt váltok!</button>
+@S@
+  document.getElementById("b").onclick = function () {
+    document.body.style.background = "hsl(" + Math.floor(Math.random() * 360) + ", 70%, 60%)";
+  };
+@E@
+</body>
+</html>`},
+
+    {t:'Szorzótábla', r:/szorzotabla/,
+py:`n = int(input("Melyik szám szorzótáblája? "))
+for i in range(1, 11):
+    print(n, "x", i, "=", n * i)`,
+js:`const n = 7;   // ennek a számnak a szorzótáblája
+for (let i = 1; i <= 10; i++) {
+  console.log(n + " x " + i + " = " + n * i);
+}`},
+
+    {t:'Páros vagy páratlan', r:/paros.*(vagy|ellenorz)|paratlan.*(vagy|ellenorz)|paros-paratlan/,
+py:`szam = int(input("Szám: "))
+if szam % 2 == 0:
+    print("Páros")
+else:
+    print("Páratlan")`,
+js:`function parosE(n) {
+  return n % 2 === 0;
+}
+console.log(parosE(4));   // true
+console.log(parosE(7));   // false`},
+
+    {t:'Szökőév-ellenőrzés', r:/szokoev/,
+py:`ev = int(input("Év: "))
+if (ev % 4 == 0 and ev % 100 != 0) or ev % 400 == 0:
+    print("Szökőév")
+else:
+    print("Nem szökőév")`,
+js:`function szokoev(ev) {
+  return (ev % 4 === 0 && ev % 100 !== 0) || ev % 400 === 0;
+}
+console.log(szokoev(2024));   // true
+console.log(szokoev(2100));   // false`},
+
+    {t:'Palindrom-ellenőrzés', r:/palindrom/,
+py:`szo = input("Szó: ").lower().replace(" ", "")
+if szo == szo[::-1]:
+    print("Palindrom")
+else:
+    print("Nem palindrom")`,
+js:`function palindrom(s) {
+  const t = s.toLowerCase().replace(/ /g, "");
+  return t === t.split("").reverse().join("");
+}
+console.log(palindrom("Anna"));   // true`},
+
+    {t:'Legnagyobb elem a listában', r:/legnagyobb.*(elem|szam|lista)|maximum.*(elem|szam|lista)/,
+py:`szamok = [4, 17, 9, 23, 5]
+legnagyobb = szamok[0]
+for x in szamok:
+    if x > legnagyobb:
+        legnagyobb = x
+print("Legnagyobb:", legnagyobb)   # röviden: max(szamok)`,
+js:`const szamok = [4, 17, 9, 23, 5];
+const legnagyobb = Math.max(...szamok);
+console.log("Legnagyobb: " + legnagyobb);`},
+
+    {t:'Szöveg megfordítása', r:/megfordit|forditsd meg|visszafele|reverse/,
+py:`szoveg = input("Szöveg: ")
+print(szoveg[::-1])`,
+js:`function megfordit(s) {
+  return s.split("").reverse().join("");
+}
+console.log(megfordit("alma"));   // "amla"`},
+
+    {t:'Szavak számolása', r:/szavak szam|szoszamlal|hany szo/,
+py:`szoveg = input("Szöveg: ")
+print("Szavak száma:", len(szoveg.split()))`,
+js:`function szavakSzama(s) {
+  return s.trim().split(/\\s+/).length;
+}
+console.log(szavakSzama("ez egy teszt"));   // 3`},
+
+    {t:'Hőmérséklet-átváltás (Celsius → Fahrenheit)', r:/celsius|fahrenheit|homerseklet atvalt/,
+py:`c = float(input("Celsius: "))
+f = c * 9 / 5 + 32
+print(c, "°C =", f, "°F")`,
+js:`function celsiusToF(c) {
+  return c * 9 / 5 + 32;
+}
+console.log(celsiusToF(20) + " °F");   // 68 °F`},
+
+    {t:'BMI-számoló', r:/\bbmi\b|testtomegindex/,
+py:`suly = float(input("Súly (kg): "))
+magassag = float(input("Magasság (cm): ")) / 100
+bmi = suly / magassag ** 2
+print("BMI:", round(bmi, 1))
+if bmi < 18.5:
+    print("Alulsúlyos")
+elif bmi < 25:
+    print("Normál")
+elif bmi < 30:
+    print("Túlsúlyos")
+else:
+    print("Elhízott")`},
+
+    {t:'Kő-papír-olló', r:/ko papir|kopapir/,
+py:`import random
+
+lehetosegek = ["kő", "papír", "olló"]
+nyer = {"kő": "olló", "papír": "kő", "olló": "papír"}
+while True:
+    en = input("Kő, papír vagy olló? (k = kilépés): ").lower()
+    if en == "k":
+        break
+    if en not in lehetosegek:
+        print("Nem jó választás.")
+        continue
+    gep = random.choice(lehetosegek)
+    print("A gép:", gep)
+    if en == gep:
+        print("Döntetlen")
+    elif nyer[en] == gep:
+        print("Nyertél!")
+    else:
+        print("Vesztettél.")`},
+
+    {t:'Jelszógenerátor', r:/jelszo.*(generator|program|kod)|jelszogenerator|generator.*jelszo/,
+py:`import random
+import string
+
+karakterek = string.ascii_letters + string.digits + "!@#$%&*"
+jelszo = "".join(random.choice(karakterek) for _ in range(14))
+print(jelszo)`,
+js:`const kar = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+let jelszo = "";
+for (let i = 0; i < 14; i++) {
+  jelszo += kar[Math.floor(Math.random() * kar.length)];
+}
+console.log(jelszo);`},
+
+    {t:'Átlagszámítás', r:/atlag/,
+py:`szamok = [4, 8, 15, 16, 23, 42]
+print("Átlag:", sum(szamok) / len(szamok))`,
+js:`const szamok = [4, 8, 15, 16, 23, 42];
+const atlag = szamok.reduce((a, b) => a + b, 0) / szamok.length;
+console.log("Átlag: " + atlag);`},
+
+    {t:'Kvíz', r:/kviz/,
+py:`kerdesek = [
+    ("Mi Magyarország fővárosa?", "budapest"),
+    ("Hány napos egy szökőév?", "366"),
+    ("Melyik bolygó a legnagyobb?", "jupiter"),
+]
+pont = 0
+for kerdes, valasz in kerdesek:
+    if input(kerdes + " ").strip().lower() == valasz:
+        print("Helyes!")
+        pont += 1
+    else:
+        print("Nem jó, a válasz:", valasz)
+print("Pontszám:", pont, "/", len(kerdesek))`}
+  ];
+
+  function progMsg(p, lg){
+    const order = lg==='javascript' ? ['js','html','py'] : lg==='python' ? ['py','js','html'] : ['html','js','py'];
+    const k = order.find(x=>p[x]);
+    let t = p.t;
+    if(lg && KLANG[k]!==lg) t += ' ('+LNAME[lg]+' változat nincs hozzá, ez a '+LNAME[KLANG[k]]+' lett)';
+    return codeMsg(t, KLANG[k], p[k].replace(/@H@/g,HEAD).replace(/@S@/g,S1).replace(/@E@/g,S2));
+  }
+
+  function genRange(n, lg){
+    const m = n.match(/(\d+)\s*-?\s*tol\s*(\d+)/) || n.match(/(\d+)\s*(?:es|-)\s*(\d+)\s*kozott/);
+    if(!m) return null;
+    const A = m[1], B = m[2];
+    const dm = n.match(/(\d+)\s*-?\s*[a-z]{2,3}\s*oszthato/) || n.match(/oszthato\s*(\d+)/);
+    const K = dm ? dm[1] : null;
+    let mode = 'plain';
+    if(dm) mode='div'; else if(/paratlan/.test(n)) mode='odd'; else if(/paros/.test(n)) mode='even';
+    else if(/osszeg|osszead/.test(n)) mode='sum'; else if(/negyzet/.test(n)) mode='sq';
+    const title = 'Számok '+A+' és '+B+' között';
+    if(!lg || lg==='javascript' || lg==='html'){
+      let body;
+      if(mode==='sum') body = 'let osszeg = 0;\nfor (let i = '+A+'; i <= '+B+'; i++) osszeg += i;\nconsole.log("Összeg: " + osszeg);';
+      else {
+        const cond = mode==='even' ? 'i % 2 === 0' : mode==='odd' ? 'i % 2 === 1' : mode==='div' ? 'i % '+K+' === 0' : null;
+        const act = mode==='sq' ? 'console.log(i + " négyzete: " + i * i);' : 'console.log(i);';
+        body = 'for (let i = '+A+'; i <= '+B+'; i++) {\n' + (cond ? '  if ('+cond+') {\n    '+act+'\n  }\n' : '  '+act+'\n') + '}';
+      }
+      return codeMsg('JavaScript – '+title, 'javascript', body);
+    }
+    let body;
+    if(mode==='sum') body = 'print("Összeg:", sum(range('+A+', '+B+' + 1)))';
+    else {
+      const cond = mode==='even' ? 'i % 2 == 0' : mode==='odd' ? 'i % 2 == 1' : mode==='div' ? 'i % '+K+' == 0' : null;
+      const act = mode==='sq' ? 'print(i, "négyzete:", i * i)' : 'print(i)';
+      body = 'for i in range('+A+', '+B+' + 1):\n' + (cond ? '    if '+cond+':\n        '+act : '    '+act);
+    }
+    return codeMsg('Python – '+title, 'python', body);
+  }
+
+  function genOp(n, lg){
+    if(!(/(osszead|szorz|szoroz|kivon|osztas|osztani|osszeg)/.test(n) && /(szam|program)/.test(n))) return null;
+    let sym='+', nm='összeadás';
+    if(/szoroz|szorz/.test(n)){ sym='*'; nm='szorzás'; }
+    else if(/kivon/.test(n)){ sym='-'; nm='kivonás'; }
+    else if(/osztas|osztani/.test(n)){ sym='/'; nm='osztás'; }
+    if(!lg || lg==='javascript' || lg==='html'){
+      return codeMsg('JavaScript – két szám '+nm, 'javascript',
+        'function muvelet(a, b) {\n  return a '+sym+' b;\n}\n\nconst a = parseFloat(prompt("Első szám:"));\nconst b = parseFloat(prompt("Második szám:"));\nalert("Az eredmény: " + muvelet(a, b));');
+    }
+    const tail = sym==='/'
+      ? '\nif b == 0:\n    print("Nullával nem lehet osztani!")\nelse:\n    print("Az eredmény:", a / b)'
+      : '\nprint("Az eredmény:", a '+sym+' b)';
+    return codeMsg('Python – két szám '+nm, 'python', 'a = float(input("Első szám: "))\nb = float(input("Második szám: "))'+tail);
+  }
+
+  function genCode(raw, n){
+    const lg = langOf(n);
+    const nm = (raw.match(/nev[uűú]\s+([A-Za-z_][A-Za-z0-9_]*)/i)||[])[1];
+    const pm = raw.match(/param[eé]ter(?:ek|rel|ekkel)?\s*:?\s*([A-Za-z0-9_, ]+)/i);
+    const params = pm ? pm[1].split(/[ ,]+/).filter(Boolean).join(', ') : '';
+    const qt = raw.match(/[„"“]([^”"“]+)[”"“]/);
+
+    const own = !lg || lg==='python' || lg==='javascript' || lg==='html';
+    if(own){
+      const rg = genRange(n, lg); if(rg) return rg;
+      for(const pr of PROGS){ if(pr.r.test(n)){ const want = (!lg && pr.html && /weboldal|honlap|bongeszo|oldal/.test(n)) ? 'html' : lg; return progMsg(pr, want); } }
+      const og = genOp(n, lg); if(og) return og;
+    }
+    if(/(html|weboldal|honlap)/.test(n) && /(oldal|sablon|vaz|alap|skeleton|weboldal|honlap)/.test(n) && lg!=='css' && lg!=='javascript'){
+      const title = qt ? qt[1] : (nm || 'Az oldalam');
+      return codeMsg('HTML oldalváz „'+title+'”', 'html',
+'<!doctype html>\n<html lang="hu">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>'+title+'</title>\n  <style>\n    body { font-family: sans-serif; margin: 0; padding: 16px; }\n    h1 { color: #2b6cb0; }\n  </style>\n</head>\n<body>\n  <h1>'+title+'</h1>\n  <p>Ide jön a tartalom.</p>\n  <button id="gomb">Kattints</button>\n  '+S1+'\n    document.getElementById("gomb").onclick = function () {\n      alert("Működik!");\n    };\n  '+S2+'\n</body>\n</html>');
+    }
+    if(/fuggveny/.test(n)){
+      const name = nm || 'fuggveny';
+      if(lg==='javascript') return codeMsg('JavaScript függvény', 'javascript',
+        'function '+name+'('+params+') {\n  // ide jön a kód\n  return null;\n}\n\nconsole.log('+name+'('+params.replace(/[A-Za-z_][A-Za-z0-9_]*/g,'1')+'));');
+      return codeMsg('Python függvény', 'python',
+        'def '+name+'('+params+'):\n    """Rövid leírás."""\n    # ide jön a kód\n    return None\n\n\nprint('+name+'('+params.replace(/[A-Za-z_][A-Za-z0-9_]*/g,'1')+'))');
+    }
+    if(/osztaly/.test(n)){
+      const name = (nm || 'Auto').charAt(0).toUpperCase() + (nm || 'Auto').slice(1);
+      if(lg==='javascript') return codeMsg('JavaScript osztály', 'javascript',
+        'class '+name+' {\n  constructor(nev) {\n    this.nev = nev;\n  }\n\n  bemutatkozik() {\n    return "Én vagyok: " + this.nev;\n  }\n}\n\nconst p = new '+name+'("Példa");\nconsole.log(p.bemutatkozik());');
+      return codeMsg('Python osztály', 'python',
+        'class '+name+':\n    def __init__(self, nev):\n        self.nev = nev\n\n    def bemutatkozik(self):\n        return "Én vagyok: " + self.nev\n\n\np = '+name+'("Példa")\nprint(p.bemutatkozik())');
+    }
+    return null;
+  }
+
+  /* ---------- Állapot ---------- */
+  const blank = () => ({kb:[], name:null, hist:[], stats:{msgs:0,learned:0,up:0,down:0}, seedV:0, mem:{likes:[],fav:{}}, llm:{on:false,url:'http://192.168.1.2:11434',model:'qwen2.5-coder:7b'}});
+  let st;
+  try{ st = JSON.parse(localStorage.getItem(KEY)) || blank(); }catch(e){ st = blank(); }
+  const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(st,(k,v)=>k[0]==='_'?undefined:v)); }catch(e){} };
+
+  st.llm = Object.assign(blank().llm, st.llm||{});
+  st.mem = Object.assign({likes:[],fav:{}}, st.mem||{}); st.mem.likes = st.mem.likes||[]; st.mem.fav = st.mem.fav||{};
+  const chat = $('#chat'), inp = $('#in');
+  let pending = null;
+  const pick = a => a[Math.floor(Math.random()*a.length)];
+  const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const flat = t => norm(t).replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+  const stop = new Set(['a','az','es','egy','hogy','is','de','meg','van','vagy','mi','ez','nem','igen','te','en','mit','mar','volt','na']);
+  function toks(t){
+    const all = flat(t).split(' ').filter(Boolean);
+    const f = all.filter(w=>!stop.has(w));
+    return f.length ? f : all;
+  }
+  function ensureSeed(){
+    if(st.seedV===SEED_V) return;
+    const have = new Set(st.kb.map(i=>flat(i.q)));
+    const base = new Map(); seed().forEach(s=>base.set(flat(s.q), s.a));
+    seed().forEach(s=>{ if(!have.has(flat(s.q))) st.kb.push(s); });
+    talkSeed().forEach(([q,a])=>{
+      const fq = flat(q), ex = st.kb.find(i=>flat(i.q)===fq);
+      if(!ex) st.kb.push({q,a,w:0,n:0,c:1});
+      else if(!ex.c && ex.a===base.get(fq)){ ex.a = a; ex.c = 1; }   // csak a tanítatlan alapválaszt cseréljük
+    });
+    st.seedV = SEED_V; save();
+  }
+
+  const QW = new Set(['ki','mi','mit','hol','mikor','hany','hogy','hogyan','miert','melyik','milyen','mennyi','mennyit','mik','kik','kit','kinek','minek','meddig','honnan']);
+  function tm(a,b){ return a===b || (a.length>=4 && b.length>=4 && (a.startsWith(b) || b.startsWith(a))); }
+  let _dfKB=null, _dfN=-1, _dfM=null;
+  function dfMap(){
+    if(_dfM && _dfKB===st.kb && _dfN===st.kb.length) return _dfM;
+    const m = {};
+    st.kb.forEach(it=>{ (it._t = it._t || [...new Set(toks(it.q))]).forEach(t=>{ m[t]=(m[t]||0)+1; }); });
+    _dfKB=st.kb; _dfN=st.kb.length; _dfM=m; return m;
+  }
+  function best(text, min){
+    const qt = [...new Set(toks(text))]; if(!qt.length) return null;
+    const nq = flat(text), N = st.kb.length, df = dfMap();
+    const known = f => { if(df[f]!==undefined) return true; for(const k in df){ if(tm(f,k)) return true; } return false; };
+    const caps = text.trim().split(/\s+/).slice(1).filter(w=>/^[A-ZÁÉÍÓÖŐÚÜŰ]/.test(w)).map(w=>flat(w)).filter(f=>f.length>=4);
+    if(caps.some(f=>!known(f))) return null;   // ismeretlen tulajdonnév: nem találgatunk
+    const idfOf = t => {
+      let d = df[t];
+      if(d===undefined){ d = 0; if(t.length>=4) for(const k in df){ if(tm(t,k) && df[k]>d) d = df[k]; } }
+      return Math.log(1+N/(1+d));
+    };
+    const qi = qt.map(idfOf), qs = qi.reduce((a,b)=>a+b,0);
+    let top=null, ts=0;
+    for(const it of st.kb){
+      if(it.w<=-3) continue;
+      const t = it._t || (it._t = [...new Set(toks(it.q))]); if(!t.length) continue;
+      let sh = 0, nm = 0, content = false;
+      for(let a=0;a<qt.length;a++){ for(let b=0;b<t.length;b++){ if(tm(qt[a],t[b])){ sh += qi[a]; nm++; if(!QW.has(qt[a])) content = true; break; } } }
+      if(!sh) continue;
+      if(!content && !(t.length===qt.length && nm===qt.length)) continue;   // csak kérdőszavak egyeznek
+      let is = 0; for(let b=0;b<t.length;b++) is += Math.log(1+N/(1+(df[t[b]]||0)));
+      if(sh/qs < 0.5) continue;   // a kérdés fele sem egyezik
+      let sc = sh/Math.sqrt(qs*is);
+      if(flat(it.q)===nq) sc = 1.2;
+      sc *= 1 + 0.1*Math.max(-2,Math.min(5,it.w));
+      if(sc>ts){ ts=sc; top=it; }
+    }
+    return ts>=(min||0.6) ? {it:top,sc:ts} : null;
+  }
+
+  function level(){
+    const n = st.stats.learned*2 + st.stats.up + Math.floor(st.kb.length/10);
+    const l = 1+Math.floor(Math.sqrt(n/2)); const lo = 2*(l-1)*(l-1), hi = 2*l*l;
+    return {l, p:Math.max(0,Math.min(1,(n-lo)/(hi-lo)))};
+  }
+  function hud(){ const {l,p} = level(); $('#lvl').textContent = '· Szint '+l+' · '+st.kb.length+' tudás'; $('#xp').style.width = Math.round(p*100)+'%'; }
+
+  /* ---------- Futtatás (sandboxolt keret) ---------- */
+  const SHIM = S1+"try{window.localStorage.getItem('x')}catch(e){var _m={};Object.defineProperty(window,'localStorage',{value:{getItem:function(k){return k in _m?_m[k]:null},setItem:function(k,v){_m[k]=String(v)},removeItem:function(k){delete _m[k]},clear:function(){_m={}}}})}"+S2;
+  const EXT = {html:'html',javascript:'js',python:'py',css:'css',sql:'sql',bash:'sh',git:'txt'};
+  const canon = l => (l==='js'?'javascript':l==='htm'?'html':l);
+  const runnable = l => canon(l)==='html' || canon(l)==='javascript';
+  function buildDoc(lang, code){
+    const safe = canon(lang)==='html' ? code : code.replace(/<\/script/gi,'<\\/script');
+    if(canon(lang)==='html'){
+      if(/<head[^>]*>/i.test(safe)) return safe.replace(/<head[^>]*>/i, m=>m+SHIM);
+      return SHIM+safe;
+    }
+    const cap = "var o=document.getElementById('o');function w(a){o.textContent+=Array.prototype.map.call(a,function(x){try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')+'\\n'}console.log=console.info=console.warn=console.error=function(){w(arguments)};window.onerror=function(m){w(['Hiba: '+m])};";
+    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#0b0f14;color:#cfe3ff;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px"><pre id="o" style="white-space:pre-wrap;margin:0"></pre>'+SHIM+S1+cap+S2+S1+safe+S2+'</body></html>';
+  }
+  let lastRun = null;
+  function runCode(lang, code, title){
+    lastRun = {lang, code};
+    $('#rtitle').textContent = title || 'Futó program';
+    $('#frame').srcdoc = buildDoc(lang, code);
+    if(!$('#drun').open) $('#drun').showModal();
+  }
+  function saveFile(lang, code){
+    const blob = new Blob([code],{type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'magyarusz-kod.'+(EXT[canon(lang)]||'txt');
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  /* ---------- Megjelenítés ---------- */
+  function copy(t, btn){
+    const done = ()=>{ btn.textContent='Másolva ✓'; setTimeout(()=>btn.textContent='Másolás',1500); };
+    function fallback(){
+      const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} ta.remove();
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, fallback); } else fallback();
+  }
+  function render(m, text){
+    const re = new RegExp(FENCE+'([a-zA-Z]*)\\n([\\s\\S]*?)'+FENCE,'g');
+    let last = 0, x, had = false;
+    const txt = s => { s = s.replace(/^\n+|\n+$/g,''); if(!s) return; const d=document.createElement('div'); d.textContent=s; m.appendChild(d); };
+    while((x = re.exec(text))){
+      had = true; txt(text.slice(last, x.index));
+      const box=document.createElement('div'); box.className='code';
+      const h=document.createElement('div'); h.className='ch';
+      const lab=document.createElement('span'); lab.textContent = LNAME[x[1]] || x[1] || 'kód';
+      const b=document.createElement('button'); b.type='button'; b.textContent='Másolás';
+      const code = x[2].replace(/\n$/,''), lang = x[1];
+      b.onclick = ()=>copy(code,b);
+      const bs=document.createElement('span'); bs.className='bs';
+      if(runnable(lang)){
+        const rb=document.createElement('button'); rb.type='button'; rb.textContent='▶ Futtatás';
+        rb.onclick = ()=>runCode(lang, code, 'Futó program ('+(LNAME[canon(lang)]||lang)+')');
+        bs.appendChild(rb);
+      }
+      const sb=document.createElement('button'); sb.type='button'; sb.textContent='Mentés';
+      sb.onclick = ()=>saveFile(lang, code);
+      bs.append(sb,b);
+      h.append(lab,bs);
+      const pre=document.createElement('pre'); pre.textContent = code;
+      box.append(h,pre); m.appendChild(box);
+      last = re.lastIndex;
+    }
+    txt(text.slice(last));
+    return had;
+  }
+
+  function add(text, who, item, llmQ, note){
+    const w = document.createElement('div'); w.className = 'wrap '+who;
+    const m = document.createElement('div'); m.className='msg';
+    if(render(m, text)) w.style.maxWidth='96%';
+    w.appendChild(m);
+    if(note){ const nt=document.createElement('div'); nt.className='note'; nt.textContent=note; w.appendChild(nt); }
+    if(item){
+      const fb = document.createElement('div'); fb.className='fb';
+      const up = document.createElement('button'), dn = document.createElement('button');
+      up.textContent='👍'; dn.textContent='👎'; up.type='button'; dn.type='button';
+      up.onclick = ()=>{ if(up.classList.contains('on')) return; up.classList.add('on'); dn.classList.remove('on'); item.w++; st.stats.up++; save(); hud(); };
+      dn.onclick = ()=>{ if(dn.classList.contains('on')) return; dn.classList.add('on'); up.classList.remove('on'); item.w--; st.stats.down++; save();
+        pending = item.q; say('Bocs! Mit kellett volna válaszolnom erre: „'+item.q+'”? Írd be a helyes választ (vagy „mégsem”).'); };
+      fb.append(up,dn); w.appendChild(fb);
+    }
+    if(llmQ){
+      const fb = document.createElement('div'); fb.className='fb';
+      const up = document.createElement('button'); up.type='button'; up.textContent='👍 megtanulom';
+      up.onclick = ()=>{ if(up.classList.contains('on')) return; up.classList.add('on'); addKnowledge(llmQ, text); st.stats.up++; save(); hud(); up.textContent='✔ megtanultam'; };
+      fb.appendChild(up); w.appendChild(fb);
+    }
+    chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
+    return w;
+  }
+  function say(text, item, llmQ, note){ add(text,'bot',item,llmQ,note); ctx.lastBot=text; st.hist.push({r:'bot',t:text}); trim(); }
+  function trim(){ if(st.hist.length>60) st.hist = st.hist.slice(-60); save(); }
+  function fill(a){ return a.replace(/\{nev\}/g, st.name || 'barátom'); }
+
+  /* ---------- Beszélgetés: szándékok, emlékezés, összerakó ---------- */
+  let ctx = {kind:null, lastBot:''};
+  const FILL = new Set(['es','meg','de','na','akkor','aztan','hat','nos','amugy','egyebkent','tehat','szoval','kerlek','kerem','igy','magyarusz','magyaruszom','figyi','figyelj']);
+  const pickAns = it => { const v = String(it.a).split(' ## '); return v.length>1 ? pick(v) : it.a; };
+  const words = s => s.trim().split(/\s+/).map(w=>w.replace(/^[,.;:!?"„”()]+|[,.;:!?"„”()]+$/g,'')).filter(Boolean);
+  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+
+  function talkSeed(){
+    const out = [];
+    KBDATA.TALK.forEach(line=>{
+      const i = line.indexOf(' | '); if(i<0) return;
+      const a = line.slice(i+3).trim();
+      line.slice(0,i).split(';').forEach(q=>{ q=q.trim(); if(q) out.push([q,a]); });
+    });
+    return out;
+  }
+
+  const POS_RE = /\b(jol|remekul|szuper|szuperul|fantasztikus|fantasztikusan|nagyszeru|boldog|vidam|elegedett|megvagyok|egesz jol)\b/;
+  const NEG_RE = /\b(rosszul|szar|szarul|szomoru|faradt|stresszes|ideges|dult|kimerult|levert|lehangolt|rossz kedvem|rossz napom|szornyen|borzasztoan|nem vagyok jol|nem erzem jol)\b/;
+  function moodOf(f){
+    if(NEG_RE.test(f) || (/\bnem\b/.test(f) && POS_RE.test(f))) return 'neg';
+    if(POS_RE.test(f)) return 'pos';
+    return null;
+  }
+  const MOOD_TXT = {
+    pos:['Örülök, hogy jól vagy!','Ennek örülök! Mi történt ma jó?','Szuper! Remélem, így is marad.'],
+    neg:['Sajnálom, hogy így érzed magad. Mesélsz róla?','Ez nem jó hír. Ha szeretnéd, mesélj róla, meghallgatlak.','Értem, az ilyen napok nehezek lehetnek. Egy pohár víz vagy egy kis séta néha segít. Mi történt?']
+  };
+
+  // Egy szakasz (szó-csoport) felismerése olcsó, szabályalapú szándékokkal. Tiszta függvény: a mellékhatás az apply-ban van.
+  function qi(spanRaw, loose){
+    const rw = words(spanRaw); if(!rw.length) return null;
+    const fw = rw.map(flat), f = fw.join(' ');
+    if(!f) return null;
+    const hasQW = fw.some(w=>QW.has(w));
+    let m;
+
+    if(/^(ismet(e)?ld meg|mondd ujra|mondd meg ujra|mondd megegyszer|megegyszer|mondd el megegyszer|mit mondtal)$/.test(f))
+      return {kind:'repeat', text:()=> ctx.lastBot || 'Még nem mondtam semmit.'};
+    if(/^(ha)+h*$|^(he)+$|^xd+$|^lol$|^hehe+$|^hihi+$/.test(f))
+      return {kind:'laugh', text:()=>pick(['Hehe! 😄','Örülök, hogy nevetsz.','Haha!'])};
+    if(/^(es )?(te|veled|veled mi van|te mit csinalsz)$/.test(f))
+      return {kind:'andyou', text:()=> /mood/.test(ctx.kind||'') ? pick(['Én jól vagyok, köszi, hogy kérdezed!','Köszi, én is jól vagyok.']) : pick(['Én itt vagyok a telefonodon, és tanulok. 😊','Én jól vagyok, köszi!'])};
+
+    // név
+    if((m = f.match(/^(?:a )?(?:nevem|hivj|hivjanak|engem)(?: pedig)? ([a-z]+)(?: hivnak)?$/)) && !['egy','az','a','mi','nem','igy'].includes(m[1])){
+      const idx = fw.findIndex(w=>w===m[1]); const typed = rw[idx];
+      const nm = cap(typed.replace(/-?(nek|nak)$/i,''));
+      return {kind:'name', apply:()=>{ st.name = nm; save(); }, text:()=>pick(['Örülök, '+nm+'! Megjegyeztem a neved.','Szép név, '+nm+'! Megjegyeztem.'])};
+    }
+    if(/^(mi a nevem|hogy hivnak engem|tudod a nevem|mi az en nevem)$/.test(f))
+      return {kind:'name?', text:()=> st.name ? 'A neved '+st.name+'.' : 'Még nem mondtad meg. Írd: „A nevem …”'};
+
+    // tények megjegyzése
+    if((m = f.match(/^(?:en )?(?:nagyon )?(szeretem|imadom|kedvelem|szeretek|imadok) (.+)$/)) && !hasQW){
+      const p = fw.findIndex(w=>w===m[1]); let tail = rw.slice(p+1); if(/^(a|az)$/i.test(tail[0]||'') && tail.length>1) tail = tail.slice(1);
+      const what = tail.join(' ');
+      return {kind:'fact', apply:()=>{ if(!st.mem.likes.includes(what)){ st.mem.likes.push(what); if(st.mem.likes.length>30) st.mem.likes.shift(); } save(); }, text:()=>pick(['Jó tudni, hogy szereted: '+what+'. Megjegyeztem.','Szép! Megjegyeztem, hogy szereted: '+what+'.'])};
+    }
+    let p = fw.indexOf('kedvenc');
+    if(p>=0 && p<=1 && fw.length>=p+3 && !hasQW){
+      const kind = fw[p+1].replace(/(em|om|am|om|m)$/,'');
+      let rest = rw.slice(p+2); if(/^(a|az|egy)$/i.test(rest[0]||'') && rest.length>1) rest = rest.slice(1);
+      const val = rest.join(' ');
+      return {kind:'fact', apply:()=>{ st.mem.fav[kind] = val; save(); }, text:()=>pick(['Rendben, a kedvenc '+rw[p+1].replace(/em$/,'ed').replace(/om$/,'od').replace(/am$/,'ad')+': '+val+'. Megjegyeztem.','Jó választás! Megjegyeztem: '+val+'.'])};
+    }
+    if((m = f.match(/^(.+) a kedvenc (\w+)$/)) && !hasQW){
+      const kind = m[2].replace(/(em|om|am|om|m)$/,''); const val = rw.slice(0, rw.length-3).join(' ');
+      if(val) return {kind:'fact', apply:()=>{ st.mem.fav[kind] = val; save(); }, text:()=>'Megjegyeztem: a kedvenced '+val+'.'};
+    }
+    if((m = f.match(/^(\d{1,3}) eves vagyok$/)))
+      return {kind:'fact', apply:()=>{ st.mem.age = +m[1]; save(); }, text:()=>'Megjegyeztem: '+m[1]+' éves vagy.'};
+    if((m = f.match(/^(?:(\w+?)(?:ban|ben) lakom|lakom (\w+?)(?:ban|ben)|(\w+) lakom|(\w+) elek)$/))){
+      const typed = rw[0]==='lakom' ? rw[1] : rw[0];
+      return {kind:'fact', apply:()=>{ st.mem.city = typed; save(); }, text:()=>'Megjegyeztem: '+typed+' laksz.'};
+    }
+    // lekérdezések a megjegyzettekről
+    if(/^(mit szeretek|mit szeretek csinalni|mit kedvelek)$/.test(f))
+      return {kind:'fact?', text:()=> st.mem.likes.length ? 'Azt mondtad, szereted: '+st.mem.likes.join(', ')+'.' : 'Még nem mondtad meg. Írd: „Szeretem a …”'};
+    if((m = f.match(/^(?:mi )?a kedvenc (\w+) ?(?:az? )?(?:nekem)?$/)) && /^mi/.test(f) && fw.length<=4){
+      const kind = m[1].replace(/(em|om|am|om|m)$/,'');
+      const mine = /(em|om|am)$/.test(m[1]);
+      if(mine) return {kind:'fact?', text:()=> st.mem.fav[kind] ? 'A kedvenc '+(rw.find((w,i)=>fw[i-1]==='kedvenc')||m[1]).replace(/em$/,'ed').replace(/om$/,'od').replace(/am$/,'ad')+': '+st.mem.fav[kind]+'.' : 'Még nem mondtad meg. Írd például: „A kedvenc színem a kék.”'};
+    }
+    if(/^(hol lakom|hol elek)$/.test(f)) return {kind:'fact?', text:()=> st.mem.city ? 'Azt mondtad: '+st.mem.city+' laksz.' : 'Még nem mondtad meg. Írd: „Pécsen lakom.”'};
+    if(/^(hany eves vagyok|mennyi idos vagyok)$/.test(f)) return {kind:'fact?', text:()=> st.mem.age ? st.mem.age+' évesnek mondtad magad.' : 'Még nem mondtad meg. Írd: „20 éves vagyok.”'};
+    if(/^(mit tudsz rolam|mit tudsz rolam megjegyezni|mit tudsz rolam mondani|mit jegyeztel meg rolam)$/.test(f)){
+      return {kind:'fact?', text:()=>{
+        const L = [];
+        if(st.name) L.push('a neved '+st.name);
+        if(st.mem.age) L.push(st.mem.age+' éves vagy');
+        if(st.mem.city) L.push(st.mem.city+' laksz');
+        Object.keys(st.mem.fav).forEach(k=>L.push('a kedvenc '+k+'ed: '+st.mem.fav[k]));
+        if(st.mem.likes.length) L.push('szereted: '+st.mem.likes.join(', '));
+        return L.length ? 'Ezeket tudom rólad: '+L.join('; ')+'.' : 'Még semmit nem tudok rólad. Mesélj: „A nevem …”, „Szeretem a …”, „A kedvenc színem a …”.';
+      }};
+    }
+
+    // hangulat
+    const wl = fw.length;
+    const mood = moodOf(f);
+    if(mood && !hasQW && !/\d/.test(f) && !/\bvagy\b/.test(f) && wl <= (loose?14:7) && (wl<=2 || /(vagyok|erzem|kedvem|napom|megvagyok|voltam|erzek)/.test(f)))
+      return {kind:'mood', text:()=>pick(MOOD_TXT[mood])};
+    return null;
+  }
+
+  // Olcsó extra-szándékok szakaszokra: idő, dátum, vicc, számolás, átváltás, szótár
+  function extraSpan(spanRaw){
+    const n = norm(spanRaw), f = flat(spanRaw);
+    if(/^(hany ora van|mennyi az ido|mennyi az ora|hany ora)$/.test(f)){ const d=new Date(); return {kind:'time', text:()=>'Most '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' van.'}; }
+    if(/^(milyen nap van ma|milyen nap van|hanyadika van ma|hanyadika van|milyen nap van ma)$/.test(f)){ const d=new Date(); return {kind:'date', text:()=>'Ma '+d.getFullYear()+'. '+months[d.getMonth()]+' '+d.getDate()+'., '+days[d.getDay()]+' van.'}; }
+    if(/^(mondj egy viccet|mondj egy vicc|egy vicc|vicc|viccet|mesélj egy viccet|meselj egy viccet)$/.test(f)) return {kind:'joke', text:()=>pick(jokes.concat(KBDATA.JOKES))};
+    if(/^(mondj egy kozmondast|kozmondas|egy kozmondas)$/.test(f)) return {kind:'proverb', text:()=>pick(KBDATA.PROVERBS)};
+    if(/^(mondj egy erdekesseget|erdekesseg|egy erdekesseg|mondj valami erdekeset)$/.test(f)) return {kind:'fact-fun', text:()=>pick(KBDATA.FACTS)};
+    if(/\d|angolul|magyarul|hany nap van|kozmondas|erdekesseg/.test(f) && !/kod|program|python|javascript/.test(f)){
+      let r = null; try{ r = extra(spanRaw, n); }catch(e){}
+      if(r) return {kind:'extra', text:()=>r};
+    }
+    return null;
+  }
+
+  function kbSpan(spanRaw){
+    const b = best(spanRaw, 0.8); if(!b) return null;
+    const it = b.it, fq = flat(it.q);
+    const L = words(spanRaw).length, ql = fq.split(' ').length;
+    if(Math.abs(L-ql) > (L<=3 ? 0 : L<=6 ? 1 : Math.ceil(L/4))) return null;
+    return {kind: /(hogy vagy|mi ujsag|mizu|mi van veled|hogy erzed)/.test(fq) ? 'asked-mood' : (it.c ? 'chat' : 'kb'),
+            item:it, text:()=>{ it.n++; return fill(pickAns(it)); }};
+  }
+
+  function spanAnswer(spanRaw){
+    const w = words(spanRaw); if(!w.length) return null;
+    if(w.length===1 && FILL.has(flat(w[0]))) return null;
+    return qi(spanRaw) || extraSpan(spanRaw) || kbSpan(spanRaw);
+  }
+
+  // Egy szakasz (írásjelek közötti rész) felbontása a lehető legtöbb felismert részre.
+  function chunkSegments(rw){
+    const fw = rw.map(flat), m = rw.length;
+    const memo = new Map();
+    const ev = (i,j)=>{ const k=i+'-'+j; if(!memo.has(k)) memo.set(k, spanAnswer(rw.slice(i,j).join(' '))); return memo.get(k); };
+    const dp = new Array(m+1).fill(null); dp[0] = {cov:0, segs:[]};
+    const upd = (j, cand)=>{ const c = dp[j]; if(!c || cand.cov>c.cov || (cand.cov===c.cov && cand.segs.length<c.segs.length)) dp[j] = cand; };
+    for(let i=0;i<m;i++){
+      const cur = dp[i]; if(!cur) continue;
+      upd(i+1, {cov: cur.cov + ((FILL.has(fw[i]) || !fw[i]) ? 1 : 0), segs: cur.segs});
+      for(let j=i+1;j<=Math.min(m,i+7);j++){
+        if(j-i>1 && (FILL.has(fw[i]) || FILL.has(fw[j-1]))) continue;
+        const r = ev(i,j); if(!r) continue;
+        upd(j, {cov: cur.cov + (j-i), segs: cur.segs.concat([Object.assign({}, r, {from:i, to:j, span: rw.slice(i,j).join(' ')})])});
+      }
+    }
+    const res = dp[m];
+    const covered = new Array(m).fill(false); res.segs.forEach(s=>{ for(let k=s.from;k<s.to;k++) covered[k]=true; });
+    const left = rw.filter((w,k)=>!covered[k] && !FILL.has(fw[k]) && fw[k]);
+    return {segs:res.segs, cov:res.cov, m, left};
+  }
+
+  function dropQ(t){
+    const parts = t.match(/[^.!?]+[.!?]*/g);
+    if(parts && parts.length>=2 && /\?\s*$/.test(parts[parts.length-1])) return parts.slice(0,-1).join('').trim();
+    return t;
+  }
+
+  function compose(raw){
+    if(raw.length>240 || /[`<>{}]/.test(raw)) return null;
+    const prot = raw.replace(/(\d)[,.](\d)/g, '$1§$2');
+    const chunks = prot.split(/[,;.!?\n]+/).map(c=>c.replace(/§/g,'.').trim()).filter(Boolean);
+    const allW = chunks.reduce((a,c)=>a+words(c).length,0);
+    if(allW<2 || allW>26) return null;
+    if(best(raw, 1.1)) return null;                       // pontosan ismert mondat: egyszerű út
+    const segs = [], lefts = [];
+    for(const c of chunks){
+      const rw = words(c); if(!rw.length) continue;
+      const r = chunkSegments(rw);
+      if(r.cov >= rw.length*0.5 && r.segs.length){
+        if(r.left.length && r.segs.some(s=>/^(kb|extra)$/.test(s.kind) || (s.kind==='chat' && s.to-s.from>=3))) return null;
+        segs.push(...r.segs);
+        if(r.left.length>=2 && r.segs.every(s=>/^(chat|mood|name|laugh|andyou|asked-mood|fact)$/.test(s.kind))) lefts.push(r.left.join(' '));
+      }
+      else if(rw.length>=2){
+        const lq = qi(c, true);                              // laza hangulat-felismerés egész szakaszra
+        if(lq) segs.push(Object.assign({}, lq, {span:c}));
+        else if(!r.segs.length || r.segs.every(s=>/^(chat|mood|name|laugh|andyou|asked-mood|fact)$/.test(s.kind))){
+          if(r.segs.length) segs.push(...r.segs);
+          lefts.push(r.left.length>=2 ? r.left.join(' ') : c);
+        } else return null;
+      }
+    }
+    if(segs.length<2 && !(segs.length===1 && lefts.length && /^(chat|mood|name|laugh|andyou|asked-mood|fact)$/.test(segs[0].kind))) return null;
+    segs.forEach(s=>{ if(s.apply) s.apply(); });
+    const parts = [];
+    segs.forEach((s,idx)=>{
+      let t = s.text();
+      ctx.kind = s.kind;
+      if(idx<segs.length-1 || lefts.length) t = dropQ(t);
+      if(t && !parts.includes(t)) parts.push(t);
+    });
+    let text = parts.join(parts.some(p=>/\n|\x60\x60\x60/.test(p)) ? '\n\n' : ' ');
+    if(lefts.length){
+      const q = lefts[0];
+      text += (text?' ':'') + 'Arra, hogy „'+q+'”, még nem tudom a választ. Írd be most, mit válaszoljak rá, és megtanulom (vagy írd: „mégsem”).';
+      pending = q;
+    }
+    return {t:text, note:'↳ felismertem: '+segs.map(s=>'„'+s.span+'”').join(' + ')+(lefts.length?' + ismeretlen rész':'')};
+  }
+
+  const CRISIS = /(ongyilk|meg akarok halni|nem akarok (?:mar )?elni|veget akarok vetni|megolom magam|bantani akarom magam|bantom magam)/;
+  const CRISIS_TXT = 'Sajnálom, hogy ilyen nehéz most. Nem vagy egyedül ezzel, és fontos vagy. Kérlek, beszélj most valakivel: ha közvetlen veszélyben vagy, hívd a 112-t; a Lelki Elsősegély Szolgálat a 116-123-as számon ingyenesen, éjjel-nappal hívható. Ha van valaki a közeledben, keresd meg most. Én csak egy kis program vagyok, de itt vagyok, ha írnál még.';
+
+  function chatFallback(raw){
+    const f = flat(raw), fw = f.split(' ').filter(Boolean);
+    const isQ = /\?\s*$/.test(raw.trim()) || fw.some(w=>QW.has(w)) || /^(tudsz|tudod|van|lehet|szabad|szerinted|igaz)\b/.test(f);
+    if(isQ || fw.length<3) return null;
+    return pick([
+      'Értem. Mesélj még róla!',
+      'Érdekes. És te mit gondolsz erről?',
+      'Jó tudni. Mi történt még?',
+      'Hmm, értem. Ezt nem ismerem pontosan, de szívesen hallgatlak.',
+      'Aha. Hogy érzed magad ezzel kapcsolatban?'
+    ]) + (Math.random()<0.2 ? ' (Ha azt szeretnéd, hogy erre válaszolni is tudjak, taníts meg: „Tanulj: … => …”.)' : '');
+  }
+
+  ensureSeed();
+  function addKnowledge(q,a){
+    q = q.trim(); a = a.trim(); if(!q||!a) return;
+    const dup = st.kb.find(i=>flat(i.q)===flat(q));
+    if(dup){ dup.a = a; dup.w = 0; delete dup._t; } else st.kb.push({q,a,w:0,n:0});
+    st.stats.learned++; save(); hud();
+  }
+
+  /* ---------- Beépített képességek ---------- */
+  const days = ['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
+  const months = ['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
+  const jokes = ['Miért nem fázik a programozó? Mert van neki Windows-a.','Mit mond az egyik szerver a másiknak? „Most nem tudok válaszolni, túl sok a kérés.”','Két bit találkozik. Az egyik azt mondja: „Úgy érzem, rád vagyok kapcsolva.”','Miért ment át a tyúk az úton? Hogy a túloldalon is legyen térerő.','Hány programozó kell egy villanykörtéhez? Egy sem, az hardverprobléma.'];
+
+  function calc(raw){
+    let e = raw.toLowerCase().replace(/(\d)\s*,\s*(\d)/g,'$1.$2').replace(/\bplusz\b/g,'+').replace(/\bminusz\b/g,'-')
+      .replace(/\bszor(?:ozva)?\b|[×]/g,'*').replace(/\bosztva\b|÷/g,'/').replace(/(\d)\s*x\s*(\d)/g,'$1*$2').replace(/\^/g,'**').replace(/[=?]/g,'');
+    if((e.match(/[a-záéíóöőúüű]/g)||[]).length > 14) return null;
+    e = e.replace(/[^0-9+\-*/().\s]/g,' ').trim();
+    if(!/\d\s*[+\-*/]+\s*\(?-?\d/.test(e) || !/^[0-9+\-*/().\s]+$/.test(e)) return null;
+    try{
+      const r = Function('"use strict";return ('+e+')')();
+      if(typeof r!=='number' || !isFinite(r)) return 'Ez nem kiszámolható (nullával osztás?).';
+      return 'Az eredmény: '+(Math.round(r*1e10)/1e10).toString().replace('.',',');
+    }catch(err){ return null; }
+  }
+
+  function babble(){
+    const text = st.kb.filter(i=>!/\x60\x60\x60/.test(i.a)).map(i=>fill(i.a)).join(' ');
+    const sents = text.split(/[.!?]+\s*/).map(s=>s.trim().split(/\s+/)).filter(s=>s.length>2);
+    if(sents.length<6) return null;
+    const next = {};
+    sents.forEach(s=>{ for(let i=0;i<s.length-1;i++){ (next[s[i]] = next[s[i]]||[]).push(s[i+1]); } });
+    let w = pick(sents)[0]; const out=[w];
+    for(let i=0;i<16 && next[w];i++){ w = pick(next[w]); out.push(w); if(i>5 && Math.random()<.2) break; }
+    const s = out.join(' ').replace(/[,;:]$/,'');
+    return s.charAt(0).toUpperCase()+s.slice(1)+'.';
+  }
+
+  function password(){
+    const cs = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+    let out=''; const a = new Uint32Array(14);
+    (window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*4294967296)}).getRandomValues(a);
+    a.forEach(v=>out+=cs[v%cs.length]); return out;
+  }
+
+  function reply(raw){
+    const n = norm(raw); let m;
+    if(CRISIS.test(flat(raw))){ pending=null; return {t:CRISIS_TXT}; }
+
+    if(pending){
+      if(/^\s*(tanulj|tanuld meg|jegyezd meg|felejtsd el|felejts el|töröld)\b/i.test(raw)){
+        pending = null;   // kifejezett parancs: nem válasznak tekintjük
+      } else {
+        const q = pending; pending = null;
+        if(/^(megsem|mindegy|hagyjuk)/.test(n)) return {t:'Rendben, hagyjuk.'};
+        addKnowledge(q, raw);
+        return {t:'Köszi, megtanultam! Ha legközelebb ezt kérdezik, így válaszolok.'};
+      }
+    }
+
+    if((m = raw.match(/^\s*tanulj m[ée]g\s*:?\s*(.+?)\s*(?:=>|->)\s*(.+)$/is))){
+      const ex = st.kb.find(i=>flat(i.q)===flat(m[1]));
+      if(ex){ ex.a = String(ex.a).split(' ## ').concat([m[2].trim()]).join(' ## '); save(); return {t:'Hozzáadtam még egy lehetséges választ ehhez: „'+m[1].trim()+'”. Most már változatosabban válaszolok.'}; }
+      addKnowledge(m[1], m[2]); return {t:'Megtanultam: „'+m[1].trim()+'”'};
+    }
+    if((m = raw.match(/^\s*(?:tanulj|tanuld meg|jegyezd meg)\s*:?\s*(.+?)\s*(?:=>|->)\s*(.+)$/is))){
+      addKnowledge(m[1], m[2]); return {t:'Megtanultam: „'+m[1].trim()+'”'};
+    }
+    if((m = raw.match(/^\s*(?:felejtsd el|felejts el|töröld)\s*:?\s*(.+)$/i))){
+      const b = best(m[1], 0.6);
+      if(b){ st.kb = st.kb.filter(i=>i!==b.it); save(); hud(); return {t:'Elfelejtettem: „'+b.it.q+'”'}; }
+      return {t:'Nem találok ilyet a tudásomban.'};
+    }
+    { const q1 = words(raw).length<=9 ? qi(raw) : null;
+      if(q1 && /^(repeat|laugh|andyou|mood|fact|fact\?|name\?)$/.test(q1.kind)){ if(q1.apply) q1.apply(); ctx.kind=q1.kind; return {t:q1.text()}; }
+      const cp = compose(raw); if(cp) return cp; }
+    if((m = n.match(/(?:a nevem|hivj|nevezz)\s+([a-z]+)/))){
+      const r = raw.match(/(?:nevem|hívj|nevezz)\s+(?:pedig\s+)?([^\s,.!?]+)/i);
+      let nm = (r?r[1]:m[1]).replace(/-?(nek|nak)$/i,''); nm = nm.charAt(0).toUpperCase()+nm.slice(1);
+      st.name = nm; save(); return {t:'Örülök, '+nm+'! Megjegyeztem.'};
+    }
+    if(/mi a nevem|hogy hivnak engem/.test(n)) return {t: st.name ? 'A neved '+st.name+'.' : 'Még nem mondtad meg. Írd: „A nevem …”'};
+
+    if(/^(segitseg|help|sugo)/.test(n)) return {t:
+      'Ezt tudom:\n• hétköznapi beszélgetés: több dolgot is felismerek egy üzenetben („szia, hogy vagy”), megjegyzem, amit mondasz („Szeretem a pizzát”, „A kedvenc színem a kék”), és ha több választ tanítasz („Tanulj még: …”), váltogatom őket\n• beszélgetés és kérdések (Magyarország, tudomány, programozás)\n• kód: „írj python ciklust”, „css flexbox”, „sql join”, „git push”, „html oldal”\n• generátor: „írj python függvényt, nevű osszead, paraméterek: a, b”, „python osztály Auto nevű”\n• kész programok: „írj számológépet”, „todo lista”, „számkitalálós játék”, „stopper”, „1-től 20-ig páros számok”, „két szám szorzása”\n• HTML és JavaScript kód alatt ▶ Futtatás: azonnal működő programként megnyílik, Mentés gombbal fájlba is teheted\n• ⚙ gomb: valódi AI bekötése (opcionális)\n• számolás: 12*7+3, „20% of 150”, „prím-e 97”, „faktoriális 10”, „négyzetgyök 144”, „lnko 12 18”, „római szám 2024”, „binárisan 42”\n• átváltás: „5 km hány mérföld”, „20 celsius fahrenheit”, „2 óra hány perc”\n• dátum: „hány nap van karácsonyig”, „milyen nap volt 2000.01.01”\n• szótár: „angolul alma”, „mi az apple magyarul”\n• kérdezz bátran: Magyarország, földrajz, történelem, tudomány, technika, sport, kultúra, főzés, egészség (általános), „közmondás”, „érdekesség”\n• idő, dátum, vicc, jelszó generálás\n• „kódlista”: milyen kódokat ismerek\n• TANÍTÁS: „Tanulj: kérdés => válasz” (a válasz lehet kód is)\n• „felejtsd el: …”, „fejlődés”'};
+    if(/kodlista|milyen kodokat|milyen nyelveken/.test(n)){
+      return {t: 'Kész programok: '+PROGS.map(p=>p.t).join(', ')+'\n\n'+Object.keys(LNAME).map(l=>LNAME[l]+': '+SNIP.filter(s=>s.l===l).map(s=>s.t).join(', ')).join('\n\n')};
+    }
+
+    const ex = extra(raw, n); if(ex) return {t:ex};
+    if(/hany ora van \w{3,}(?:ban|ben|ban|ben|on|en|on|ön)\b/.test(n) && !/(most|ma)\b/.test(n)) return {t:'Más városok idejét nem tudom, csak a telefonét. Ott most '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0')+' van.'};
+    if(/hany ora|mennyi az ido|mennyi az ora/.test(n)){ const d=new Date(); return {t:'Most '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' van.'}; }
+    if(/milyen nap|hanyadika|datum|melyik nap/.test(n)){ const d=new Date(); return {t:'Ma '+d.getFullYear()+'. '+months[d.getMonth()]+' '+d.getDate()+'., '+days[d.getDay()]+' van.'}; }
+    if(/vicc/.test(n)) return {t:pick(jokes.concat(KBDATA.JOKES))};
+    if(!/(program|kod|generator|python|javascript|\bjs\b)/.test(n) && (/(generalj|csinalj|adj|kell).*jelszo|jelszo.*(generalj|csinalj)/.test(n))) return {t:'Egy erős jelszó: '+password()+'\n(Csak itt jelent meg, sehova nem mentettem.)'};
+    if(/fejlod|statisztik|hanyadik szint|mennyit tudsz|mennyit tanult/.test(n)){
+      const {l} = level();
+      return {t:'Szint: '+l+'\nTudás: '+st.kb.length+' elem\nTőled tanult: '+st.stats.learned+'\nÜzenetek: '+st.stats.msgs+'\n👍 '+st.stats.up+'   👎 '+st.stats.down};
+    }
+    if(/mondj valamit|meselj|kitalalj|szoljal/.test(n)){
+      const b = babble();
+      return {t: b || 'Még kevés mindent tudok ahhoz, hogy összerakjak valamit. Taníts még!'};
+    }
+    const c = calc(raw); if(c) return {t:c};
+
+    // majdnem pontos egyezés a tudásbázisban
+    const b0 = best(raw, 0.85);
+    if(b0){ b0.it.n++; save(); return {t:fill(pickAns(b0.it)), item:b0.it}; }
+
+    // kód
+    const lg = langOf(n);
+    if(lg || (codeIntent(n) && /(kod|program|script|szkript|fuggveny|osztaly|oldal|weboldal|honlap|alkalmazas|jatek|algoritmus|ciklus)/.test(n)) || BARE.test(n) || OPQ.test(n) || /\d+\s*-?\s*tol\s*\d+/.test(n)){
+      if(st.llm.on && n.split(' ').length>7 && !/\d+\s*-?\s*tol\s*\d+/.test(n)) return {llm:true};
+      const g = genCode(raw, n);
+      if(g) return {t:g};
+      if(st.llm.on && n.split(' ').length>5) return {llm:true};
+      const f = findSnippet(n);
+      if(f && f.s && (lg || codeIntent(n))) return {t: codeMsg(LNAME[f.s.l]+' – '+f.s.t, f.s.l, f.s.c)};
+      if(f && f.none){
+        if(st.llm.on) return {llm:true};
+        return {t:'Erre '+LNAME[f.none]+' nyelven még nincs példám. Ezekhez van: '+SNIP.filter(s=>s.l===f.none).map(s=>s.t).join(', ')+'.\nTaníthatsz is: „Tanulj: kérés => kód”.'};
+      }
+    }
+
+    const b = best(raw);
+    if(b){ b.it.n++; save(); return {t:fill(pickAns(b.it)), item:b.it}; }
+
+    if(st.llm.on) return {llm:true};
+    { const cf = chatFallback(raw); if(cf) return {t:cf}; }
+    pending = raw;
+    return {t: pick([
+      'Ezt még nem tudom. Mit válaszoljak erre? Írd be, és megjegyzem. (Vagy írd: „mégsem”.)',
+      'Erre nincs válaszom. Taníts meg: a következő üzeneted lesz a válasz. („mégsem”, ha nem akarod.)'
+    ])};
+  }
+
+  async function askLLM(){
+    const c = st.llm;
+    const msgs = [{role:'system',content:'Te Magyarusz vagy, egy segítőkész magyar asszisztens. Mindig magyarul válaszolsz. Kódot mindig '+FENCE+' jelek közötti blokkban adsz meg, a nyitó jelek után a nyelv nevével, és röviden magyarázod. Ha weboldalt, játékot vagy alkalmazást kérnek, egyetlen, teljes, önállóan futó html blokkot adj, beágyazott CSS-sel és JavaScripttel, külső függőségek nélkül, mobilbarát kialakítással.'}];
+    st.hist.slice(-8).forEach(h=>msgs.push({role:h.r==='me'?'user':'assistant',content:h.t}));
+    const r = await fetch(c.url.replace(/\/$/,'')+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:c.model,stream:false,messages:msgs})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    return ((j.message && j.message.content) || '').trim();
+  }
+  async function viaLLM(q){
+    const tmp = add('Gondolkodom a háttérmodellel…','bot');
+    try{
+      const a = await askLLM();
+      tmp.remove();
+      say(a || '(Üres válasz érkezett.)', null, q);
+    }catch(e){
+      tmp.remove();
+      pending = q;
+      say('A háttérmodellt nem értem el ('+e.message+'). Taníts meg te: mit válaszoljak erre? Írd be a választ, vagy „mégsem”.');
+    }
+    save();
+  }
+
+  function send(text){
+    if(!text.trim()) return;
+    add(text,'me'); st.hist.push({r:'me',t:text}); st.stats.msgs++; trim();
+    setTimeout(async ()=>{ let r; try{ r = reply(text); }catch(e){ r = {t:'Hopp, valami elromlott bennem: '+e.message}; }
+      if(r.llm){ await viaLLM(text); return; }
+      say(r.t, r.item, null, r.note); save(); }, 200+Math.random()*250);
+  }
+
+  function go(){ const v=inp.value; if(!v.trim()) return; inp.value=''; inp.style.height='auto'; send(v); }
+  $('#send').addEventListener('click', go);
+  $('#f').addEventListener('submit', e=>{ e.preventDefault(); go(); });
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); go(); } });
+  inp.addEventListener('input', ()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,110)+'px'; });
+
+  /* ---------- Tudás böngésző, mentés ---------- */
+  function list(){
+    const box = $('#list'); box.innerHTML='';
+    const shown = [...st.kb].reverse().slice(0,150);
+    if(st.kb.length>150){ const note=document.createElement('div'); note.className='hint'; note.textContent='Az utolsó 150 tudás látszik, összesen '+st.kb.length+' van. Törölni a „felejtsd el: …” paranccsal tudsz.'; box.appendChild(note); }
+    shown.forEach(it=>{
+      const d=document.createElement('div'); d.className='item';
+      const c=document.createElement('div'); const b=document.createElement('b'); b.textContent=it.q;
+      c.append(b, document.createTextNode(' → '+(it.a.length>140?it.a.slice(0,140)+'…':it.a)));
+      const x=document.createElement('button'); x.type='button'; x.textContent='✕'; x.onclick=()=>{ st.kb = st.kb.filter(i=>i!==it); save(); hud(); list(); };
+      d.append(c,x); box.appendChild(d);
+    });
+  }
+  $('#kb').onclick = ()=>{ list(); $('#dkb').showModal(); };
+  $('#ck').onclick = ()=>$('#dkb').close();
+  $('#mn').onclick = ()=>$('#dmn').showModal();
+  $('#cm').onclick = ()=>$('#dmn').close();
+
+  $('#exp').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(st,(k,v)=>k[0]==='_'?undefined:v,2)],{type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'magyarusz-agy-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('#imp').onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{ try{
+      const j = JSON.parse(r.result); if(!Array.isArray(j.kb)) throw 0;
+      st = Object.assign(blank(), j); st.stats = Object.assign({msgs:0,learned:0,up:0,down:0}, j.stats);
+      st.llm = Object.assign(blank().llm, st.llm||{});
+      st.seedV = 0; ensureSeed(); save(); hud();
+      chat.innerHTML=''; st.hist.forEach(h=>add(h.t,h.r==='me'?'me':'bot'));
+      say('Visszatöltöttem az agyamat: '+st.kb.length+' tudás.'); $('#dmn').close();
+    }catch(err){ alert('Ez a fájl nem Magyarusz mentés.'); } };
+    r.readAsText(f); e.target.value='';
+  };
+  $('#clr').onclick = ()=>{ st.hist=[]; save(); chat.innerHTML=''; $('#dmn').close(); say('Törölted a beszélgetést, de mindent megőriztem, amit tanultam.'); };
+
+  $('#rclose').onclick = ()=>{ $('#frame').srcdoc=''; $('#drun').close(); };
+  $('#rreload').onclick = ()=>{ if(lastRun) $('#frame').srcdoc = buildDoc(lastRun.lang, lastRun.code); };
+  $('#ai').onclick = ()=>{ $('#aion').checked=st.llm.on; $('#aiurl').value=st.llm.url; $('#aimodel').value=st.llm.model; $('#aistat').textContent=''; $('#dai').showModal(); };
+  $('#aiclose').onclick = ()=>$('#dai').close();
+  function readAI(){ st.llm = {on:$('#aion').checked, url:$('#aiurl').value.trim(), model:$('#aimodel').value.trim()}; save(); }
+  $('#aisave').onclick = ()=>{ readAI(); $('#dai').close(); };
+  $('#aitest').onclick = async ()=>{
+    readAI(); const s = $('#aistat'); s.textContent = 'Próbálkozom…';
+    try{
+      const r = await fetch(st.llm.url.replace(/\/$/,'')+'/api/tags'); const j = await r.json();
+      const names = (j.models||[]).map(m=>m.name);
+      s.textContent = names.some(x=>x===st.llm.model || x.startsWith(st.llm.model+':')) ? '✔ Kapcsolódva, a modell megvan.' : 'Az Ollama elérhető, de nincs ilyen modell. Van: '+(names.join(', ')||'semmi');
+    }catch(e){ s.textContent = 'Nem érem el: '+e.message; }
+  };
+
+  // Nexa AI híd: a fő alkalmazás chatmodellként is használhatja.
+  window.Magyarusz = {
+    ready: true,
+    reply: (text) => reply(text),
+    learn: (q, a) => { addKnowledge(q, a); save(); hud(); return 'Megtanultam: ' + q; },
+    state: () => st,
+    reset: () => { st.hist = []; save(); },
+  };
+
+  hud();
+  if(st.hist.length) st.hist.forEach(h=>add(h.t,h.r==='me'?'me':'bot'));
+  else say('Szia! Magyarusz vagyok. Kérdezz bármit, kérj kódot (pl. „írj python ciklust”), vagy taníts: „Tanulj: kérdés => válasz”. Írd be: „segítség”.');
+})();
+</script>
+</body>
+</html>

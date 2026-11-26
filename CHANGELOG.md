@@ -2,6 +2,15 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.3 — 2026-11-26
+
+- **Új külön modell: 🇭🇺 Magyarusz.** A mellékelt, önálló tanuló magyar AI beépült az alkalmazásba: a chat **Modell** menüjéből választható, és a **Beállítások → Modellek → Magyarusz → Letöltés** gombbal kell letölteni — ugyanúgy, mint a többi modellt. Utána offline is működik, tanítható („Tanulj: kérdés => válasz”), kódot ír, számol, fordít.
+- A **🔨 Forge** mostantól a csevegő Modell menüjében is kiválasztható, nem csak automatikus kódmódban.
+- A csevegés felső és alsó sávja a képernyőhöz ragasztva marad; csak az üzenetlista görget.
+- A beépített hátterek valódi képek: a **Forest** most tényleg egy három rétegű, ködös fenyőerdő, a Aurora/Dusk/Graphite is egyedi rajzolt kép.
+- Telefonon, hálózat nélkül a lassú Nova/Forge helyett automatikusan egy már letöltött gyors modell (Magyarusz/Szikra/Nova Lite) válaszol, látható értesítéssel.
+- A gyorsítótár verziója `v1.5.3` lett.
+
 ## v1.5.2 — 2026-11-26
 
 - A Beállításokból mostantól **„← Csevegés”** gombbal rögtön visszatérhetsz a megnyitott beszélgetéshez, nem kell újat létrehozni.
