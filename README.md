@@ -51,9 +51,9 @@ A *Szigorú offline mód* kapcsolóval kikapcsolható minden hálózati modellk�
 
 ## Saját modell (Nexa HU)
 
-A v1.4.7-tól az app képes egy **saját, magyar adatokkal tanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van: `nexa_train.ipynb` és útmutató.
+A v1.4.7-tól az app képes egy **saját, magyar adatokkal betanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van.
 
-A tanítás most **két szakaszos**: először folyamatos magyar szöveges előképzés (magyar Wikipédia és más elérhető magyar korpusz), majd utasítás-követő finomhangolás a saját mintákon és nyílt magyar párpéldákon. A súlyokat tehát a mi adataink alapján képezzük, a kész modell a saját Hugging Face repónkra kerül, és telefonon offline fut. Az architektúra a nyílt `Qwen3-0.6B` (Apache 2.0): egy nulláról betanított LLM több ezer GPU-órát igényelne, és jóval gyengébb lenne egy ilyen kis eszközön. A cél a **lehető legtöbbet tudó, telefonbarát saját modell**, nem a marketingértelemben vett „nulláról írt” modell.
+A választott út a **nulláról tanított modell**: `nexa_scratch.ipynb`. Saját BPE tokenizáló, véletlen súlyokból indított transzformer, két szakaszú magyar tanítás (Wikipédia + saját minták + Aya + OPUS), majd ONNX/q4 export. Egy kb. 34M-paraméteres modell **nem éri el** a Qwen3-0.6B finomhangolásának minőségét, de a súlyok és a tokenizáló teljesen sajátok. Ha a lehető legjobb magyar tudás a cél, a `nexa_train.ipynb` erősebb alternatíva — mindkettő ugyanabba a Hugging Face repóba tud feltölteni.
 
 Használat: **Beállítások → Modellek → Saját Nexa modell** mezőbe írd be a repo nevét (pl. `sziriusz-blackalt/nexa-hu`), majd a megjelenő **🧠 Nexa HU** kártyán kattints a *Letöltés* gombra. A csevegés **Modell** legördülőjében ezután választható. Üres mező esetén a beépített Nova/Szikra modellek változatlanul működnek, és az „Összes letöltése” sem próbálja letölteni a saját modellt.
 
@@ -64,7 +64,7 @@ Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek k�
 - SmolLM2 135M Instruct (Szikra): ~117 MB
 - **SmolLM2 360M Instruct (Nova Lite): ~272 MB (q4f16) — telefonra ajánlott**
 - Qwen3 0.6B (Nova): ~570 MB (q4f16; ez a legjobb magyar, de nagyobb)
-- **Nexa HU 0.6B: ~420 MB** (opcionális, saját magyar adatokkal finomhangolt modell; lásd lent)
+- **Nexa HU: ~20–50 MB** (opcionális, nulláról magyar adatokkal betanított modell; a Qwen3-alapú erősebb változat ~420 MB)
 - Qwen2.5-Coder 0.5B (Forge): ~555 MB (q4f16)
 - Whisper Tiny: ~45 MB
 - Supertonic TTS: ~260 MB
