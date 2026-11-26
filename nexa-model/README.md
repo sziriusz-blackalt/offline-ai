@@ -76,7 +76,7 @@ konfigurációs fájlokkal a repo gyökerében.
 
 A mező üresen hagyása esetén az app pontosan úgy működik, mint korábban —
 a beépített Nova/Szikra modellek elérhetők maradnak, és az „Összes letöltése”
-sem próbálja letölteni a saját modellt. A v1.4.6-ban **nincs válaszidőzítő**:
+sem próbálja letölteni a saját modellt. A v1.4.7-ban **nincs válaszidőzítő**:
 a modell addig ír, amíg a beállított hosszúságú válasz el nem készül.
 
 ## Hibaelhárítás

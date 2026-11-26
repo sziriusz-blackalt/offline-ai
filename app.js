@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.6-shell';
+const SHELL_CACHE = 'offline-ai-v1.4.7-shell';
 
 const MODEL_DEFS = {
   nexa: {
@@ -968,13 +968,13 @@ async function sendChat(text, forcedMode) {
     const temperature = Math.min(Math.max(Number.isFinite(rawTemp) ? rawTemp : 0.3, 0), 1);
     let safeTemp = mode === 'code' ? Math.min(temperature, 0.4) : temperature;
     if (phoneMode()) safeTemp = Math.min(safeTemp, 0.5);
-    // Nincs időzítő: a modell addig ír, amíg a válasz kész nem lesz,
-    // legfeljebb a felhasználó által beállított tokennyi szöveget generálunk.
+    // Nincs időzítő és nincs rejtett rövidítés: a modell addig ír, amíg a
+    // felhasználó által beállított hosszúságú válasz el nem készül.
     const maxNewTokens = Math.min(Math.max(Number($('#chatTokens').value) || 128, 64), 512);
 
     const options = greedy
       ? {
-          max_new_tokens: isTiny ? Math.min(maxNewTokens, 64) : maxNewTokens,
+          max_new_tokens: maxNewTokens,
           do_sample: false,
           repetition_penalty: 1.12,
         }
@@ -996,7 +996,7 @@ async function sendChat(text, forcedMode) {
       console.warn('Mintavételes generálás hiba, újrapróbálás mintavétel nélkül:', sampleErr);
       const { temperature: _ignored, top_p: _ignoredTopP, ...fallback } = options;
       fallback.do_sample = false;
-      fallback.max_new_tokens = Math.min(maxNewTokens, 256);
+      fallback.max_new_tokens = maxNewTokens;
       chat.messages.at(-1).content = '…';
       if (bubble.isConnected) bubble.textContent = '…';
       result = await runChatGeneration(pipe, messages, fallback, chat, bubble, log, mode, modelKey);
@@ -1004,17 +1004,17 @@ async function sendChat(text, forcedMode) {
     }
 
     if (!result) {
-      // Előfordul, hogy a modell csak gondolkodási jeleket ír ki. Újrapróbáljuk
-      // rövidebb, mintavétel nélküli generálással, hogy a válasz mégis megíródjon.
-      console.warn('Üres válasz, újrapróbálás rövidebb determinista generálással.');
+      // Előfordul, hogy a modell csak gondolkodási jeleket ír ki. Ugyanakkora
+      // hosszal, mintavétel nélkül újrapróbáljuk, hogy a válasz mégis megíródjon.
+      console.warn('Üres válasz, újrapróbálás determinista generálással.');
       const { temperature: _t, top_p: _p, ...safe } = options;
       safe.do_sample = false;
-      safe.max_new_tokens = Math.min(maxNewTokens, 160);
+      safe.max_new_tokens = maxNewTokens;
       safe.repetition_penalty = 1.05;
       chat.messages.at(-1).content = '…';
       if (bubble.isConnected) bubble.textContent = '…';
       result = await runChatGeneration(pipe, messages, safe, chat, bubble, log, mode, modelKey);
-      if (result) toast('Az első kísérlet üres volt, újrapróbáltam rövidebben.', 'info');
+      if (result) toast('Az első kísérlet üres volt, mintavétel nélkül újrapróbáltam.', 'info');
     }
 
     if (!result) {
