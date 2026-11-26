@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.5.1">
+  <link rel="stylesheet" href="styles.css?v=1.5.2">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.1</span></div>
+          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.2</span></div>
         </div>
       </div>
     </aside>
@@ -288,7 +288,7 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><span class="badge badge-online" data-version>v1.5.1</span></div>
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><div class="view-head-actions"><button id="backToChatBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.2</span></div></div>
 
           <div id="appearancePanel" class="settings-block">
             <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
@@ -379,6 +379,7 @@
             <details open>
               <summary>Kiadások megjelenítése / összecsukása</summary>
               <div class="release-log">
+                <div class="release-item"><b>v1.5.2</b><time>2026-11-26</time><p>A Beállításokból „← Csevegés” gombbal térhetsz vissza a meglévő beszélgetéshez, és az oldalsávról is azonnal a chat nézetbe vált egy régi csevegés kiválasztása.</p></div>
                 <div class="release-item"><b>v1.5.1</b><time>2026-11-26</time><p>A Hugging Face 401/unauthorized hibája helyett érthető magyar útmutatás jelenik meg, és a Beállításokban is látszik, hogy a Nexa HU repo előbb létrejön a Colab notebookból.</p></div>
                 <div class="release-item"><b>v1.5.0</b><time>2026-11-26</time><p>Ha van internet, bármelyik modell használható: az első üzenetnél igény szerint letölti a súlyokat, haladással a buborékban. Szigorú offline módban vagy hálózat nélkül továbbra is csak gyorsítótárazott modellt használ.</p></div>
                 <div class="release-item"><b>v1.4.9</b><time>2026-11-26</time><p>A saját Nexa HU repo beállítása nélkül is választható. Látható verziójelvény, teljes release napló az appban és a CHANGELOG.md fájlban.</p></div>
@@ -414,6 +415,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.5.1"></script>
+  <script type="module" src="app.js?v=1.5.2"></script>
 </body>
 </html>

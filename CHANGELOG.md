@@ -2,6 +2,12 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.2 — 2026-11-26
+
+- A Beállításokból mostantól **„← Csevegés”** gombbal rögtön visszatérhetsz a megnyitott beszélgetéshez, nem kell újat létrehozni.
+- Az oldalsávban egy meglévő csevegésre kattintva az app **ténylegesen a chat nézetbe vált**, még ha Settings/Images/Voice oldalon voltál is.
+- A gyorsítótár verziója `v1.5.2` lett.
+
 ## v1.5.1 — 2026-11-26
 
 - A Hugging Face **401 / unauthorized** hibája helyett érthető magyar üzenet jelenik meg: a Nexa HU repo még nem érhető el, előbb Hugging Face fiók + `HF_TOKEN` + a Colab notebook kell.

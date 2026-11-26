@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.5.2';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -492,6 +492,14 @@ function switchView(name) {
   setMenu(false);
 }
 
+// Visszatérés a már megnyitott csevegésbe (Beállításokból vagy az oldalsávról).
+function returnToChat() {
+  switchView('chat');
+  syncChatHeader();
+  renderChat();
+  setMenu(false);
+}
+
 /* Mobil hamburger menü */
 const menuBtn = $('#menuBtn');
 const menuClose = $('#menuClose');
@@ -720,10 +728,8 @@ function renderChatList() {
     open.addEventListener('click', () => {
       state.activeChatId = chat.id;
       persistChats();
-      syncChatHeader();
-      renderChat();
+      returnToChat();
       renderChatList();
-      setMenu(false);
     });
 
     const rename = document.createElement('button');
@@ -780,6 +786,7 @@ function newChat() {
   $('#chatInput').focus();
 }
 on('#newChatBtn', 'click', newChat);
+on('#backToChatBtn', 'click', returnToChat);
 
 on('#tempChatBtn', 'click', () => {
   const chat = activeChat();

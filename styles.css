@@ -283,6 +283,7 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 .view-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
 .view-head h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.4px; }
 .view-head p { margin: 4px 0 0; }
+.view-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .muted { color: var(--muted); font-size: 13px; }
 .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 .empty-view { padding: 48px 0; color: var(--muted); text-align: center; }
