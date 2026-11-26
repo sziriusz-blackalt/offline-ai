@@ -73,7 +73,7 @@ const MODEL_DEFS = {
     web: 'q4f16', wasm: 'q4f16', sizeMB: 555, override: true,
     probes: ['onnx/model_q4f16.onnx', 'onnx/model_q4.onnx'],
     probe: 'onnx/model_q4f16.onnx',
-    note: 'Kódírásra és magyarázatra hangolva. Telefonon a kódhoz is a chatmodellt használja.',
+    note: 'Kódírásra és magyarázatra hangolva. A Modell menüben bárhol kiválasztható, telefonon is.',
   },
   asr: {
     group: 'Hang', nick: 'Suttogó', icon: '🎧', label: 'Whisper Tiny', task: 'automatic-speech-recognition',
@@ -1211,7 +1211,7 @@ function syncModelButton() {
   if (btn) btn.title = `Modell: ${def.label || key} — kattints a váltáshoz`;
 }
 
-// Csak csevegésre használható modellek. A saját Nexa HU itt mindig szerepel,
+// Csevegésre és kódra használható modellek. A saját Nexa HU itt mindig szerepel,
 // így a felhasználó már a repo beállítása előtt is láthatja, hol lesz elérhető.
 function renderModelMenu() {
   const menu = $('#modelMenu');
