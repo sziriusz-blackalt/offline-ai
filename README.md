@@ -74,7 +74,9 @@ Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek k�
 - MODNet: ~25 MB
 - LFM2.5-VL 450M: ~350 MB
 
-Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet** modelleket letölteni (~340 MB összesen). A Nova és a Forge nagy modellek egyenként is letölthetők, de az „Összes letöltése” telefonon átugorja őket. A küldés többé nem indít el automatikusan hatalmas letöltést: ha a választott modell nincs kész, az app egy már letöltött kisebb modellel válaszol.
+Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet** modelleket letölteni (~340 MB összesen). A Nova és a Forge nagy modellek egyenként is letölthetők, de az „Összes letöltése” telefonon átugorja őket.
+
+A v1.5.0 óta **ha van internet, bármelyik modell azonnal használható**: nem kell előre letölteni, az első üzenetnél az app igény szerint betölti a súlyokat, és a haladást a válaszbuborékban mutatja. **Szigorú offline módban vagy hálózat nélkül** nem indul letöltés: az app egy már gyorsítótárazott modellre esik vissza, vagy egyértelmű hibát ad. A letöltések ezután a böngésző gyorsítótárában maradnak, így később offline is működnek.
 
 A v1.4.9-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 

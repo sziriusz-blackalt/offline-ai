@@ -2,6 +2,13 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.0 — 2026-11-26
+
+- **Ha van internet, bármelyik modell használható**: nem kell előre a Modellek kártyán letölteni — a kiválasztott modell az első üzenetnél igény szerint betölti a súlyokat.
+- A letöltés haladása a válaszbuborékban látszik (`⏬ Modell letöltése… X%`).
+- **Szigorú offline mód** és hálózat hiányában változatlan a viselkedés: nem indul letöltés, az app egy már gyorsítótárazott modellre esik vissza, vagy egyértelmű hibát ad.
+- A saját Nexa HU és a képi/hangmodellek is igény szerint töltenek, amikor elérhető a hálózat.
+
 ## v1.4.9 — 2026-11-26
 
 - A saját **🧠 Nexa HU** modell repo beállítása **nélkül** is választható a csevegő Modell menüjéből; alapértelmezett repo: `sziriusz-blackalt/nexa-hu`.

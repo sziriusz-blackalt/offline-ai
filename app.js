@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.4.9';
+const APP_VERSION = '1.5.0';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -616,7 +616,7 @@ function selectChatModel(key, notify = true) {
   if (!MODEL_DEFS[key]) return;
   commitChatModel(key);
   if (notify && key === 'nexa') {
-    toast('🧠 Nexa HU kiválasztva. Ha még nincs letöltve, a Beállítások → Modellek kártyán nyomj a Letöltésre.', 'info');
+    toast('🧠 Nexa HU kiválasztva. Ha van internet, az első üzenetnél magától letölti a súlyokat; hálózat nélkül a Modellek kártyán töltsd le előre.', 'info');
   }
 }
 
@@ -925,15 +925,23 @@ async function sendChat(text, forcedMode) {
   let modelKey = mode === 'code' && !phoneMode() ? 'code' : $('#chatModel').value;
   if (state.downloading.has(modelKey)) return toast('Ez a modell még töltődik, várj egy pillanatot.', 'info');
 
-  // Küldéskor ne induljon el észrevétlenül egy hatalmas letöltés.
-  if (!await isModelCached(modelKey)) {
+  // Ha van internet és nincs bekapcsolva a szigorú offline mód, bármelyik
+  // modellt használhatjuk: a transformers.js igény szerint letölti a súlyokat.
+  // Hálózat nélkül (vagy szigorú offline módban) továbbra sem indul letöltés,
+  // ilyenkor egy már gyorsítótárazott modell válaszol.
+  const canDownload = navigator.onLine && !offlineMode;
+  const cached = await isModelCached(modelKey);
+  if (!cached && !canDownload) {
     const fallback = await findCachedChatModel();
     if (fallback) {
       toast(`${getDef(modelKey).nick} nincs letöltve — a már elérhető ${getDef(fallback).nick} válaszol.`, 'info');
       modelKey = fallback;
     } else {
-      return toast('Először töltsd le a modellt: Beállítások → Modellek → Letöltés.', 'error');
+      return toast('Nincs internet és a modell nincs letöltve. Kapcsold be a netet, vagy töltsd le a Beállítások → Modellekben.', 'error');
     }
+  }
+  if (canDownload && !cached) {
+    toast(`${getDef(modelKey).nick} nincs még letöltve — most letöltjük. A böngészőben láthatod a haladást.`, 'info');
   }
   state.busyChat = true;
   const sendBtn = $('#chatSend');
@@ -960,7 +968,11 @@ async function sendChat(text, forcedMode) {
   try {
     // Ha váltunk modellt, a régit elengedjük — egyszerre csak egy modell van a memóriában.
     if (state.activePipeKey && state.activePipeKey !== modelKey) await releasePipe(state.activePipeKey);
-    const pipe = await loadPipe(modelKey);
+    const pipe = await loadPipe(modelKey, (ratio, label) => {
+      if (bubble.isConnected) {
+        bubble.textContent = `⏬ ${getDef(modelKey).nick} letöltése… ${label || ''} ${Math.round(ratio * 100)}%`;
+      }
+    });
     state.activePipeKey = modelKey;
     clearTimeout(pipeIdleTimer);
     const messages = [{ role: 'system', content: systemPrompt(mode, modelKey) }];
@@ -1043,7 +1055,7 @@ async function sendChat(text, forcedMode) {
     renderFormatted(bubble, result, mode === 'code');
   } catch (err) {
     console.error(err);
-    const message = `Hiba: ${err?.message || String(err)}. Ellenőrizd a Modellek fülön, hogy a modell le van-e töltve.`;
+    const message = `Hiba: ${err?.message || String(err)}. Ha nincs internet, töltsd le előre a modellt a Beállítások → Modellekben.`;
     chat.messages.at(-1).content = message;
     log.querySelector('.msg.assistant:last-child')?.classList.add('err');
     bubble.textContent = message;
