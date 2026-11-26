@@ -8,6 +8,8 @@ Egyetlen statikus webalkalmazás, ami **telefonon (Android/iOS) és számítóg�
 
 A repó **nyilvános**, a GitHub Pages tartósan kiszolgálja – a laptopnak nem kell bekapcsolva lennie. Androidra van egy aláírt APK is: `offline-ai.apk` (a projekt gyökerében, illetve az `offline-ai-apk-github/` mappában). Ugyanazzal a kulccsal van aláírva, mint a korábbi verzió, így simán frissíti azt.
 
+A teljes változattörténet: [CHANGELOG.md](CHANGELOG.md). Ugyanez az appban is olvasható: **Beállítások → Release napló**.
+
 ## Mit tartalmaz
 
 | Funkció | Modell | Megjegyzés |
@@ -51,11 +53,11 @@ A *Szigorú offline mód* kapcsolóval kikapcsolható minden hálózati modellk�
 
 ## Saját modell (Nexa HU)
 
-A v1.4.8-tól az app képes egy **saját, magyar adatokkal betanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van.
+A v1.4.9-tól az app képes egy **saját, magyar adatokkal betanított modellt** is használni. A csevegőmező melletti gomb a jelenlegi modell nevét mutatja, és rákattintva közvetlenül választható a Szikra, Nova Lite, Nova és Nexa HU. A teljes, Colabban futtatható tanítórendszer a [`nexa-model/`](https://github.com/sziriusz-blackalt/offline-ai/tree/main/nexa-model) mappában van.
 
 A választott út a **nulláról tanított modell**: `nexa_scratch.ipynb`. Saját BPE tokenizáló, véletlen súlyokból indított transzformer, két szakaszú magyar tanítás (Wikipédia + saját minták + Aya + OPUS), majd ONNX/q4 export. Egy kb. 34M-paraméteres modell **nem éri el** a Qwen3-0.6B finomhangolásának minőségét, de a súlyok és a tokenizáló teljesen sajátok. Ha a lehető legjobb magyar tudás a cél, a `nexa_train.ipynb` erősebb alternatíva — mindkettő ugyanabba a Hugging Face repóba tud feltölteni.
 
-Használat: **Beállítások → Modellek → Saját Nexa modell** mezőbe írd be a repo nevét (pl. `sziriusz-blackalt/nexa-hu`), majd a megjelenő **🧠 Nexa HU** kártyán kattints a *Letöltés* gombra. A csevegés **Modell** legördülőjében ezután választható. Üres mező esetén a beépített Nova/Szikra modellek változatlanul működnek, és az „Összes letöltése” sem próbálja letölteni a saját modellt.
+Használat: a csevegő **Modell** gombjából válaszd a **🧠 Nexa HU**-t. A repo mező üresen is jó: az app az alapértelmezett `sziriusz-blackalt/nexa-hu` repót használja. A **Beállítások → Modellek → Nexa HU** kártyán nyomj a *Letöltés* gombra; a mezőt csak akkor kell kitölteni, ha saját repo-d van. Az „Összes letöltése” nem próbálja automatikusan letölteni a még nem létező saját modellt.
 
 ## Tárhelyigény
 
@@ -74,7 +76,7 @@ Az alkalmazás maga ~83 MB (főleg az ONNX Runtime WASM fájljai). A modellek k�
 
 Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet** modelleket letölteni (~340 MB összesen). A Nova és a Forge nagy modellek egyenként is letölthetők, de az „Összes letöltése” telefonon átugorja őket. A küldés többé nem indít el automatikusan hatalmas letöltést: ha a választott modell nincs kész, az app egy már letöltött kisebb modellel válaszol.
 
-A v1.4.8-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
+A v1.4.9-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 
 ## Korlátok
 

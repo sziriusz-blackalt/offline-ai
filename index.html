@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.4.8">
+  <link rel="stylesheet" href="styles.css?v=1.4.9">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version">v1.4.8</span></div>
+          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.4.9</span></div>
         </div>
       </div>
     </aside>
@@ -288,7 +288,7 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div></div>
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><span class="badge badge-online" data-version>v1.4.9</span></div>
 
           <div id="appearancePanel" class="settings-block">
             <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
@@ -358,9 +358,9 @@
               <input type="checkbox" id="offlineToggle">
               <span><b>Szigorú offline mód</b><br><small>Csak gyorsítótárból tölt modellt.</small></span>
             </label>
-            <label>Saját Nexa modell (Hugging Face repo)
-              <input id="nexaRepo" type="text" placeholder="pl. sziriusz-blackalt/nexa-hu" autocomplete="off" spellcheck="false">
-              <small class="hint">Ha saját finomhangolt modellt készítettél, ide írd a repo nevét. Üresen hagyd a beépített modellekhez.</small>
+            <label>Saját Nexa modell repo (opcionális)
+              <input id="nexaRepo" type="text" placeholder="alapértelmezett: sziriusz-blackalt/nexa-hu" autocomplete="off" spellcheck="false">
+              <small class="hint">Üresen is működik: az alapértelmezett repót használja. Csak akkor írj be mást, ha saját repo-d van. A modell a csevegő Modell menüjéből választható.</small>
             </label>
             <div id="modelList" class="model-list"></div>
             <p class="hint">Először a ✨ Novát töltsd le: ez adja az értelmes magyar válaszokat. A ⚡ Szikra csak gyors próbákhoz jó, magyarul gyakran hibás.</p>
@@ -372,12 +372,45 @@
             <p class="muted">Androidon ezt az APK-t telepítsd, és az alkalmazásfiókból indítsd. A böngésző „Hozzáadás a kezdőképernyőhöz” csak parancsikont létre.</p>
             <p class="hint">Régi „Offline AI Stúdió” esetén előbb távolítsd el.</p>
           </div>
+
+          <div class="settings-block">
+            <div class="section-head"><h2>Release napló</h2><span class="muted">Minden kiadás röviden, a legrégebbitől az újig.</span></div>
+            <details open>
+              <summary>Kiadások megjelenítése / összecsukása</summary>
+              <div class="release-log">
+                <div class="release-item"><b>v1.4.9</b><time>2026-11-26</time><p>A saját Nexa HU repo beállítása nélkül is választható. Látható verziójelvény, teljes release napló az appban és a CHANGELOG.md fájlban.</p></div>
+                <div class="release-item"><b>v1.4.8</b><time>2026-11-26</time><p>A saját modell mindig megjelenik a csevegő Modell menüjében, egyértelmű letöltési útmutatással.</p></div>
+                <div class="release-item"><b>v1.4.7</b><time>2026-11-26</time><p>Nincs rejtett tokenkorlát: a válasz a beállított hosszig ír. Csiszolt két szakaszú és nulláról tanító notebookok.</p></div>
+                <div class="release-item"><b>v1.4.6</b><time>2026-11-26</time><p>A válaszidőzítő eltűnt, a modell teljes válaszokat ír. Megjelent a két szakaszú magyar tanítási terv.</p></div>
+                <div class="release-item"><b>v1.4.5</b><time>2026-11-25</time><p>30 másodperces telefonos válaszkeret, q4f16 Nova Lite, rövid rendszerüzenet. Ezt a korlátot a v1.4.6 eltávolította.</p></div>
+                <div class="release-item"><b>v1.4.4</b><time>2026-11-25</time><p>A modellválasztó modellneveket mutat, nem gyorsválasz-módokat.</p></div>
+                <div class="release-item"><b>v1.4.3</b><time>2026-11-25</time><p>A betöltött modell tétlenségig a memóriában marad, így a következő kérdés gyorsabb.</p></div>
+                <div class="release-item"><b>v1.4.2</b><time>2026-11-25</time><p>A tényleges súlyfájl ellenőrzése tartalékmodell váltás előtt; küldéskor nem indul automatikus letöltés.</p></div>
+                <div class="release-item"><b>v1.4.1</b><time>2026-11-25</time><p>Gyorsabb telefonos út: q4f16 letöltések, Nova Lite alapértelmezés, nincs észrevétlen modellletöltés.</p></div>
+                <div class="release-item"><b>v1.4.0</b><time>2026-11-25</time><p>Saját Nexa HU finomhangolási folyamat és konfigurálható egyedi modell. Dokumentáció- és notebook-javítások.</p></div>
+                <div class="release-item"><b>v1.3.3</b><time>2026-11-24</time><p>A Qwen3 üres válaszainak javítása automatikus újrapróbálással.</p></div>
+                <div class="release-item"><b>v1.3.2</b><time>2026-11-24</time><p>Egyértelműbb modell-útmutatás és válaszminőségi javítások.</p></div>
+                <div class="release-item"><b>v1.3.1</b><time>2026-11-24</time><p>Jobb modellalapértelmezések, egyszerűbb utasítások, új adatvédelmi oldal.</p></div>
+                <div class="release-item"><b>v1.3.0</b><time>2026-11-24</time><p>Skinnek, háttérképek, gyorsabb mobil csevegés és összeomlásjavítások.</p></div>
+                <div class="release-item"><b>v1.2.2</b><time>2026-11-24</time><p>Reszponzív elrendezés verziózott CSS/JS fájlokkal a gyorsítótár frissítéséhez.</p></div>
+                <div class="release-item"><b>v1.2.1</b><time>2026-11-24</time><p>ChatGPT-szerű reszponzív elrendezés.</p></div>
+                <div class="release-item"><b>v1.2.0</b><time>2026-11-24</time><p>Csevegési munkamenetek, biztonságosabb generálás és valódi APK telepítés.</p></div>
+                <div class="release-item"><b>v1.1.2</b><time>2026-11-24</time><p>Barátságos modellnevek: Szikra, Nova, Forge, Suttogó, Szirén, Látó, Olló, Látnok.</p></div>
+                <div class="release-item"><b>v1.1.1</b><time>2026-11-24</time><p>A Telepítés gomb valódi, aláírt APK-t tölt le.</p></div>
+                <div class="release-item"><b>v1.1.0</b><time>2026-11-24</time><p>Az alkalmazás neve Nexa AI lett.</p></div>
+                <div class="release-item"><b>v1.0.8</b><time>2026-11-24</time><p>Letölthető APK-link hozzáadása.</p></div>
+                <div class="release-item"><b>v1.0.7</b><time>2026-11-24</time><p>Mobil CSS frissítése új shell-cache verzióval.</p></div>
+                <div class="release-item"><b>v1.0.6</b><time>2026-11-24</time><p>Nagyobb érintőfelületek, safe-area támogatás, nincs túlcsordulás mobilon.</p></div>
+                <div class="release-item"><b>v1.0.5</b><time>2026-11-24</time><p>Első teljes offline PWA: SEO meta, robots.txt, sitemap.xml és állandó GitHub Pages URL.</p></div>
+              </div>
+            </details>
+          </div>
         </section>
       </main>
     </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.4.8"></script>
+  <script type="module" src="app.js?v=1.4.9"></script>
 </body>
 </html>

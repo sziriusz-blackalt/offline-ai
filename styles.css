@@ -548,3 +548,10 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
   .composer { gap: 2px; }
   .composer-icon { width: 36px; }
 }
+
+.release-log { margin-top: 14px; display: grid; gap: 12px; }
+.release-item { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; }
+.release-item b { color: var(--text); }
+.release-item time { color: var(--muted); font-size: 12px; margin-left: 8px; }
+.release-item p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.release-log + summary, details > summary { cursor: pointer; color: var(--muted); font-size: 13px; }

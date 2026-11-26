@@ -63,11 +63,11 @@ Ha a Wikipédia letöltése nem sikerül, a notebook kiírja, hogy kihagyta, és
 ## 3. Használata a Nexa AI appban
 
 1. Győződj meg róla, hogy a repo **nyilvános**.
-2. Nexa AI → **Beállítások → Modellek → Saját Nexa modell** → írd be: `sziriusz-blackalt/nexa-hu`.
-3. A **🧠 Nexa HU** kártyán kattints a **Letöltés** gombra.
-4. A csevegő **Modell** gombjából válaszd a **🧠 Nexa HU**-t.
+2. A csevegő **Modell** gombjából válaszd a **🧠 Nexa HU**-t — repo mező kitöltése nem kötelező, az app az alapértelmezett `sziriusz-blackalt/nexa-hu` repót használja.
+3. A **Beállítások → Modellek → Nexa HU** kártyán kattints a **Letöltés** gombra.
+4. Csak akkor írd be a repo nevét a **Saját Nexa modell** mezőbe, ha saját repo-d van.
 
-A mező üresen hagyása esetén az app továbbra is a beépített Nova/Nova Lite/Szikra modelleket használja; az „Összes letöltése” nem próbálja letölteni a saját modellt. A v1.4.8 óta **nincs válaszidőzítő és nincs rejtett tokenkorlát** sem.
+Az „Összes letöltése” nem próbálja automatikusan letölteni a még nem létező saját modellt. A v1.4.9 óta **nincs válaszidőzítő és nincs rejtett tokenkorlát** sem.
 
 ## Hibaelhárítás
 

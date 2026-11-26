@@ -21,7 +21,8 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const SHELL_CACHE = 'offline-ai-v1.4.8-shell';
+const APP_VERSION = '1.4.9';
+const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
   nexa: {
@@ -103,8 +104,8 @@ const MODEL_DEFS = {
   },
 };
 
-// A saját modell csak akkor jelenik meg, ha a felhasználó megadta a repo nevét.
-// Így a beépített modellek és az „Összes letöltése” változatlanul működnek.
+// A saját modell alapból az alapértelmezett repót használja; a mező csak felülírás.
+// A beépített modellek és az „Összes letöltése” így is változatlanul működnek.
 const NEXA_REPO_KEY = 'nexaRepo';
 function nexaRepo() {
   return (localStorage.getItem(NEXA_REPO_KEY) || '').trim();
@@ -112,8 +113,9 @@ function nexaRepo() {
 function modelDefs() {
   const defs = { ...MODEL_DEFS };
   const repo = nexaRepo();
+  // A saját modell mindig elérhető: üres repo mező esetén az alapértelmezett
+  // sziriusz-blackalt/nexa-hu repót használjuk. A mező csak felülírásra szolgál.
   if (repo) defs.nexa = { ...MODEL_DEFS.nexa, model: repo };
-  else delete defs.nexa;
   return defs;
 }
 function getDef(key) {
@@ -609,33 +611,20 @@ function commitChatModel(key) {
   renderModelMenu();
 }
 
-// A saját modell mindig választható a csevegő Modell gombjáról. Ha még nincs
-// megadva a repo, odairányítunk a Beállításokhoz, de nem indítunk letöltést.
+// A saját modell mindig választható a csevegő Modell gombjáról, repo beállítása nélkül is.
 function selectChatModel(key, notify = true) {
   if (!MODEL_DEFS[key]) return;
-  if (key === 'nexa' && !nexaRepo()) {
-    const previous = localStorage.getItem('chatModel');
-    commitChatModel(previous && previous !== 'nexa' ? previous : (phoneMode() ? 'lite' : 'chat'));
-    if (notify) {
-      toast('A saját modellhez add meg a repo nevét: Beállítások → Saját Nexa modell.', 'info');
-      switchView('settings');
-    }
-    return;
-  }
   commitChatModel(key);
   if (notify && key === 'nexa') {
-    toast(nexaRepo()
-      ? '🧠 Nexa HU kiválasztva. Ha még nincs letöltve, a Modellek kártyán nyomj a Letöltésre.'
-      : '🧠 Nexa HU kiválasztva.', 'info');
+    toast('🧠 Nexa HU kiválasztva. Ha még nincs letöltve, a Beállítások → Modellek kártyán nyomj a Letöltésre.', 'info');
   }
 }
 
 const defaultChatModel = phoneMode() ? 'lite' : 'chat';
 let savedChatModel = localStorage.getItem('chatModel') || defaultChatModel;
-if (!MODEL_DEFS[savedChatModel] || (savedChatModel === 'nexa' && !nexaRepo())) {
-  savedChatModel = defaultChatModel;
-}
+if (!MODEL_DEFS[savedChatModel]) savedChatModel = defaultChatModel;
 commitChatModel(savedChatModel);
+$$('[data-version]').forEach((el) => { el.textContent = 'v' + APP_VERSION; });
 on('#chatModel', 'change', (e) => selectChatModel(e.target.value));
 
 /* ---------------------------- chat ------------------------------ */
@@ -934,9 +923,6 @@ async function sendChat(text, forcedMode) {
   // Telefonon a kód is a kiválasztott chatmodellt használja: így nem kell
   // külön 555 MB-os Forge-ot letölteni csak azért, mert kódot kérünk.
   let modelKey = mode === 'code' && !phoneMode() ? 'code' : $('#chatModel').value;
-  if (modelKey === 'nexa' && !nexaRepo()) {
-    return toast('A saját modell nincs beállítva: Beállítások → Saját Nexa modell.', 'error');
-  }
   if (state.downloading.has(modelKey)) return toast('Ez a modell még töltődik, várj egy pillanatot.', 'info');
 
   // Küldéskor ne induljon el észrevétlenül egy hatalmas letöltés.
@@ -1125,8 +1111,8 @@ function renderModelMenu() {
     btn.type = 'button';
     btn.dataset.model = key;
     btn.classList.toggle('active', key === current);
-    const detail = key === 'nexa' && !nexaRepo()
-      ? 'saját modell – add meg a repót a Beállításokban'
+    const detail = key === 'nexa'
+      ? `saját modell – ${nexaRepo() || MODEL_DEFS.nexa.model}`
       : def.label || key;
     btn.textContent = `${def.icon || '✨'} ${def.nick || key} — ${detail}`;
     menu.appendChild(btn);
@@ -1714,6 +1700,8 @@ on('#downloadAll', 'click', async () => {
   // Ezeket egyenként lehet letölteni; az alap csomag így is teljesen használható.
   const keys = Object.keys(modelDefs()).filter((key) => !(phoneMode() && (key === 'chat' || key === 'code')));
   for (const key of keys) {
+    // A saját modellt ne próbáljuk automatikusan letölteni, ha a repo még nem létezik.
+    if (key === 'nexa' && !nexaRepo() && !await isModelCached(key)) continue;
     await downloadModel(key);
   }
   btn.disabled = false;
@@ -1776,19 +1764,12 @@ on('#dtypeSelect', 'change', (e) => {
   updateDeviceHint();
 });
 
-// Saját modell: mindig választható, de a repo csak megadása után használható.
+// Saját modell: mindig választható. A repo mező csak felülírja az alapértelmezettet.
 function syncNexaOption() {
-  const select = $('#chatModel');
-  const option = select?.querySelector('option[value="nexa"]');
+  const option = $('#chatModel')?.querySelector('option[value="nexa"]');
   if (option) {
     option.hidden = false;
-    option.textContent = nexaRepo()
-      ? `🧠 Nexa HU · saját modell (${nexaRepo()})`
-      : '🧠 Nexa HU · saját modell (repo beállítása szükséges)';
-  }
-  if (select && select.value === 'nexa' && !nexaRepo()) {
-    const previous = localStorage.getItem('chatModel');
-    commitChatModel(previous && previous !== 'nexa' ? previous : (phoneMode() ? 'lite' : 'chat'));
+    option.textContent = `🧠 Nexa HU · saját modell (${nexaRepo() || MODEL_DEFS.nexa.model})`;
   }
   syncModelButton();
   renderModelMenu();
@@ -1802,7 +1783,7 @@ if (nexaInput) {
     state.pipes.delete('nexa');
     syncNexaOption();
     refreshModels();
-    toast(nexaRepo() ? 'Saját Nexa modell bekapcsolva.' : 'Saját Nexa modell kikapcsolva.', 'info');
+    toast(nexaRepo() ? 'Egyedi Nexa repo beállítva.' : 'Alapértelmezett Nexa repo használata.', 'info');
   });
 }
 
