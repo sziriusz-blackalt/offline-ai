@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -382,6 +382,19 @@ function generationOptions(key, device, dtype, extra = {}) {
     local_files_only: offlineMode,
     ...extra,
   };
+}
+
+// A Hugging Face 401-et ad, ha a repo nem létezik, privát vagy a fiók nincs meg.
+// Ezt nem hagyjuk nyers "unauthorized" üzenetként a felhasználóra ömleszteni.
+function friendlyModelError(err, key) {
+  const raw = String(err?.message || err || '');
+  if (/401|unauthorized|invalid username or password|not found|403|gated|private/i.test(raw)) {
+    if (key === 'nexa') {
+      return 'A Nexa HU repo még nem érhető el. Először létre kell hozni a Hugging Face fiókot, le kell futtatni a Colab notebookot HF_TOKEN-nel, és a repónak nyilvánosnak kell lennie.';
+    }
+    return 'A modell repo nem érhető el (401). Ellenőrizd a hálózatot, vagy válassz másik modellt.';
+  }
+  return raw;
 }
 
 function progressHandler(def, onProgress) {
@@ -1055,7 +1068,7 @@ async function sendChat(text, forcedMode) {
     renderFormatted(bubble, result, mode === 'code');
   } catch (err) {
     console.error(err);
-    const message = `Hiba: ${err?.message || String(err)}. Ha nincs internet, töltsd le előre a modellt a Beállítások → Modellekben.`;
+    const message = `Hiba: ${friendlyModelError(err, modelKey)}. Ha nincs internet, töltsd le előre a modellt a Beállítások → Modellekben.`;
     chat.messages.at(-1).content = message;
     log.querySelector('.msg.assistant:last-child')?.classList.add('err');
     bubble.textContent = message;
@@ -1696,7 +1709,7 @@ async function downloadModel(key) {
   } catch (err) {
     console.error(err);
     setProgress(key, 0, 'Hiba');
-    toast(`${def.nick}: ${err?.message || String(err)}`, 'error');
+    toast(`${def.nick}: ${friendlyModelError(err, key)}`, 'error');
   } finally {
     state.downloading.delete(key);
     refreshModels();

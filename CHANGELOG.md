@@ -2,6 +2,12 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.1 — 2026-11-26
+
+- A Hugging Face **401 / unauthorized** hibája helyett érthető magyar üzenet jelenik meg: a Nexa HU repo még nem érhető el, előbb Hugging Face fiók + `HF_TOKEN` + a Colab notebook kell.
+- A Beállításokban közvetlen Colab-link és magyarázat olvasható az előfeltételről.
+- Megjegyzés: a `sziriusz-blackalt` Hugging Face fiók jelenleg **nem létezik** (404), ezért a repo sem tud létrejönni. Ezért jött a 401 — nem alkalmazáshiba.
+
 ## v1.5.0 — 2026-11-26
 
 - **Ha van internet, bármelyik modell használható**: nem kell előre a Modellek kártyán letölteni — a kiválasztott modell az első üzenetnél igény szerint betölti a súlyokat.

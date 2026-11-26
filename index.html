@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.5.0">
+  <link rel="stylesheet" href="styles.css?v=1.5.1">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.0</span></div>
+          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.1</span></div>
         </div>
       </div>
     </aside>
@@ -288,7 +288,7 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><span class="badge badge-online" data-version>v1.5.0</span></div>
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><span class="badge badge-online" data-version>v1.5.1</span></div>
 
           <div id="appearancePanel" class="settings-block">
             <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
@@ -361,6 +361,7 @@
             <label>Saját Nexa modell repo (opcionális)
               <input id="nexaRepo" type="text" placeholder="alapértelmezett: sziriusz-blackalt/nexa-hu" autocomplete="off" spellcheck="false">
               <small class="hint">Üresen is működik: az alapértelmezett repót használja. Csak akkor írj be mást, ha saját repo-d van. A modell a csevegő Modell menüjéből választható.</small>
+              <small class="hint">A Nexa HU súlyait a <a href="https://colab.research.google.com/github/sziriusz-blackalt/offline-ai/blob/main/nexa-model/nexa_scratch.ipynb" target="_blank" rel="noopener">Colab notebook</a> tanítja és tölti fel. Ha a Hugging Face fiók/repo még nem nyilvános, a letöltés <b>401 (unauthorized)</b> hibát ad — ez nem alkalmazáshiba.</small>
             </label>
             <div id="modelList" class="model-list"></div>
             <p class="hint">Először a ✨ Novát töltsd le: ez adja az értelmes magyar válaszokat. A ⚡ Szikra csak gyors próbákhoz jó, magyarul gyakran hibás.</p>
@@ -378,6 +379,7 @@
             <details open>
               <summary>Kiadások megjelenítése / összecsukása</summary>
               <div class="release-log">
+                <div class="release-item"><b>v1.5.1</b><time>2026-11-26</time><p>A Hugging Face 401/unauthorized hibája helyett érthető magyar útmutatás jelenik meg, és a Beállításokban is látszik, hogy a Nexa HU repo előbb létrejön a Colab notebookból.</p></div>
                 <div class="release-item"><b>v1.5.0</b><time>2026-11-26</time><p>Ha van internet, bármelyik modell használható: az első üzenetnél igény szerint letölti a súlyokat, haladással a buborékban. Szigorú offline módban vagy hálózat nélkül továbbra is csak gyorsítótárazott modellt használ.</p></div>
                 <div class="release-item"><b>v1.4.9</b><time>2026-11-26</time><p>A saját Nexa HU repo beállítása nélkül is választható. Látható verziójelvény, teljes release napló az appban és a CHANGELOG.md fájlban.</p></div>
                 <div class="release-item"><b>v1.4.8</b><time>2026-11-26</time><p>A saját modell mindig megjelenik a csevegő Modell menüjében, egyértelmű letöltési útmutatással.</p></div>
@@ -412,6 +414,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.5.0"></script>
+  <script type="module" src="app.js?v=1.5.1"></script>
 </body>
 </html>
