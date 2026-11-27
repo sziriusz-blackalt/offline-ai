@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.3';
+const APP_VERSION = '1.5.4';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -1744,6 +1744,7 @@ async function refreshModels() {
     const actions = document.createElement('div');
     actions.className = 'model-actions';
     const dl = document.createElement('button');
+    dl.type = 'button';
     dl.className = 'btn btn-primary';
     dl.textContent = info.cached ? 'Újra letöltés' : 'Letöltés';
     dl.addEventListener('click', () => downloadModel(key));
@@ -1751,6 +1752,7 @@ async function refreshModels() {
 
     if (info.cached) {
       const del = document.createElement('button');
+      del.type = 'button';
       del.className = 'btn btn-ghost';
       del.textContent = 'Gyorsítótár törlése';
       del.addEventListener('click', async () => {
@@ -1782,6 +1784,43 @@ async function refreshModels() {
   });
 }
 
+// A nagy modelleket nem szabad letöltés közben betölteni: az 500 MB fölötti
+// WASM-példány telefonon memóriahiányt okozhat, és a böngésző bezárja a lapot.
+// Itt csak a fájlokat tesszük a Cache Storage-ba; a modellt a chat hozza létre.
+async function cacheModelFiles(key, onProgress = () => {}) {
+  const def = getDef(key);
+  const device = await resolveDevice();
+  const dtype = await resolveDtype(key, device);
+  const files = await ModelRegistry.get_pipeline_files(def.task, def.model, { device, dtype });
+  const cache = await caches.open(env.cacheKey);
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const url = modelUrl(def.model, file);
+    if (await cache.match(url)) {
+      onProgress((i + 1) / files.length, file);
+      continue;
+    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Letöltési hiba (${response.status}): ${file}`);
+    const total = Number(response.headers.get('content-length')) || 0;
+    if (total && response.body) {
+      const counter = response.clone();
+      (async () => {
+        const reader = counter.body.getReader();
+        let loaded = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          loaded += value.length;
+          onProgress((i + loaded / total) / files.length, file);
+        }
+      })().catch(() => {});
+    }
+    await cache.put(url, response);
+    onProgress((i + 1) / files.length, file);
+  }
+}
+
 async function downloadModel(key) {
   if (state.downloading.has(key)) return;
   const def = getDef(key);
@@ -1802,6 +1841,7 @@ async function downloadModel(key) {
       toast(`${def.nick} készen áll offline használatra.`, 'ok');
       return;
     }
+    if (!navigator.onLine) throw new Error('Nincs internet. A modellt csak hálózat közben lehet letölteni.');
     // A telefon gyakran nem a hálózat, hanem a böngésző tárhelykorlátja miatt bukik meg.
     if (navigator.storage?.estimate) {
       const { usage = 0, quota = 0 } = await navigator.storage.estimate();
@@ -1811,23 +1851,16 @@ async function downloadModel(key) {
       }
     }
     if (def.extras) for (const extra of def.extras) await warmVoiceFile(extra);
-    const pipeKey = def.special ? 'vlm' : key;
-    const alreadyLoaded = state.pipes.has(pipeKey);
-    if (!alreadyLoaded) {
-      let pipe;
-      if (def.special) pipe = await getVlm((ratio, label) => setProgress(key, ratio, label));
-      else pipe = await loadPipe(key, (ratio, label) => setProgress(key, ratio, label));
-      setProgress(key, 1, 'Kész');
-
-      // A modell a gyorsítótárban marad, de a memóriát felszabadítjuk.
-      // Ha épp használatban van, nem szabad dispose-olni.
-      if (def.special) await pipe.model.dispose?.();
-      else await pipe.dispose?.();
-      state.pipes.delete(pipeKey);
-      if (state.activePipeKey === pipeKey) state.activePipeKey = null;
+    if (def.special) {
+      // A képi modellnél a processor és a modell külön csomag, marad a régi út.
+      const pipe = await getVlm((ratio, label) => setProgress(key, ratio, label));
+      await pipe.model.dispose?.();
+      state.pipes.delete('vlm');
+      if (state.activePipeKey === 'vlm') state.activePipeKey = null;
     } else {
-      setProgress(key, 1, 'Már betöltve');
+      await cacheModelFiles(key, (ratio, label) => setProgress(key, ratio, label));
     }
+    setProgress(key, 1, 'Kész');
     toast(`${def.nick} készen áll offline használatra.`, 'ok');
   } catch (err) {
     console.error(err);

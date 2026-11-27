@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.5.3">
+  <link rel="stylesheet" href="styles.css?v=1.5.4">
   <script type="importmap">
   {
     "imports": {
@@ -93,7 +93,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.3</span></div>
+          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.4</span></div>
         </div>
       </div>
     </aside>
@@ -290,7 +290,7 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><div class="view-head-actions"><button id="backToChatBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.3</span></div></div>
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><div class="view-head-actions"><button id="backToChatBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.4</span></div></div>
 
           <div id="appearancePanel" class="settings-block">
             <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
@@ -381,6 +381,7 @@
             <details open>
               <summary>Kiadások megjelenítése / összecsukása</summary>
               <div class="release-log">
+                <div class="release-item"><b>v1.5.4</b><time>2026-11-27</time><p>Az 555 MB-os Forge (és a Nova) letöltése több nem példányosítja a modellt a memóriában, csak a fájlokat teszi a gyorsítótárba — telefonon így nem záródik be a lap. Egyértelmű hiba üzenet, ha nincs internet vagy kevés a tárhely.</p></div>
                 <div class="release-item"><b>v1.5.3</b><time>2026-11-26</time><p>Új, külön letölthető modell: a 🇭🇺 Magyarusz — tanuló magyar AI, ami kódot ír és tanítható. A Forge most a Modell menüben is kiválasztható. A csevegés felső és alsó sávja ragasztva marad, a beépített hátterek (Forest, Aurora, Dusk, Graphite) valódi képek. Offline, telefonon a lassú Nova/Forge helyett egy már letöltött gyors modell válaszol.</p></div>
                 <div class="release-item"><b>v1.5.2</b><time>2026-11-26</time><p>A Beállításokból „← Csevegés” gombbal térhetsz vissza a meglévő beszélgetéshez, és az oldalsávról is azonnal a chat nézetbe vált egy régi csevegés kiválasztása.</p></div>
                 <div class="release-item"><b>v1.5.1</b><time>2026-11-26</time><p>A Hugging Face 401/unauthorized hibája helyett érthető magyar útmutatás jelenik meg, és a Beállításokban is látszik, hogy a Nexa HU repo előbb létrejön a Colab notebookból.</p></div>
@@ -418,6 +419,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.5.3"></script>
+  <script type="module" src="app.js?v=1.5.4"></script>
 </body>
 </html>

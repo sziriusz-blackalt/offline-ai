@@ -2,6 +2,13 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.4 — 2026-11-27
+
+- A **Forge** (555 MB) és a **Nova** (570 MB) letöltése nem hoz létre modellpéldányt a memóriában: a `downloadModel` mostantól közvetlenül a szükséges fájlokat teszi a `transformers-cache` gyorsítótárba, streaming haladással. Ez megszünteti a telefonos memóriahiányt, amely korábban bezárta a lapot / kilépett az oldalról.
+- A letöltő gombok explicit `type="button"`-t kaptak, így semmilyen körülmények között nem indítanak űrlapbeküldést vagy navigációt.
+- Hálózat hiányában a modellletöltés azonnal egyértelmű magyar hibát ad, nem próbálkozik csendben.
+- A képi modell (Látnok) továbbra is a régi, processorral közös úton tölt, mert ott a fájlok külön csomagok.
+
 ## v1.5.3 — 2026-11-26
 
 - **Új külön modell: 🇭🇺 Magyarusz.** A mellékelt, önálló tanuló magyar AI beépült az alkalmazásba: a chat **Modell** menüjéből választható, és a **Beállítások → Modellek → Magyarusz → Letöltés** gombbal kell letölteni — ugyanúgy, mint a többi modellt. Utána offline is működik, tanítható („Tanulj: kérdés => válasz”), kódot ír, számol, fordít.
