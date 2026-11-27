@@ -6,7 +6,7 @@ Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül
 
 - A kódblokkok gombjai most **Futtatás – Mentés – Másolás** sorrendben vannak (a Magyarusz saját oldalán is).
 - A futtatott program nem a kód alján, hanem **a képernyő közepén, egy külön alkalmazásablakban** jelenik meg (átlátszó háttér, bezárás / újraindítás / Esc). A kód a beszélgetésben marad.
-- A Magyarusz beépített tudása magyar Wikipédia-cikkekből (Magyarország, Budapest, magyar nyelv, mesterséges intelligencia, számítógép) származó, párbeszédre használható tényekkel bővült.
+- A Magyarusz beépített tudása magyar Wikipédia-cikkekből (Magyarország, Budapest, magyar nyelv, mesterséges intelligencia, számítógép) származó, párbeszédre használható tényekkel bővült. A „mesélj …-ról” kérések most a tényleges témához tartozó cikket adják vissza, nem véletlenül összekevert adatokat.
 - Új kódgenerálási sablon: „számológép szivárványos háttérrel” és hasonló, teljes, futtatható HTML alkalmazások.
 
 ## v1.5.6 — 2026-11-27
