@@ -85,6 +85,8 @@ Telefonon érdemes először csak a **Nova Lite**, **Whisper Tiny** és **MODNet
 
 A v1.5.0 óta **ha van internet, bármelyik modell azonnal használható**: nem kell előre letölteni, az első üzenetnél az app igény szerint betölti a súlyokat, és a haladást a válaszbuborékban mutatja. **Szigorú offline módban vagy hálózat nélkül** nem indul letöltés: az app egy már gyorsítótárazott modellre esik vissza, vagy egyértelmű hibát ad. A letöltések ezután a böngésző gyorsítótárában maradnak, így később offline is működnek. A v1.5.4 óta a letöltés **csak a fájlokat** teszi a gyorsítótárba, nem tölti be a modellt a memóriába — ezért az 555 MB-os Forge és az 570 MB-os Nova telefonon sem zárja be a lapot.
 
+A v1.5.5 óta a generált kód egyetlen dobozban jelenik meg: a **Másolás** a teljes kódot teszi a vágólapra (tartalék megoldással is), a **Mentés** fájlba írja, a JavaScript/HTML kódnál pedig a **▶ Futtatás** a kód alatt, helyben, sandboxolt iframe-ben mutatja az eredményt — a kód közben látható marad. Ugyanígy jelenik meg a Magyarusz és a Forge kódja is.
+
 A v1.4.9-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 
 ## Korlátok

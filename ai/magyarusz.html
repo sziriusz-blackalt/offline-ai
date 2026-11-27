@@ -28,6 +28,8 @@
   .ch{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:#141b24;color:var(--mut);font-size:12px}
   .ch button{background:none;border:1px solid #33445a;color:var(--txt);border-radius:6px;padding:3px 8px;font-size:12px}
   .code pre{margin:0;padding:10px;overflow-x:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;color:#cfe3ff}
+  .cout{border-top:1px solid #2d3b4f;background:#0b0f14}
+  .cout iframe{display:block;width:100%;min-height:130px;border:0;background:#0b0f14}
   .note{font-size:11px;color:var(--mut);margin:3px 0 0 6px}
   .fb{display:flex;gap:6px;margin:3px 0 0 4px}
   .fb button{background:none;border:0;font-size:15px;opacity:.55;padding:2px 6px}
@@ -1203,11 +1205,23 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
     return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#0b0f14;color:#cfe3ff;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px"><pre id="o" style="white-space:pre-wrap;margin:0"></pre>'+SHIM+S1+cap+S2+S1+safe+S2+'</body></html>';
   }
   let lastRun = null;
-  function runCode(lang, code, title){
+  // A futtatás eredménye a kód alatt, helyben jelenik meg – a kód látható marad.
+  function runCode(lang, code, title, box, rb){
     lastRun = {lang, code};
-    $('#rtitle').textContent = title || 'Futó program';
-    $('#frame').srcdoc = buildDoc(lang, code);
-    if(!$('#drun').open) $('#drun').showModal();
+    let out = box.querySelector('.cout');
+    if(!out){
+      out=document.createElement('div'); out.className='cout';
+      const oh=document.createElement('div'); oh.className='ch';
+      const lab=document.createElement('span'); lab.textContent='Eredmény'+(title?' – '+title:'');
+      const cl=document.createElement('button'); cl.type='button'; cl.textContent='✕'; cl.title='Eredmény bezárása';
+      cl.onclick=()=>{ out.remove(); if(rb) rb.textContent='▶ Futtatás'; };
+      oh.append(lab,cl);
+      const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.title='Kód eredménye';
+      out.append(oh,fr); box.appendChild(out);
+    }
+    out.querySelector('iframe').srcdoc = buildDoc(lang, code);
+    if(rb) rb.textContent='↻ Újra';
+    out.scrollIntoView?.({block:'nearest'});
   }
   function saveFile(lang, code){
     const blob = new Blob([code],{type:'text/plain;charset=utf-8'});
@@ -1240,7 +1254,7 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
       const bs=document.createElement('span'); bs.className='bs';
       if(runnable(lang)){
         const rb=document.createElement('button'); rb.type='button'; rb.textContent='▶ Futtatás';
-        rb.onclick = ()=>runCode(lang, code, 'Futó program ('+(LNAME[canon(lang)]||lang)+')');
+        rb.onclick = ()=>runCode(lang, code, LNAME[canon(lang)]||lang, box, rb);
         bs.appendChild(rb);
       }
       const sb=document.createElement('button'); sb.type='button'; sb.textContent='Mentés';

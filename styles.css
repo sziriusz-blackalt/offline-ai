@@ -321,6 +321,19 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 .code-wrap pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; overflow: auto; }
 .code-wrap code { white-space: pre-wrap; }
 
+/* Kódgenerálás: egy doboz fejléccel, teljes másolás + helyben futtatás. */
+.code-box { margin: 8px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.code-box-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 10px; background: var(--surface); border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.code-box-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.code-btn { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.code-btn:hover { border-color: var(--accent); color: var(--accent); }
+.code-run { border-color: var(--accent); color: var(--accent); }
+.code-box pre { margin: 0; padding: 12px; overflow-x: auto; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+.code-box code { white-space: pre-wrap; }
+.code-out { border-top: 1px solid var(--border); background: #0b0f14; }
+.code-out-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; color: #9aa3ad; font-size: 12px; border-bottom: 1px solid #223044; }
+.code-frame { display: block; width: 100%; min-height: 120px; border: 0; background: #0b0f14; }
+
 .advanced-panel {
   width: min(850px, calc(100% - 40px)); margin: 0 auto 10px; padding: 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;

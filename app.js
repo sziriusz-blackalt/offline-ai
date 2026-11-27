@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.4';
+const APP_VERSION = '1.5.5';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -662,29 +662,150 @@ on('#chatModel', 'change', (e) => selectChatModel(e.target.value));
 
 /* ---------------------------- chat ------------------------------ */
 
+// Egységes kódblokk: egy doboz, a teljes kód másolása, helyben futtatás.
+const CODE_LABELS = {
+  javascript: 'JavaScript', js: 'JavaScript', html: 'HTML', htm: 'HTML',
+  python: 'Python', py: 'Python', css: 'CSS', sql: 'SQL', bash: 'Bash',
+  sh: 'Bash', git: 'Git', json: 'JSON', xml: 'XML', text: 'Szöveg'
+};
+const RUNNABLE_LANGS = new Set(['html', 'htm', 'javascript', 'js']);
+const CODE_EXT = { javascript: 'js', js: 'js', html: 'html', htm: 'html', python: 'py', py: 'py', css: 'css', sql: 'sql', bash: 'sh', sh: 'sh', json: 'json' };
+
+function copyCode(text, btn) {
+  const done = () => {
+    if (!btn) return;
+    btn.textContent = 'Másolva ✓';
+    setTimeout(() => { btn.textContent = 'Másolás'; }, 1500);
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch { /* a böngésző tiltja */ }
+    ta.remove();
+  };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
+}
+
+// A futtatás sandboxolt iframe-ben történik, saját (opaque) originnal:
+// a kód nem fér hozzá az oldal adataihoz, mégis fut a készüléken.
+const S1 = '<scr' + 'ipt>', S2 = '<\/scr' + 'ipt>';
+const LS_SHIM = S1 + "try{window.localStorage.getItem('x')}catch(e){var _m={};Object.defineProperty(window,'localStorage',{value:{getItem:function(k){return k in _m?_m[k]:null},setItem:function(k,v){_m[k]=String(v)},removeItem:function(k){delete _m[k]},clear:function(){_m={}}}})}" + S2;
+
+function codeRunDoc(lang, code) {
+  if (lang === 'html' || lang === 'htm') {
+    if (/<head[^>]*>/i.test(code)) return code.replace(/<head[^>]*>/i, (m) => m + LS_SHIM);
+    return LS_SHIM + code;
+  }
+  const cap = "var o=document.getElementById('o');function w(a){o.textContent+=Array.prototype.map.call(a,function(x){try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')+'\\n'}console.log=console.info=console.warn=console.error=function(){w(arguments)};window.onerror=function(m){w(['Hiba: '+m])};";
+  const safe = code.replace(/<\/script/gi, '<\\/script');
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#0b0f14;color:#cfe3ff;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px"><pre id="o" style="white-space:pre-wrap;margin:0"></pre>' + LS_SHIM + S1 + cap + S2 + S1 + safe + S2 + '</body></html>';
+}
+
+function codeBlock(langRaw, raw) {
+  const lang = (langRaw || '').trim().toLowerCase();
+  const canon = lang === 'js' ? 'javascript' : lang === 'htm' ? 'html' : lang === 'py' ? 'python' : lang;
+  const code = raw.replace(/\n$/, '');
+  const wrap = document.createElement('div');
+  wrap.className = 'code-box';
+  const head = document.createElement('div');
+  head.className = 'code-box-head';
+  const label = document.createElement('span');
+  label.textContent = CODE_LABELS[canon] || lang || 'kód';
+  const actions = document.createElement('div');
+  actions.className = 'code-box-actions';
+
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'code-btn';
+  copy.textContent = 'Másolás';
+  copy.title = 'A teljes kód másolása vágólapra';
+  copy.addEventListener('click', () => copyCode(code, copy));
+  actions.appendChild(copy);
+
+  let runBtn = null, out = null, frame = null;
+  if (RUNNABLE_LANGS.has(canon)) {
+    runBtn = document.createElement('button');
+    runBtn.type = 'button';
+    runBtn.className = 'code-btn code-run';
+    runBtn.textContent = '▶ Futtatás';
+    runBtn.title = 'Futtatás helyben, a készüléken';
+    runBtn.addEventListener('click', () => {
+      if (!out) {
+        out = document.createElement('div');
+        out.className = 'code-out';
+        const oh = document.createElement('div');
+        oh.className = 'code-out-head';
+        const t = document.createElement('span');
+        t.textContent = 'Eredmény';
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'code-btn';
+        close.textContent = '✕';
+        close.title = 'Eredmény bezárása';
+        close.addEventListener('click', () => {
+          out.remove(); out = null; frame = null;
+          if (runBtn) runBtn.textContent = '▶ Futtatás';
+        });
+        oh.append(t, close);
+        frame = document.createElement('iframe');
+        frame.className = 'code-frame';
+        frame.title = 'Kód eredménye';
+        frame.setAttribute('sandbox', 'allow-scripts');
+        out.append(oh, frame);
+        wrap.appendChild(out);
+      }
+      frame.srcdoc = codeRunDoc(canon, code);
+      runBtn.textContent = '↻ Újra';
+      out.scrollIntoView?.({ block: 'nearest' });
+    });
+    actions.appendChild(runBtn);
+  }
+
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'code-btn';
+  save.textContent = 'Mentés';
+  save.title = 'Kód mentése fájlba';
+  save.addEventListener('click', () => {
+    const ext = CODE_EXT[canon] || 'txt';
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'nexa-kod.' + ext;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+  actions.appendChild(save);
+
+  head.append(label, actions);
+  const pre = document.createElement('pre');
+  const codeEl = document.createElement('code');
+  codeEl.textContent = code;
+  pre.appendChild(codeEl);
+  wrap.append(head, pre);
+  return wrap;
+}
+
 function renderFormatted(container, text, isCode) {
   container.textContent = '';
-  if (!isCode) {
+  // A kódkeretet akkor is felismerjük, ha a beszélgetés nem kódmódban van
+  // (pl. a Magyarusz kódgenerálása): a ``` jelek mindenhol számítanak.
+  if (!isCode && !text.includes('```')) {
     container.textContent = text;
     return;
   }
   const parts = text.split(/```/);
   parts.forEach((part, index) => {
     if (index % 2 === 1) {
-      const wrap = document.createElement('div');
-      wrap.className = 'code-wrap';
-      const pre = document.createElement('pre');
-      pre.style.cssText = 'background:var(--surface-2);padding:10px;border-radius:8px;overflow:auto;white-space:pre-wrap';
-      const code = document.createElement('code');
-      code.textContent = part.replace(/^[a-zA-Z0-9+#-]+\n/, '');
-      pre.appendChild(code);
-      const copy = document.createElement('button');
-      copy.className = 'btn btn-ghost';
-      copy.style.cssText = 'font-size:11px;padding:4px 8px;margin-top:4px';
-      copy.textContent = 'Másolás';
-      copy.addEventListener('click', () => navigator.clipboard?.writeText(code.textContent));
-      wrap.append(pre, copy);
-      container.appendChild(wrap);
+      const nl = part.indexOf('\n');
+      const lang = nl < 0 ? '' : part.slice(0, nl);
+      const body = nl < 0 ? part : part.slice(nl + 1);
+      container.appendChild(codeBlock(lang, body));
     } else if (part.trim()) {
       const p = document.createElement('div');
       p.textContent = part;
@@ -1060,7 +1181,7 @@ async function sendChat(text, forcedMode) {
       if (!result) throw new Error('A Magyarusz nem írt szöveget.');
       chat.messages.at(-1).content = result;
       bubble.textContent = '';
-      renderFormatted(bubble, result, false);
+      renderFormatted(bubble, result, true);
     } catch (err) {
       console.error(err);
       const message = `Hiba: ${friendlyModelError(err, modelKey)}`;

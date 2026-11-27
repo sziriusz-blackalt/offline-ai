@@ -2,6 +2,14 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.5 — 2026-11-27
+
+- A kódgenerálás megjelenítése egységesült: minden modell (beleértve a **Magyarusz** és a **Forge**) kódja egyetlen, fejlécelt dobozban jelenik meg, még nem-kódmódban is — a ``` kereteket a megjelenítő automatikusan felismeri.
+- A doboz **Másolás** gombja a teljes kódot másolja, vágólap-hiba esetén `execCommand` tartalékkal, „Másolva ✓” visszajelzéssel. **Mentés** gomb letölti a kódot a megfelelő kiterjesztéssel.
+- A JavaScript és HTML kód **helyben futtatható** a kód alatt: az eredmény egy sandboxolt iframe-ben jelenik meg, miközben a kód maga látható marad a képernyőn. A futás újraindítható („↻ Újra”) és bezárható („✕”).
+- Az önálló `ai/magyarusz.html` futatása is a kód alatti, beágyazott eredményre váltott — nem takarja el a kódot modal ablakkal.
+- A futtató környezet saját (opaque) originnal és `localStorage` shimmel dolgozik, így a generált kód nem fér hozzá az alkalmazás adataihoz.
+
 ## v1.5.4 — 2026-11-27
 
 - A **Forge** (555 MB) és a **Nova** (570 MB) letöltése nem hoz létre modellpéldányt a memóriában: a `downloadModel` mostantól közvetlenül a szükséges fájlokat teszi a `transformers-cache` gyorsítótárba, streaming haladással. Ez megszünteti a telefonos memóriahiányt, amely korábban bezárta a lapot / kilépett az oldalról.
