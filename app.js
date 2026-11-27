@@ -2028,10 +2028,11 @@ async function downloadModel(key) {
   setProgress(key, 0, 'Indítás');
   try {
     if (def.local) {
-      if (!navigator.onLine) throw new Error('Nincs internet. A csomagot csak hálózat közben lehet letölteni.');
       const url = modelUrl(def.model, def.probe);
       const cache = await caches.open(env.cacheKey);
-      if (!(await cache.match(url))) {
+      const ready = (await cache.match(url)) || (await caches.match(url));
+      if (!ready) {
+        if (!navigator.onLine) throw new Error('Nincs internet. A csomagot csak hálózat közben lehet letölteni.');
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`A csomag letöltése nem sikerült (${response.status}).`);
         try { await cache.put(url, response.clone()); }
