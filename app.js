@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.6';
+const APP_VERSION = '1.5.7';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -715,6 +715,54 @@ function codeRunDoc(lang, code) {
   return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#0b0f14;color:#cfe3ff;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px"><pre id="o" style="white-space:pre-wrap;margin:0"></pre>' + LS_SHIM + S1 + cap + S2 + S1 + safe + S2 + '</body></html>';
 }
 
+// A futó program középen, egy külön alkalmazásablakban jelenik meg.
+// A kód maga a beszélgetésben marad, az ablak bezárásával oda térünk vissza.
+let codeApp = null;
+function openCodeApp(lang, code, title) {
+  codeApp?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'code-app-overlay';
+  const win = document.createElement('div');
+  win.className = 'code-app-window';
+  const bar = document.createElement('div');
+  bar.className = 'code-app-bar';
+  const label = document.createElement('span');
+  label.textContent = `▶ ${title || 'Futó program'}`;
+  const tools = document.createElement('div');
+  tools.className = 'code-app-tools';
+  const reload = document.createElement('button');
+  reload.type = 'button';
+  reload.className = 'code-btn';
+  reload.textContent = '↻ Újra';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'code-btn';
+  close.textContent = '✕';
+  close.title = 'Ablak bezárása';
+  const frame = document.createElement('iframe');
+  frame.className = 'code-app-frame';
+  frame.title = 'Kód eredménye';
+  frame.setAttribute('sandbox', 'allow-scripts');
+  const load = () => { frame.srcdoc = codeRunDoc(lang, code); };
+  const shut = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+    if (codeApp === overlay) codeApp = null;
+  };
+  const onKey = (e) => { if (e.key === 'Escape') shut(); };
+  reload.addEventListener('click', load);
+  close.addEventListener('click', shut);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) shut(); });
+  document.addEventListener('keydown', onKey);
+  tools.append(reload, close);
+  bar.append(label, tools);
+  win.append(bar, frame);
+  overlay.appendChild(win);
+  document.body.appendChild(overlay);
+  codeApp = overlay;
+  load();
+}
+
 function codeBlock(langRaw, raw) {
   const lang = (langRaw || '').trim().toLowerCase();
   const canon = lang === 'js' ? 'javascript' : lang === 'htm' ? 'html' : lang === 'py' ? 'python' : lang;
@@ -728,51 +776,15 @@ function codeBlock(langRaw, raw) {
   const actions = document.createElement('div');
   actions.className = 'code-box-actions';
 
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.className = 'code-btn';
-  copy.textContent = 'Másolás';
-  copy.title = 'A teljes kód másolása vágólapra';
-  copy.addEventListener('click', () => copyCode(code, copy));
-  actions.appendChild(copy);
-
-  let runBtn = null, out = null, frame = null;
+  // Kért sorrend: Futtatás, Mentés, Másolás.
   if (RUNNABLE_LANGS.has(canon)) {
-    runBtn = document.createElement('button');
-    runBtn.type = 'button';
-    runBtn.className = 'code-btn code-run';
-    runBtn.textContent = '▶ Futtatás';
-    runBtn.title = 'Futtatás helyben, a készüléken';
-    runBtn.addEventListener('click', () => {
-      if (!out) {
-        out = document.createElement('div');
-        out.className = 'code-out';
-        const oh = document.createElement('div');
-        oh.className = 'code-out-head';
-        const t = document.createElement('span');
-        t.textContent = 'Eredmény';
-        const close = document.createElement('button');
-        close.type = 'button';
-        close.className = 'code-btn';
-        close.textContent = '✕';
-        close.title = 'Eredmény bezárása';
-        close.addEventListener('click', () => {
-          out.remove(); out = null; frame = null;
-          if (runBtn) runBtn.textContent = '▶ Futtatás';
-        });
-        oh.append(t, close);
-        frame = document.createElement('iframe');
-        frame.className = 'code-frame';
-        frame.title = 'Kód eredménye';
-        frame.setAttribute('sandbox', 'allow-scripts');
-        out.append(oh, frame);
-        wrap.appendChild(out);
-      }
-      frame.srcdoc = codeRunDoc(canon, code);
-      runBtn.textContent = '↻ Újra';
-      out.scrollIntoView?.({ block: 'nearest' });
-    });
-    actions.appendChild(runBtn);
+    const run = document.createElement('button');
+    run.type = 'button';
+    run.className = 'code-btn code-run';
+    run.textContent = '▶ Futtatás';
+    run.title = 'Futtatás külön alkalmazásablakban, a készüléken';
+    run.addEventListener('click', () => openCodeApp(canon, code, CODE_LABELS[canon] || lang || 'kód'));
+    actions.appendChild(run);
   }
 
   const save = document.createElement('button');
@@ -791,6 +803,14 @@ function codeBlock(langRaw, raw) {
     a.remove();
   });
   actions.appendChild(save);
+
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'code-btn';
+  copy.textContent = 'Másolás';
+  copy.title = 'A teljes kód másolása vágólapra';
+  copy.addEventListener('click', () => copyCode(code, copy));
+  actions.appendChild(copy);
 
   head.append(label, actions);
   const pre = document.createElement('pre');

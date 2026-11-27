@@ -87,7 +87,9 @@ A v1.5.0 óta **ha van internet, bármelyik modell azonnal használható**: nem 
 
 A v1.5.6 óta a képi modellek a kiválasztott képfájlt közvetlenül olvassák be (nem blob URL-en át), így nem dobják a „Failed to fetch” hibát. A képekhez használt modelleket a **Beállítások → Modellek** menüben előre le kell tölteni; offline módban a már letöltött súlyok a gyorsítótárból működnek. A Release napló saját fülként érhető el az oldalsávban.
 
-A v1.5.5 óta a generált kód egyetlen dobozban jelenik meg: a **Másolás** a teljes kódot teszi a vágólapra (tartalék megoldással is), a **Mentés** fájlba írja, a JavaScript/HTML kódnál pedig a **▶ Futtatás** a kód alatt, helyben, sandboxolt iframe-ben mutatja az eredményt — a kód közben látható marad. Ugyanígy jelenik meg a Magyarusz és a Forge kódja is.
+A v1.5.7 óta a generált kód egyetlen dobozban jelenik meg, a gombok sorrendje **▶ Futtatás – Mentés – Másolás**. A **Másolás** a teljes kódot teszi a vágólapra (tartalék megoldással is), a **Mentés** fájlba írja, a **▶ Futtatás** pedig a képernyő közepén, egy külön alkalmazásablakban futtatja helyben, sandboxolt iframe-ben — a kód közben látható marad. Ugyanígy működik a Magyarusz és a Forge kódja is.
+
+A Magyarusz beépített szótára magyar Wikipédia-cikkekből származó tényekkel bővült (Magyarország, Budapest, Duna, Balaton, magyar nyelv, mesterséges intelligencia, programozási nyelv stb.). A kódgenerálás felismeri a „szivárványos háttér” kérést: pl. a „csinálj egy számológépet szivárványos háttérrel” teljes, futtatható HTML alkalmazást ad.
 
 A v1.4.9-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 

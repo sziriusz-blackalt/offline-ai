@@ -2,6 +2,13 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.7 — 2026-11-27
+
+- A kódblokkok gombjai most **Futtatás – Mentés – Másolás** sorrendben vannak (a Magyarusz saját oldalán is).
+- A futtatott program nem a kód alján, hanem **a képernyő közepén, egy külön alkalmazásablakban** jelenik meg (átlátszó háttér, bezárás / újraindítás / Esc). A kód a beszélgetésben marad.
+- A Magyarusz beépített tudása magyar Wikipédia-cikkekből (Magyarország, Budapest, magyar nyelv, mesterséges intelligencia, számítógép) származó, párbeszédre használható tényekkel bővült.
+- Új kódgenerálási sablon: „számológép szivárványos háttérrel” és hasonló, teljes, futtatható HTML alkalmazások.
+
 ## v1.5.6 — 2026-11-27
 
 - **Képi modellek javítása:** a kiválasztott `File`/`Blob` közvetlenül kerül a `RawImage.read()`-be (a könyvtár támogatja), így nem kell `blob:` URL-t `fetch`-elni — ez volt a „Failed to fetch” egyik oka.

@@ -330,9 +330,12 @@ body.sidebar-collapsed #sidebarCollapse svg { transform: rotate(180deg); }
 .code-run { border-color: var(--accent); color: var(--accent); }
 .code-box pre { margin: 0; padding: 12px; overflow-x: auto; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
 .code-box code { white-space: pre-wrap; }
-.code-out { border-top: 1px solid var(--border); background: #0b0f14; }
-.code-out-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; color: #9aa3ad; font-size: 12px; border-bottom: 1px solid #223044; }
-.code-frame { display: block; width: 100%; min-height: 120px; border: 0; background: #0b0f14; }
+/* A futtatás eredménye középen, külön alkalmazásablakban. */
+.code-app-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .66); }
+.code-app-window { width: min(960px, 94vw); height: min(78vh, 760px); display: flex; flex-direction: column; background: #0b0f14; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 24px 80px rgba(0, 0, 0, .6); }
+.code-app-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 13px; }
+.code-app-tools { display: flex; gap: 6px; }
+.code-app-frame { flex: 1; width: 100%; border: 0; background: #0b0f14; }
 
 .advanced-panel {
   width: min(850px, calc(100% - 40px)); margin: 0 auto 10px; padding: 12px;
