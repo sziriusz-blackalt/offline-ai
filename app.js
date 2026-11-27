@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.5';
+const APP_VERSION = '1.5.6';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -183,6 +183,11 @@ env.logLevel = LogLevel.ERROR;
 // rendben van (a cache kulcsa így is a Hugging Face URL), de szigorú offline
 // módban a `local_files_only` miatt ez a kapcsolónak BE kell lennie.
 env.allowLocalModels = localStorage.getItem('offline') === '1';
+// A súlyokat a Hugging Face URL-jére cache-eljük. Ha strict offline módban
+// allowRemoteModels=false lenne, a könyvtár a `/models/` útra váltana, ahol
+// nincsenek fájljaink – innen jött a „Failed to fetch”. A cache-first kérés
+// így is offline marad: ha a fájl nincs a gyorsítótárban, az app előbb jelez.
+env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.useWasmCache = true;
 env.backends.onnx.wasm.wasmPaths = new URL('./vendor/ort/', import.meta.url).href;
@@ -400,6 +405,9 @@ function generationOptions(key, device, dtype, extra = {}) {
 // Ezt nem hagyjuk nyers "unauthorized" üzenetként a felhasználóra ömleszteni.
 function friendlyModelError(err, key) {
   const raw = String(err?.message || err || '');
+  if (/failed to fetch|networkerror|network error|fetch failed|load failed|could not connect|internet/i.test(raw)) {
+    return 'A modell fájljait nem sikerült elérni. Szigorú offline módban vagy hálózat nélkül előbb töltsd le a modellt: Beállítások → Modellek → a modell → Letöltés. Hálózattal ellenőrizd a kapcsolatot, és próbáld újra — egy nagy modell letöltése több percig is tarthat.';
+  }
   if (/401|unauthorized|invalid username or password|not found|403|gated|private/i.test(raw)) {
     if (key === 'nexa') {
       return 'A Nexa HU repo még nem érhető el. Először létre kell hozni a Hugging Face fiókot, le kell futtatni a Colab notebookot HF_TOKEN-nel, és a repónak nyilvánosnak kell lennie.';
@@ -545,6 +553,8 @@ window.addEventListener('resize', () => {
 $$('.side-item[data-view]').forEach((btn) => btn.addEventListener('click', () => {
   switchView(btn.dataset.view);
 }));
+on('#settingsReleaseBtn', 'click', () => switchView('release'));
+on('#releaseBackBtn', 'click', () => returnToChat());
 
 /* Keresés az oldalsávban */
 on('#sidebarSearch', 'click', () => {
@@ -1626,9 +1636,19 @@ on('#imgCaptionFile', 'change', (e) => showPreview(e.target, '#imgCaptionPreview
 on('#imgMatteFile', 'change', (e) => showPreview(e.target, '#imgMattePreview', 'matte'));
 on('#vlmFile', 'change', (e) => showPreview(e.target, '#vlmPreview', 'vlm'));
 
-function fileToUrl(file) {
-  return URL.createObjectURL(file);
+// A képi modelleket is ugyanúgy kell először letölteni, mint a csevegőket.
+// A nyers „Failed to fetch” helyett érthető magyar útmutatást adunk.
+async function ensureImageModel(key) {
+  const def = getDef(key);
+  if (await isModelCached(key)) return;
+  if (offlineMode || !navigator.onLine) {
+    throw new Error(`${def.nick} nincs letöltve. Kapcsold be a netet, vagy töltsd le: Beállítások → Modellek → ${def.nick} → Letöltés.`);
+  }
+  toast(`${def.nick} nincs még letöltve — most letöltjük. Ez egy nagy fájl, eltarthat egy-két percig.`, 'info');
 }
+
+// A File-t közvetlenül adjuk át a könyvtárnak: a RawImage.read Blob-ot is
+// elfogad, így nem kell blob: URL-t fetchelni (ez okozta a „Failed to fetch”-t).
 
 on('#captionBtn', 'click', async () => {
   const file = state.files.caption;
@@ -1638,14 +1658,17 @@ on('#captionBtn', 'click', async () => {
   btn.textContent = 'Feldolgozás…';
   $('#captionResult').value = 'A modell dolgozik…';
   try {
-    const pipe = await loadPipe('caption');
-    const output = await pipe(fileToUrl(file), { max_new_tokens: 64 });
+    await ensureImageModel('caption');
+    const pipe = await loadPipe('caption', (ratio, label) => {
+      $('#captionResult').value = `Modell betöltése: ${Math.round(ratio * 100)}% ${label || ''}`.trim();
+    });
+    const output = await pipe(file, { max_new_tokens: 64 });
     const text = Array.isArray(output) ? (output[0]?.generated_text ?? JSON.stringify(output[0])) : String(output);
-    $('#captionResult').value = text;
+    $('#captionResult').value = text || 'A modell nem írt leírást. Próbálj másik képet vagy modellt.';
   } catch (err) {
     console.error(err);
-    $('#captionResult').value = '';
-    toast(`Képfelismerési hiba: ${err.message}`, 'error');
+    $('#captionResult').value = friendlyModelError(err, 'caption');
+    toast(`Képfelismerési hiba: ${friendlyModelError(err, 'caption')}`, 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Leírás készítése';
@@ -1687,8 +1710,11 @@ on('#matteBtn', 'click', async () => {
   btn.disabled = true;
   btn.textContent = 'Feldolgozás…';
   try {
-    const pipe = await loadPipe('matte');
-    const output = await pipe(fileToUrl(file));
+    await ensureImageModel('matte');
+    const pipe = await loadPipe('matte', (ratio, label) => {
+      $('#matteResult').textContent = `Modell betöltése: ${Math.round(ratio * 100)}% ${label || ''}`.trim();
+    });
+    const output = await pipe(file);
     const raw = Array.isArray(output) ? output[0] : output;
     const canvas = rawImageToCanvas(raw);
     if (state.matteUrl) URL.revokeObjectURL(state.matteUrl);
@@ -1702,7 +1728,8 @@ on('#matteBtn', 'click', async () => {
     $('#matteDownload').disabled = false;
   } catch (err) {
     console.error(err);
-    toast(`Háttér eltávolítási hiba: ${err.message}`, 'error');
+    $('#matteResult').textContent = friendlyModelError(err, 'matte');
+    toast(`Háttér eltávolítási hiba: ${friendlyModelError(err, 'matte')}`, 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Háttér eltávolítása';
@@ -1726,13 +1753,17 @@ on('#vlmBtn', 'click', async () => {
   btn.textContent = '…';
   $('#vlmResult').value = 'A modell dolgozik…';
   try {
-    const { processor, model } = await getVlm();
+    await ensureImageModel('vlm');
+    const { processor, model } = await getVlm((ratio, label) => {
+      $('#vlmResult').value = `Modell betöltése: ${Math.round(ratio * 100)}% ${label || ''}`.trim();
+    });
     const messages = [{
       role: 'user',
       content: [{ type: 'image' }, { type: 'text', text: question }],
     }];
     const promptText = processor.apply_chat_template(messages, { add_generation_prompt: true });
-    const image = await load_image(fileToUrl(file));
+    // A File-t közvetlenül olvassuk be – nem kell blob: URL-t fetchelni.
+    const image = await load_image(file);
     const inputs = await processor(image, promptText, { add_special_tokens: false });
     const outputs = await model.generate({
       ...inputs,
@@ -1742,11 +1773,12 @@ on('#vlmBtn', 'click', async () => {
       max_new_tokens: 160,
     });
     const generated = outputs.slice(null, [inputs.input_ids.dims.at(-1), null]);
-    $('#vlmResult').value = processor.batch_decode(generated, { skip_special_tokens: true })[0];
+    const answer = processor.batch_decode(generated, { skip_special_tokens: true })[0];
+    $('#vlmResult').value = answer || 'A modell nem írt választ. Próbálj rövidebb, angol nyelvű kérdést.';
   } catch (err) {
     console.error(err);
-    $('#vlmResult').value = '';
-    toast(`Képi modell hiba: ${err.message}`, 'error');
+    $('#vlmResult').value = friendlyModelError(err, 'vlm');
+    toast(`Képi modell hiba: ${friendlyModelError(err, 'vlm')}`, 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Kérdés';
@@ -2049,7 +2081,8 @@ on('#offlineToggle', 'change', (e) => {
   const value = e.target.checked;
   localStorage.setItem('offline', value ? '1' : '0');
   offlineMode = value;
-  env.allowRemoteModels = !value;
+  // Itt is a HF URL-t használjuk, mert oda van cache-elve a modell.
+  env.allowRemoteModels = true;
   env.allowLocalModels = value;
   toast(value ? 'Szigorú offline mód bekapcsolva.' : 'Hálózati letöltés engedélyezve.', 'info');
   refreshModels();

@@ -2,6 +2,14 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.6 — 2026-11-27
+
+- **Képi modellek javítása:** a kiválasztott `File`/`Blob` közvetlenül kerül a `RawImage.read()`-be (a könyvtár támogatja), így nem kell `blob:` URL-t `fetch`-elni — ez volt a „Failed to fetch” egyik oka.
+- **Szigorú offline mód:** a `env.allowRemoteModels` többé nem kapcsol ki. A súlyokat a Hugging Face URL-jére cache-eljük, és a könyvtár előbb a Cache API-ból olvas; a `/models/` helyi út váltása korábban üres keresést és hálózati hibát eredményezett.
+- A képi modelleknél (👁️ Látó, ✂️ Olló, 🔮 Látnok) indulás előtt ellenőrizzük a gyorsítótárat: ha nincs letöltve és offline van, magyar útmutatás jelenik meg a Beállítások → Modellek felé. Nagy modell letöltésekor haladás látszik az eredménymezőben.
+- A nyers „Failed to fetch” / hálózati hibák helyett érthető magyar hibaüzenet jelenik meg minden modellnél.
+- A **Release napló** saját fülre került a bal oldalsávban (Settings mellett); a Beállításokból is át lehet rajta ugrani.
+
 ## v1.5.5 — 2026-11-27
 
 - A kódgenerálás megjelenítése egységesült: minden modell (beleértve a **Magyarusz** és a **Forge**) kódja egyetlen, fejlécelt dobozban jelenik meg, még nem-kódmódban is — a ``` kereteket a megjelenítő automatikusan felismeri.
