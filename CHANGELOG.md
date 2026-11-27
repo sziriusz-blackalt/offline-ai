@@ -2,6 +2,13 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.10 — 2026-11-27
+
+- **Javított offline indítás:** a modell betöltését most a tényleges hálózati kapcsolat és a szigorú offline kapcsoló együtt vezérli. Hálózat nélkül a `local_files_only` minden módban bekapcsol, ezért nem indul hálózati kérés, és a már letöltött súlyok továbbra is betölthetők.
+- **Teljesebb gyorsítótár-ellenőrzés:** az app nem egyetlen probefájlból dönt, hanem a modell összes szükséges konfig-, tokenizer- és súlyfájlját ellenőrzi. A hiányos letöltés érthető magyar hibát ad, nem „Failed to fetch”-t.
+- **Változatbarevizió-barát csomagok:** a korábban letöltött `magyarusz.html` és tudáscsomag a verziószám (`?v=...`) megváltozása után is felismerhető és használható marad.
+- Offline a beállított quantizáció helyett automatikusan azt a típus választja, amelyik fájl tényleg a gyorsítótárban van.
+
 ## v1.5.9 — 2026-11-27
 
 - **107 892 magyar szó és fogalom:** új, opcionálisan letölthető adatcsomag a Magyaruszhoz. Források: Magyar Wikipédia (rövid, magyar nyelvű bevezetők), Magyar WordNet (magyar definíciók) és egy magyar helyesírási szótár. „Mi az a sakk?”, „Ki volt Mátyás király?”, „Mesélj a mesterséges intelligenciáról” — mind offline, az első letöltés után.

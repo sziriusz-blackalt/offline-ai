@@ -101,7 +101,7 @@
   const KEY = 'magyarusz_agy_v1';
   const SEED_V = 5;
   const FENCE = '\x60\x60\x60';
-  const PACK_URL = './magyarusz-pack.js?v=1.5.9';
+  const PACK_URL = './magyarusz-pack.js?v=1.5.10';
   const S1 = '<scr'+'ipt>', S2 = '<\/scr'+'ipt>';
 
   let storageOK = true;
@@ -249,6 +249,25 @@
     p._index = m;
     return m;
   }
+  async function findCachedPack(){
+    // A ?v=... verziószám változhat, a már letöltött csomag viszont a régi
+    // URL alatt is tökéletesen használható offline.
+    try{
+      const exact = await caches.match(PACK_URL);
+      if(exact) return exact;
+      const wanted = new URL(PACK_URL, location.href);
+      for(const name of await caches.keys()){
+        const cache = await caches.open(name);
+        for(const req of await cache.keys()){
+          const candidate = new URL(req.url, location.href);
+          if(candidate.origin === wanted.origin && candidate.pathname === wanted.pathname){
+            return cache.match(req);
+          }
+        }
+      }
+    }catch(e){}
+    return null;
+  }
   async function packReady(){
     if(window.NEXA_PACK && Array.isArray(window.NEXA_PACK.entries)) return true;
     if(_packPromise) return _packPromise;
@@ -257,8 +276,7 @@
       try{
         // Előbb a gyorsítótárból próbáljuk — szigorú offline módban így
         // egyáltalán nem indul hálózati kérés.
-        let cached = null;
-        try{ cached = await caches.match(PACK_URL); }catch(e){}
+        const cached = await findCachedPack();
         if(cached){
           try{
             const text = await cached.text();

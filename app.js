@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.9';
+const APP_VERSION = '1.5.10';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -29,8 +29,8 @@ const MODEL_DEFS = {
     group: 'Csevegés', nick: 'Magyarusz', icon: '🇭🇺',
     label: 'Magyarusz · külön tanuló magyar AI (saját csomag)',
     task: 'text-generation',
-    model: './ai/magyarusz.html?v=1.5.9',
-    probe: './ai/magyarusz.html?v=1.5.9',
+    model: './ai/magyarusz.html?v=1.5.10',
+    probe: './ai/magyarusz.html?v=1.5.10',
     web: 'local', wasm: 'local', sizeMB: 0.2, override: false,
     local: true,
     note: 'Külön, saját magyar AI: beszélgetik, kódot ír, és tanítod. A csomagot le kell tölteni; utána offline is működik.',
@@ -39,8 +39,8 @@ const MODEL_DEFS = {
     group: 'Adatcsomag', nick: 'Magyarusz tudáscsomag', icon: '📚',
     label: '107 892 magyar szó és fogalom (opcionális adatcsomag)',
     task: 'text-generation',
-    model: './ai/magyarusz-pack.js?v=1.5.9',
-    probe: './ai/magyarusz-pack.js?v=1.5.9',
+    model: './ai/magyarusz-pack.js?v=1.5.10',
+    probe: './ai/magyarusz-pack.js?v=1.5.10',
     web: 'local', wasm: 'local', sizeMB: 15, override: false,
     local: true,
     note: 'Magyar Wikipédia, Magyar WordNet és helyesírási szótár. Első letöltés után offline is működik; a chatmodell-lista nem mutatja.',
@@ -189,14 +189,11 @@ const state = {
 /* ----------------------------- setup ----------------------------- */
 
 env.logLevel = LogLevel.ERROR;
-// A v4 böngészőben alapból kikapcsolja a "helyi" modelleket. Online módban ez
-// rendben van (a cache kulcsa így is a Hugging Face URL), de szigorú offline
-// módban a `local_files_only` miatt ez a kapcsolónak BE kell lennie.
-env.allowLocalModels = localStorage.getItem('offline') === '1';
-// A súlyokat a Hugging Face URL-jére cache-eljük. Ha strict offline módban
-// allowRemoteModels=false lenne, a könyvtár a `/models/` útra váltana, ahol
-// nincsenek fájljaink – innen jött a „Failed to fetch”. A cache-first kérés
-// így is offline marad: ha a fájl nincs a gyorsítótárban, az app előbb jelez.
+// A súlyokat a Hugging Face URL-jére cache-eljük, ezért a remote engedélye
+// mindig maradjon bekapcsolva: így a könyvtár ugyanazt a cache kulcsot keresi
+// offline és online módban is. A hálózatot a `local_files_only` állítja le,
+// aminek viszont a `allowLocalModels=true` feltétele. A pontos beállítást a
+// syncNetworkEnv() végzi a kapcsoló és a navigator.onLine alapján.
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.useWasmCache = true;
@@ -291,7 +288,25 @@ function schedulePipeRelease() {
 let offlineMode = localStorage.getItem('offline') === '1';
 const toggleEl = $('#offlineToggle');
 if (toggleEl) toggleEl.checked = offlineMode;
-env.allowRemoteModels = !offlineMode;
+
+// Egyetlen helyen döntjük el, hogy szabad-e hálózatot használni. A régi
+// kódban a szigorú offline kapcsoló az `allowRemoteModels=false` értéket
+// állította be, miközben a `local_files_only` csak a kapcsolót nézte: sima
+// „nincs net” állapotban a könyvtár még próbált volna letölteni, illetve
+// rossz konfiguráció esetén egyáltalán nem engedte be a gyorsítótárat.
+function networkAllowed() {
+  return navigator.onLine && !offlineMode;
+}
+
+function syncNetworkEnv() {
+  // A cache-elt távoli fájlok akkor is elérhetők, ha a hálózat épp nincs.
+  // A transformers.js viszont csak akkor engedi őket `local_files_only`-val,
+  // ha a helyi modellek engedélye be van kapcsolva.
+  env.allowLocalModels = !networkAllowed();
+  env.allowRemoteModels = true;
+}
+
+syncNetworkEnv();
 
 const theme = localStorage.getItem('theme') || 'dark';
 document.documentElement.dataset.theme = theme;
@@ -379,15 +394,29 @@ function modelUrl(model, file) {
   return `${env.remoteHost.replace(/\/$/, '')}/${model}/resolve/main/${file}`;
 }
 
+// A verziószám a fájlnevekben változhat, az offline példány viszont a régi
+// URL alatt van eltárolva. Ugyanaz az útvonal ezért ugyanazt a fájlt jelenti,
+// akkor is, ha a query string (`?v=...`) már nem egyezik.
+async function cachedUrl(url) {
+  try {
+    if (await caches.match(url)) return url;
+    const wanted = new URL(url, location.href);
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name);
+      for (const request of await cache.keys()) {
+        const candidate = new URL(request.url, location.href);
+        if (candidate.origin === wanted.origin && candidate.pathname === wanted.pathname) {
+          return candidate.href;
+        }
+      }
+    }
+  } catch { /* Cache Storage nem érhető el */ }
+  return null;
+}
+
 async function isFileCached(model, file) {
   try {
-    const url = modelUrl(model, file);
-    const cache = await caches.open(env.cacheKey);
-    if (await cache.match(url)) return true;
-    // A service worker a helyi fájlokat a héj-gyorsítótárba is teheti;
-    // ilyenkor a csomag valójában offline elérhető, még ha a modellcache
-    // nem is tartalmazza.
-    return Boolean(await caches.match(url));
+    return Boolean(await cachedUrl(modelUrl(model, file)));
   } catch { return false; }
 }
 
@@ -399,11 +428,39 @@ async function resolveDevice() {
   return (typeof navigator !== 'undefined' && navigator.gpu) ? 'webgpu' : 'wasm';
 }
 
+const DTYPE_FILE_TESTS = {
+  q4f16: /_q4f16\.onnx$/i,
+  q4: /_q4(?!f16)\.onnx$/i,
+  q8: /(_q8|_quantized)\.onnx$/i,
+  fp16: /_fp16\.onnx$/i,
+  fp32: /(^|\/)model\.onnx$/i,
+  int8: /_int8\.onnx$/i,
+};
+
+function cachedDtype(files, preferred) {
+  const order = [preferred, 'q4f16', 'q4', 'q8', 'fp16', 'fp32', 'int8'];
+  const seen = new Set();
+  for (const dtype of order) {
+    if (!dtype || seen.has(dtype)) continue;
+    seen.add(dtype);
+    const test = DTYPE_FILE_TESTS[dtype];
+    if (test && files.some((file) => test.test(file))) return dtype;
+  }
+  return preferred;
+}
+
 async function resolveDtype(key, device) {
   const def = getDef(key);
   const override = localStorage.getItem('dtype') || 'auto';
   let dtype = device === 'webgpu' ? def.web : def.wasm;
   if (override !== 'auto' && def.override) dtype = override;
+  // Offline nem érünk el másik quantizációs fájlt. Ha a beállított típus
+  // nincs a gyorsítótárban, de egy másik igen, azt használjuk — így a már
+  // letöltött modell akkor is elindul, ha közben megváltozott a beállítás.
+  if (!networkAllowed() && !def.local && def.task === 'text-generation') {
+    const files = await cachedModelFiles(def);
+    if (files?.length) dtype = cachedDtype(files, dtype);
+  }
   return dtype;
 }
 
@@ -411,7 +468,10 @@ function generationOptions(key, device, dtype, extra = {}) {
   return {
     device,
     dtype,
-    local_files_only: offlineMode,
+    // Ne csak a szigorú kapcsolót nézzük: ha a böngésző szerint nincs net,
+    // akkor sem szabad egyetlen kérést sem indítani. A már cache-elt súlyok
+    // így is betöltődnek, a hiányzó fájlok pedig érthető hibát adnak.
+    local_files_only: !networkAllowed(),
     ...extra,
   };
 }
@@ -422,6 +482,9 @@ function friendlyModelError(err, key) {
   const raw = String(err?.message || err || '');
   if (/failed to fetch|networkerror|network error|fetch failed|load failed|could not connect|internet/i.test(raw)) {
     return 'A modell fájljait nem sikerült elérni. Szigorú offline módban vagy hálózat nélkül előbb töltsd le a modellt: Beállítások → Modellek → a modell → Letöltés. Hálózattal ellenőrizd a kapcsolatot, és próbáld újra — egy nagy modell letöltése több percig is tarthat.';
+  }
+  if (/local_files_only|allowremotemodels|not found locally|invalid configuration/i.test(raw)) {
+    return 'A modell nincs teljesen a gyorsítótárban, ezért offline nem indítható. Kapcsold be a netet, és a Beállítások → Modellekben kattints a modell Letöltés gombjára; utána újra használhatod internet nélkül is.';
   }
   if (/401|unauthorized|invalid username or password|not found|403|gated|private/i.test(raw)) {
     if (key === 'nexa') {
@@ -1114,9 +1177,12 @@ let magyaruszFrame = null;
 
 async function magyaruszGenerate(text, bubble) {
   const def = getDef('magyarusz');
-  const url = modelUrl(def.model, def.probe);
-  if (!(await isFileCached(def.model, def.probe))) {
-    if (!navigator.onLine || offlineMode) {
+  let url = modelUrl(def.model, def.probe);
+  // Ha már letöltve van egy korábbi verzió, offline azt használjuk — új
+  // verziót ilyenkor úgysem tudnánk letölteni.
+  if (!networkAllowed()) url = (await cachedUrl(url)) || url;
+  if (!(await cachedUrl(url))) {
+    if (!networkAllowed()) {
       throw new Error('A Magyarusz csomag nincs letöltve. Kapcsold be a netet, vagy töltsd le a Beállítások → Modellekben.');
     }
     const response = await fetch(url, { cache: 'no-store' });
@@ -1175,7 +1241,7 @@ async function sendChat(text, forcedMode) {
   // modellt használhatjuk: a transformers.js igény szerint letölti a súlyokat.
   // Hálózat nélkül (vagy szigorú offline módban) továbbra sem indul letöltés,
   // ilyenkor egy már gyorsítótárazott modell válaszol.
-  const canDownload = navigator.onLine && !offlineMode;
+  const canDownload = networkAllowed();
   const cached = await isModelCached(modelKey);
   if (!cached && !canDownload) {
     const fallback = await findCachedChatModel(mode);
@@ -1194,7 +1260,7 @@ async function sendChat(text, forcedMode) {
   }
   // Offline + telefon: a nagy modell (Nova/Forge) CPU-n nagyon lassú.
   // Ha van már gyors, letöltött modell, az válaszol — ezt jelezzük is.
-  if ((!navigator.onLine || offlineMode) && phoneMode() && (modelKey === 'chat' || modelKey === 'code')) {
+  if (!networkAllowed() && phoneMode() && (modelKey === 'chat' || modelKey === 'code')) {
     const fast = await findFastChatModel();
     if (fast) {
       toast(`${getDef(modelKey).nick} offline lassú a telefonon — ${getDef(fast).nick} válaszol.`, 'info');
@@ -1681,7 +1747,7 @@ on('#vlmFile', 'change', (e) => showPreview(e.target, '#vlmPreview', 'vlm'));
 async function ensureImageModel(key) {
   const def = getDef(key);
   if (await isModelCached(key)) return;
-  if (offlineMode || !navigator.onLine) {
+  if (!networkAllowed()) {
     throw new Error(`${def.nick} nincs letöltve. Kapcsold be a netet, vagy töltsd le: Beállítások → Modellek → ${def.nick} → Letöltés.`);
   }
   toast(`${def.nick} nincs még letöltve — most letöltjük. Ez egy nagy fájl, eltarthat egy-két percig.`, 'info');
@@ -1842,7 +1908,7 @@ async function estimateModel(key) {
   const dtype = await resolveDtype(key, device);
   const options = { device, dtype };
 
-  if (navigator.onLine && !offlineMode && !def.special && !def.local) {
+  if (networkAllowed() && !def.special && !def.local) {
     try {
       const files = await ModelRegistry.get_pipeline_files(def.task, def.model, options);
       const metas = await Promise.all(files.map((f) => ModelRegistry.get_file_metadata(def.model, f).catch(() => null)));
@@ -1865,15 +1931,76 @@ async function estimateModel(key) {
   return { size: def.sizeMB * 1024 * 1024, cached, files: null };
 }
 
-async function isModelCached(key) {
-  // Nem szabad a ModelRegistry generally "cached" jelzésére hagyatkozni:
-  // az néha csak a konfigfájlok alapján mond igent, és ilyenkor küldéskor
-  // indult el egy 570 MB-os letöltés. Mindig a tényleges súlyfájlt nézzük.
-  const def = getDef(key);
-  for (const file of def.probes || [def.probe]) {
-    if (await isFileCached(def.model, file)) return true;
+// A ModelRegistry „cached” jelzése néha csak a konfigfájlok alapján mond
+// igent, és ilyenkor küldéskor indult el egy nagy letöltés. Mi ezért nem
+// elégszünk egyetlen probefájllal: azt nézzük, hogy a modell összes, hálózat
+// nélkül szükséges fájlja tényleg a Cache Storage-ban van-e.
+async function cachedModelFiles(def) {
+  try {
+    const cache = await caches.open(env.cacheKey);
+    const prefix = modelUrl(def.model, '').replace(/\/?$/, '/');
+    const files = [];
+    for (const request of await cache.keys()) {
+      const url = request.url;
+      if (url.startsWith(prefix)) files.push(url.slice(prefix.length));
+    }
+    return files;
+  } catch { return null; }
+}
+
+function looksLikeWeights(file) {
+  return /\.(onnx|onnx_data|bin|safetensors)$/i.test(file)
+    && /(?:^|\/)(?:model|encoder|decoder|voice|embed|vision|latent|text|token)/i.test(file);
+}
+
+function requiredModelFiles(def) {
+  switch (def.task) {
+    case 'text-generation':
+      return ['config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+    case 'automatic-speech-recognition':
+      return ['preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+    case 'text-to-speech':
+      return ['config.json', 'tokenizer.json', 'tokenizer_config.json'];
+    case 'image-to-text':
+      return ['preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+    case 'background-removal':
+      return ['config.json', 'preprocessor_config.json'];
+    case 'image-text-to-text':
+      return ['config.json', 'preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+    default:
+      return ['config.json'];
   }
-  return false;
+}
+
+async function isModelCached(key) {
+  const def = getDef(key);
+  // A Magyarusz és a tudáscsomag nem HF-modell: náluk elég a egyetlen
+  // letölthető fájl jelenléte.
+  if (def.local) {
+    for (const file of def.probes || [def.probe]) {
+      if (await isFileCached(def.model, file)) return true;
+    }
+    return false;
+  }
+
+  const files = await cachedModelFiles(def);
+  if (!files) {
+    for (const file of def.probes || [def.probe]) {
+      if (await isFileCached(def.model, file)) return true;
+    }
+    return false;
+  }
+
+  if (!files.some(looksLikeWeights)) return false;
+  for (const file of requiredModelFiles(def)) {
+    if (!files.includes(file) && !(await isFileCached(def.model, file))) return false;
+  }
+  if (def.extras) {
+    for (const extra of def.extras) {
+      if (!files.includes(extra) && !(await isFileCached(def.model, extra))) return false;
+    }
+  }
+  return true;
 }
 
 // Csak olyan modellre váltsunk, amely tényleg a gyorsítótárban van.
@@ -2032,7 +2159,7 @@ async function downloadModel(key) {
       const cache = await caches.open(env.cacheKey);
       const ready = (await cache.match(url)) || (await caches.match(url));
       if (!ready) {
-        if (!navigator.onLine) throw new Error('Nincs internet. A csomagot csak hálózat közben lehet letölteni.');
+        if (!networkAllowed()) throw new Error('Nincs internet. A csomagot csak hálózat közben lehet letölteni.');
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`A csomag letöltése nem sikerült (${response.status}).`);
         try { await cache.put(url, response.clone()); }
@@ -2042,7 +2169,7 @@ async function downloadModel(key) {
       toast(`${def.nick} készen áll offline használatra.`, 'ok');
       return;
     }
-    if (!navigator.onLine) throw new Error('Nincs internet. A modellt csak hálózat közben lehet letölteni.');
+    if (!networkAllowed()) throw new Error('Nincs internet. A modellt csak hálózat közben lehet letölteni.');
     // A telefon gyakran nem a hálózat, hanem a böngésző tárhelykorlátja miatt bukik meg.
     if (navigator.storage?.estimate) {
       const { usage = 0, quota = 0 } = await navigator.storage.estimate();
@@ -2122,16 +2249,18 @@ async function updateStats() {
   } catch { $('#statCache').textContent = '–'; }
 }
 
-window.addEventListener('online', updateStats);
-window.addEventListener('offline', updateStats);
+function onNetworkChange() {
+  syncNetworkEnv();
+  updateStats();
+}
+window.addEventListener('online', onNetworkChange);
+window.addEventListener('offline', onNetworkChange);
 
 on('#offlineToggle', 'change', (e) => {
   const value = e.target.checked;
   localStorage.setItem('offline', value ? '1' : '0');
   offlineMode = value;
-  // Itt is a HF URL-t használjuk, mert oda van cache-elve a modell.
-  env.allowRemoteModels = true;
-  env.allowLocalModels = value;
+  syncNetworkEnv();
   toast(value ? 'Szigorú offline mód bekapcsolva.' : 'Hálózati letöltés engedélyezve.', 'info');
   refreshModels();
 });

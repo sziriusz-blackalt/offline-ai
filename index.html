@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=1.5.9">
+  <link rel="stylesheet" href="styles.css?v=1.5.10">
   <script type="importmap">
   {
     "imports": {
@@ -97,7 +97,7 @@
           <button id="appearanceBtn" type="button">Kinézet</button>
           <button id="installBtn" class="btn btn-ghost" hidden>Telepítés</button>
           <a href="privacy.html" target="_blank" rel="noopener">Adatvédelem</a>
-          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.9</span></div>
+          <div class="profile-version">Nexa AI · <span id="version" data-version>v1.5.10</span></div>
         </div>
       </div>
     </aside>
@@ -294,7 +294,7 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="view">
-          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><div class="view-head-actions"><button id="backToChatBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.9</span></div></div>
+          <div class="view-head"><div><h1>Settings</h1><p class="muted">Kinézet, futatás, modellek és telepítés.</p></div><div class="view-head-actions"><button id="backToChatBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.10</span></div></div>
 
           <div id="appearancePanel" class="settings-block">
             <div class="section-head"><h2>Kinézet</h2><span class="muted">A választás a készüléken marad.</span></div>
@@ -387,12 +387,13 @@
 
         <!-- RELEASE LOG – saját fül a bal oldalsávban -->
         <section id="view-release" class="view">
-          <div class="view-head"><div><h1>Release napló</h1><p class="muted">Minden kiadás röviden, a legrégebbitől az újig.</p></div><div class="view-head-actions"><button id="releaseBackBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.9</span></div></div>
+          <div class="view-head"><div><h1>Release napló</h1><p class="muted">Minden kiadás röviden, a legrégebbitől az újig.</p></div><div class="view-head-actions"><button id="releaseBackBtn" class="btn btn-ghost" type="button">← Csevegés</button><span class="badge badge-online" data-version>v1.5.10</span></div></div>
           <div class="settings-block">
             <div class="section-head"><h2>Kiadások</h2><span class="muted">A teljes napló a CHANGELOG.md fájlban is elérhető.</span></div>
             <details open>
               <summary>Kiadások megjelenítése / összecsukása</summary>
               <div class="release-log">
+                <div class="release-item"><b>v1.5.10</b><time>2026-11-27</time><p>Javítva a „le van töltve a modell, mégse használható internet nélkül” hiba: a hálózatot most a tényleges kapcsolat és a szigorú offline kapcsoló együtt vezérli, így a már gyorsítótárazott súlyok mindig betöltődnek, és offline nem indul letöltés. A modell állapotát a teljes fájlkészlet alapján ellenőrzi az app, egy korábbi verziójú Magyarusz tudáscsomagot pedig változatlanul felismer.</p></div>
                 <div class="release-item"><b>v1.5.9</b><time>2026-11-27</time><p>Új, opcionálisan letölthető Magyarusz tudáscsomag: <b>107 892 magyar szó és fogalom</b> a Magyar Wikipédiából, a Magyar WordNetből és egy magyar helyesírási szótárból. „Mi az a sakk?”, „Ki volt Mátyás király?” és hasonló kérdésekre offline is magyarázatot ad. A csomag a Beállítások → Modellekben külön Adatcsomagként jelenik meg, és nem kerül a chatmodell-listába. Online az első kérdésnél magától betöltődik; szigorú offline módban nem indul letöltés.</p></div>
                 <div class="release-item"><b>v1.5.8</b><time>2026-11-27</time><p>Offline módban, ha a kiválasztott modell nincs letöltve, az app automatikusan a legjobb elérhetőre vált, és a választás is megváltozik. Internet esetén bármelyik modell első üzenetre magától betöltődik, külön Letöltés gomb nélkül. A Magyarusz most Flappy Birdöt, beszélgető appot, sakkot, Snake-et, memóriajátékot, kvízt, jegyzetappot és rajzolót is ír — mindegyik egyetlen, futtatható HTML fájl; ismeretlen appnévre is ad működő alapot.</p></div>
                 <div class="release-item"><b>v1.5.7</b><time>2026-11-27</time><p>A Magyarusz kódblokkjában a gomb sorrendje Futtatás – Mentés – Másolás; a futtatás eredménye középen, egy külön alkalmazásablakban nyílik meg. A Magyarusz szótára magyar Wikipédia-cikkekből származó ismeretekkel bővült, és új kódgenerálási sablonokat kapott (például szivárványos számológép).</p></div>
@@ -436,6 +437,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="app.js?v=1.5.9"></script>
+  <script type="module" src="app.js?v=1.5.10"></script>
 </body>
 </html>
