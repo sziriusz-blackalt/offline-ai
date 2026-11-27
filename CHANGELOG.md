@@ -2,6 +2,12 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.11 — 2026-11-27
+
+- **Pontosabb offline készletszint:** a súlyfájlok felismerése nem függ a fájlnévtől, így a képi és hangmodellek (`vision_encoder_q4.onnx`, `decoder_model_merged_q4.onnx`, `voices/F1.bin` stb.) is helyesen „Elérhető offline” állapotot mutatnak.
+- Nem kérjük számon az opcionális `generation_config.json` és `tokenizer_config.json` fájlokat: ha a modell egyébként betölthető, akkor offline is elindul.
+- A Beállítások most ugyanazzal az ellenőrzéssel dönt, mint a küldés, így a kártyán látható „Elérhető offline” állapot nem tér el a tényleges használhatóságtól.
+
 ## v1.5.10 — 2026-11-27
 
 - **Javított offline indítás:** a modell betöltését most a tényleges hálózati kapcsolat és a szigorú offline kapcsoló együtt vezérli. Hálózat nélkül a `local_files_only` minden módban bekapcsol, ezért nem indul hálózati kérés, és a már letöltött súlyok továbbra is betölthetők.

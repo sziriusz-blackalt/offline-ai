@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.10';
+const APP_VERSION = '1.5.11';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -29,8 +29,8 @@ const MODEL_DEFS = {
     group: 'Csevegés', nick: 'Magyarusz', icon: '🇭🇺',
     label: 'Magyarusz · külön tanuló magyar AI (saját csomag)',
     task: 'text-generation',
-    model: './ai/magyarusz.html?v=1.5.10',
-    probe: './ai/magyarusz.html?v=1.5.10',
+    model: './ai/magyarusz.html?v=1.5.11',
+    probe: './ai/magyarusz.html?v=1.5.11',
     web: 'local', wasm: 'local', sizeMB: 0.2, override: false,
     local: true,
     note: 'Külön, saját magyar AI: beszélgetik, kódot ír, és tanítod. A csomagot le kell tölteni; utána offline is működik.',
@@ -39,8 +39,8 @@ const MODEL_DEFS = {
     group: 'Adatcsomag', nick: 'Magyarusz tudáscsomag', icon: '📚',
     label: '107 892 magyar szó és fogalom (opcionális adatcsomag)',
     task: 'text-generation',
-    model: './ai/magyarusz-pack.js?v=1.5.10',
-    probe: './ai/magyarusz-pack.js?v=1.5.10',
+    model: './ai/magyarusz-pack.js?v=1.5.11',
+    probe: './ai/magyarusz-pack.js?v=1.5.11',
     web: 'local', wasm: 'local', sizeMB: 15, override: false,
     local: true,
     note: 'Magyar Wikipédia, Magyar WordNet és helyesírási szótár. Első letöltés után offline is működik; a chatmodell-lista nem mutatja.',
@@ -1913,21 +1913,17 @@ async function estimateModel(key) {
       const files = await ModelRegistry.get_pipeline_files(def.task, def.model, options);
       const metas = await Promise.all(files.map((f) => ModelRegistry.get_file_metadata(def.model, f).catch(() => null)));
       const size = metas.reduce((sum, m) => sum + (m?.size || 0), 0);
-      let cached = await ModelRegistry.is_pipeline_cached(def.task, def.model, options);
-      if (def.extras) {
-        for (const extra of def.extras) cached = cached && await isFileCached(def.model, extra);
-      }
+      // Ugyanazt az ellenőrzést használjuk, mint küldéskor: a ModelRegistry
+      // néha csak a konfigfájlokból következtet, mi viszont a tényleges
+      // súlyokat nézzük. Így a Beállítások nem mutat hamis „nincs letöltve”-t.
+      const cached = await isModelCached(key);
       return { size, cached, files: files.length };
     } catch (err) {
       console.warn('ModelRegistry nem elérhető:', key, err.message);
     }
   }
 
-  let cached = false;
-  for (const file of def.probes || [def.probe]) {
-    if (await isFileCached(def.model, file)) { cached = true; break; }
-  }
-  if (def.extras) for (const extra of def.extras) cached = cached && await isFileCached(def.model, extra);
+  const cached = await isModelCached(key);
   return { size: def.sizeMB * 1024 * 1024, cached, files: null };
 }
 
@@ -1949,24 +1945,29 @@ async function cachedModelFiles(def) {
 }
 
 function looksLikeWeights(file) {
-  return /\.(onnx|onnx_data|bin|safetensors)$/i.test(file)
-    && /(?:^|\/)(?:model|encoder|decoder|voice|embed|vision|latent|text|token)/i.test(file);
+  // A fájlném nem követi egyetlen mintát sem (pl. `vision_encoder_q4.onnx`,
+  // `decoder_model_merged_q4.onnx`, `voices/F1.bin`), ezért csak a típus
+  // számít: bármelyik valódi súlyfájl jelenléte elég a gyorsítótár-ellenőrzéshez.
+  return /\.(onnx|onnx_data|bin|safetensors)$/i.test(file);
 }
 
 function requiredModelFiles(def) {
+  // Csak azt kérjük számon, ami nélkül a pipeline biztosan nem indul el.
+  // A `generation_config.json` és a `tokenizer_config.json` opcionális:
+  // ha nincs a gyorsítótárban, a könyvtár akkor is betölti a modellt.
   switch (def.task) {
     case 'text-generation':
-      return ['config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+      return ['config.json', 'tokenizer.json'];
     case 'automatic-speech-recognition':
-      return ['preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+      return ['config.json', 'preprocessor_config.json', 'tokenizer.json'];
     case 'text-to-speech':
-      return ['config.json', 'tokenizer.json', 'tokenizer_config.json'];
+      return ['config.json', 'tokenizer.json'];
     case 'image-to-text':
-      return ['preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+      return ['config.json', 'preprocessor_config.json', 'tokenizer.json'];
     case 'background-removal':
       return ['config.json', 'preprocessor_config.json'];
     case 'image-text-to-text':
-      return ['config.json', 'preprocessor_config.json', 'tokenizer.json', 'tokenizer_config.json', 'generation_config.json'];
+      return ['config.json', 'preprocessor_config.json', 'tokenizer.json'];
     default:
       return ['config.json'];
   }
