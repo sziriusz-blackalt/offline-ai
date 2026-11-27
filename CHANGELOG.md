@@ -2,6 +2,12 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.8 — 2026-11-27
+
+- **Okos modellváltás offline:** ha a kiválasztott modell (pl. Nova) nincs a gyorsítótárban, az app most a legjobb ténylegesen elérhető modellre vált, és ezt a választást is elmenti — nem csak az adott üzenethez. Kódmódban a Forge, beszélgetésben a Nova, majd a Nova Lite, a Magyarusz és a Szikra a sorrend.
+- **Internet:** a kiválasztott modellt nem kell külön a Modellek kártyán letölteni; az első üzenet magától betölti a súlyokat, érthető haladással.
+- A **Magyarusz** kódgenerálása jelentősen bővült: Flappy Bird, beszélgető app, sakk, Snake, memóriajáték, HTML kvíz, jegyzetapp és rajzoló — mindegyik teljes, önállóan futtatható HTML alkalmazás. Ismeretlen appnév esetén is egy működő, testre szabott alapot ad, nem „nem tudom”-t.
+
 ## v1.5.7 — 2026-11-27
 
 - A kódblokkok gombjai most **Futtatás – Mentés – Másolás** sorrendben vannak (a Magyarusz saját oldalán is).

@@ -642,7 +642,7 @@ git pull`}
 
   /* ---------- Kész programok ---------- */
   const KLANG = {py:'python', js:'javascript', html:'html'};
-  const BARE = /szamologep|kalkulator|todo|teendo|kitalalos|digitalis ora|szamlalo|stopper|szinvalto|szorzotabla|szokoev|palindrom|\bbmi\b|ko papir/;
+  const BARE = /szamologep|kalkulator|todo|teendo|kitalalos|digitalis ora|szamlalo|stopper|szinvalto|szorzotabla|szokoev|palindrom|\bbmi\b|ko papir|flapp|fluppy|bird|sakk|chess|snake|kigyo|beszelget|cseveg|\bchat\b|memoria|kviz|quiz|jegyzet|rajzol/;
   const OPQ = /(ket|2)\s*szam.*(osszead|szorz|szoroz|kivon|osztas)/;
   const HEAD = '<!doctype html>\n<html lang="hu">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n';
 
@@ -1011,7 +1011,7 @@ js:`const szamok = [4, 8, 15, 16, 23, 42];
 const atlag = szamok.reduce((a, b) => a + b, 0) / szamok.length;
 console.log("Átlag: " + atlag);`},
 
-    {t:'Kvíz', r:/kviz/,
+    {t:'Kvíz (Python)', r:/kviz.*python|python.*kviz/,
 py:`kerdesek = [
     ("Mi Magyarország fővárosa?", "budapest"),
     ("Hány napos egy szökőév?", "366"),
@@ -1024,7 +1024,400 @@ for kerdes, valasz in kerdesek:
         pont += 1
     else:
         print("Nem jó, a válasz:", valasz)
-print("Pontszám:", pont, "/", len(kerdesek))`}
+print("Pontszám:", pont, "/", len(kerdesek))`},
+
+    {t:'Flappy Bird', r:/flapp|fluppy|floppy.*bird|bird.*jatek|mado.*jatek/,
+html:`@H@<title>Flappy Bird</title>
+<style>
+  body{margin:0;background:#87ceeb;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+  canvas{background:#87ceeb;border:3px solid #fff;border-radius:10px;box-shadow:0 6px 18px #0003;touch-action:manipulation}
+  p{color:#fff;text-shadow:1px 1px 2px #000;margin:8px}
+  button{font-size:18px;padding:8px 16px;border:0;border-radius:8px;background:#ff9800;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h2>Flappy Bird</h2>
+<canvas id="c" width="360" height="520"></canvas>
+<p>Pont: <b id="p">0</b> · kattints vagy nyomj szóközt</p>
+<button id="r">Új játék</button>
+@S@
+(function(){
+  const c=document.getElementById('c'), x=c.getContext('2d'), p=document.getElementById('p');
+  let y, vy, cs, pipes, pont, fut;
+  function uj(){ y=260; vy=0; cs=0; pipes=[]; pont=0; fut=true; p.textContent='0'; pipes.push({x:380,h:140+Math.random()*190}); }
+  function ugrik(){ if(fut) vy=-7.2; }
+  document.addEventListener('click',ugrik);
+  document.addEventListener('keydown',function(e){ if(e.code==='Space'){ e.preventDefault(); ugrik(); }});
+  document.getElementById('r').onclick=uj;
+  function rajz(){
+    x.fillStyle='#87ceeb'; x.fillRect(0,0,360,520);
+    x.fillStyle='#7ac74f'; x.fillRect(0,490,360,30);
+    x.fillStyle='#f2c94c'; x.fillRect(60,y,26,26);
+    x.fillStyle='#333'; x.fillRect(82,y+7,5,5);
+    x.fillStyle='#2e9e4f';
+    pipes.forEach(function(cs){
+      x.fillRect(cs.x,0,70,cs.h);
+      x.fillRect(cs.x,cs.h+150,70,520-cs.h-150);
+    });
+    if(!fut){
+      x.fillStyle='#0009'; x.fillRect(0,205,360,90);
+      x.fillStyle='#fff'; x.font='bold 28px sans-serif'; x.fillText('Vége! Pont: '+pont,78,258);
+    }
+  }
+  function lep(){
+    if(!fut){ rajz(); requestAnimationFrame(lep); return; }
+    vy+=0.42; y+=vy; cs++;
+    if(cs%95===0) pipes.push({x:380,h:140+Math.random()*190});
+    pipes.forEach(function(cs){
+      cs.x-=2.2;
+      if(cs.x+70>60 && cs.x<86 && (y<cs.h || y+26>cs.h+150)) fut=false;
+      if(cs.x<60 && !cs.szamolva){ cs.szamolva=true; pont++; p.textContent=pont; }
+    });
+    pipes=pipes.filter(function(cs){ return cs.x>-80; });
+    if(y<0 || y>490) fut=false;
+    rajz(); requestAnimationFrame(lep);
+  }
+  uj(); lep();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Beszélgető alkalmazás', r:/beszelget|cseveg|\bchat\b|uzenet|uzeno/,
+html:`@H@<title>Beszélgető</title>
+<style>
+  body{font-family:sans-serif;max-width:420px;margin:20px auto;padding:0 12px}
+  h1{color:#2b6cb0}
+  #uzenetek{height:340px;overflow:auto;border:1px solid #ddd;border-radius:10px;padding:10px;background:#fafafa}
+  .sor{margin:8px 0}.en{text-align:right}
+  .en span{background:#2b6cb0;color:#fff;border-radius:12px;padding:8px 12px;display:inline-block}
+  .bot span{background:#e2e8f0;border-radius:12px;padding:8px 12px;display:inline-block}
+  #sor{display:flex;gap:6px;margin-top:10px}
+  #t{flex:1;padding:10px;font-size:16px}
+  button{padding:10px 14px;border:0;border-radius:8px;background:#2b6cb0;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>Beszélgető</h1>
+<div id="uzenetek"></div>
+<div id="sor"><input id="t" placeholder="Írd be az üzenetet..."><button id="k">Küld</button></div>
+@S@
+(function(){
+  const lista=document.getElementById('uzenetek'), t=document.getElementById('t');
+  const valaszok=['Szia!','Értem, mondj még!','Köszönöm!','Hogy vagy?','Ez érdekes.','Nevetsz? én is!'];
+  function hozza(ki,szoveg){
+    const d=document.createElement('div'); d.className='sor '+ki;
+    const s=document.createElement('span'); s.textContent=szoveg;
+    d.appendChild(s); lista.appendChild(d); lista.scrollTop=lista.scrollHeight;
+  }
+  function kuldes(){
+    const v=t.value.trim(); if(!v)return;
+    hozza('en',v); t.value='';
+    setTimeout(function(){ hozza('bot',valaszok[Math.floor(Math.random()*valaszok.length)]); },350);
+  }
+  document.getElementById('k').onclick=kuldes;
+  t.addEventListener('keydown',function(e){ if(e.key==='Enter') kuldes(); });
+  hozza('bot','Szia! Írd be, mit mondjak.');
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Sakk', r:/sakk|chess/,
+html:`@H@<title>Sakk</title>
+<style>
+  body{font-family:sans-serif;text-align:center;background:#f4f1ea;margin:0;padding:16px}
+  #tabla{display:grid;grid-template-columns:repeat(8,48px);gap:0;margin:12px auto;border:4px solid #5b4636;width:max-content}
+  .m{width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;user-select:none}
+  .vilagos{background:#f0d9b5}.sotet{background:#b58863}.kijelolt{outline:3px solid #e33;outline-offset:-3px}
+  button{font-size:16px;padding:8px 14px;border:0;border-radius:8px;background:#5b4636;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>Sakk</h1>
+<p><b id="allapot">Fehér jön</b></p>
+<div id="tabla"></div>
+<button id="uj">Új játék</button>
+@S@
+(function(){
+  const SYM={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+  let tab, turn, val, allapot=document.getElementById('allapot');
+  function uj(){
+    tab=Array.from('rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR');
+    turn='F'; val=null; rajz();
+  }
+  function szin(d){ return d===d.toUpperCase()?'F':'S'; }
+  function utvonal(a,b){
+    const ar=Math.floor(a/8), ac=a%8, br=Math.floor(b/8), bc=b%8;
+    const sr=Math.sign(br-ar), sc=Math.sign(bc-ac);
+    let r=ar+sr, c=ac+sc;
+    while(r!==br || c!==bc){ if(tab[r*8+c]!=='.') return false; r+=sr; c+=sc; }
+    return true;
+  }
+  function lehet(a,b){
+    const p=tab[a], q=tab[b]; if(p==='.'||szin(p)!==turn)return false;
+    if(q!=='.'&&szin(q)===turn)return false;
+    const ar=Math.floor(a/8), ac=a%8, br=Math.floor(b/8), bc=b%8;
+    const dr=br-ar, dc=bc-ac, t=p.toUpperCase();
+    if(t==='P'){
+      const ir=turn==='F'?-1:1, start=turn==='F'?6:1;
+      return (dc===0&&dr===ir&&q==='.') ||
+             (dc===0&&dr===2*ir&&ar===start&&q==='.'&&tab[(ar+ir)*8+ac]==='.') ||
+             (Math.abs(dc)===1&&dr===ir&&q!=='.');
+    }
+    if(t==='N') return (Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2);
+    if(t==='K') return Math.max(Math.abs(dr),Math.abs(dc))===1;
+    const atlo=Math.abs(dr)===Math.abs(dc), egyenes=dr===0||dc===0;
+    if(t==='B'&&!atlo)return false;
+    if(t==='R'&&!egyenes)return false;
+    if(t==='Q'&&!atlo&&!egyenes)return false;
+    return utvonal(a,b);
+  }
+  function rajz(){
+    const t=document.getElementById('tabla'); t.textContent='';
+    tab.forEach(function(p,i){
+      const d=document.createElement('div');
+      const sor=Math.floor(i/8), oszlop=i%8;
+      d.className='m '+((sor+oszlop)%2?'vilagos':'sotet')+(val===i?' kijelolt':'');
+      d.textContent=SYM[p]||p; d.dataset.i=i; t.appendChild(d);
+    });
+    allapot.textContent=turn==='F'?'Fehér jön':'Fekete jön';
+  }
+  document.getElementById('tabla').addEventListener('click',function(e){
+    const cell=e.target.closest('.m'); if(!cell)return;
+    const i=Number(cell.dataset.i), p=tab[i];
+    if(val===null){
+      if(p!=='.'&&szin(p)===turn){ val=i; rajz(); }
+      return;
+    }
+    if(lehet(val,i)){
+      const p=tab[val]; tab[i]=p; tab[val]='.';
+      if(p.toUpperCase()==='P'&&(Math.floor(i/8)===0||Math.floor(i/8)===7)) tab[i]=turn==='F'?'Q':'q';
+      turn=turn==='F'?'S':'F';
+    }
+    val=null; rajz();
+  });
+  document.getElementById('uj').onclick=uj;
+  uj();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Kígyó (Snake)', r:/snake|kigyo/,
+html:`@H@<title>Snake</title>
+<style>
+  body{font-family:sans-serif;text-align:center;background:#111;color:#eee;margin:0;padding:16px}
+  canvas{background:#1b1b1b;border:2px solid #444;display:block;margin:0 auto;touch-action:none}
+  button{margin-top:10px;padding:8px 14px;border:0;border-radius:8px;background:#4caf50;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>Snake</h1>
+<p>Pont: <b id="p">0</b> · nyilakkal vagy WASD-vel irányíts</p>
+<canvas id="c" width="320" height="320"></canvas>
+<br><button id="r">Új játék</button>
+@S@
+(function(){
+  const c=document.getElementById('c'), x=c.getContext('2d'), p=document.getElementById('p');
+  let k, etel, ir, kov, pont, ido, fut;
+  const meret=16, szemek=20;
+  function uj(){
+    k=[{x:8,y:10},{x:7,y:10},{x:6,y:10}]; ir={x:1,y:0}; kov=ir; pont=0; fut=true; p.textContent='0';
+    etel={x:14,y:10}; clearInterval(ido); ido=setInterval(lep,110);
+  }
+  function fordul(dx,dy){ if(ir.x!==-dx||ir.y!==-dy) kov={x:dx,y:dy}; }
+  document.addEventListener('keydown',function(e){
+    const kulcs=e.key.toLowerCase();
+    if(kulcs==='arrowup'||kulcs==='w')fordul(0,-1);
+    if(kulcs==='arrowdown'||kulcs==='s')fordul(0,1);
+    if(kulcs==='arrowleft'||kulcs==='a')fordul(-1,0);
+    if(kulcs==='arrowright'||kulcs==='d')fordul(1,0);
+  });
+  function lep(){
+    if(!fut)return;
+    ir=kov; const fej={x:k[0].x+ir.x,y:k[0].y+ir.y};
+    if(fej.x<0||fej.y<0||fej.x>=szemek||fej.y>=szemek||k.some(function(d){return d.x===fej.x&&d.y===fej.y;})){ fut=false; return; }
+    k.unshift(fej);
+    if(fej.x===etel.x&&fej.y===etel.y){ pont++; p.textContent=pont; etel={x:Math.floor(Math.random()*szemek),y:Math.floor(Math.random()*szemek)}; }
+    else k.pop();
+    x.fillStyle='#1b1b1b'; x.fillRect(0,0,320,320);
+    x.fillStyle='#e74c3c'; x.fillRect(etel.x*meret,etel.y*meret,meret,meret);
+    k.forEach(function(d,i){ x.fillStyle=i===0?'#8bc34a':'#4caf50'; x.fillRect(d.x*meret,d.y*meret,meret,meret); });
+  }
+  document.getElementById('r').onclick=uj;
+  uj();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Memóriajáték', r:/memoria|memory/,
+html:`@H@<title>Memóriajáték</title>
+<style>
+  body{font-family:sans-serif;text-align:center;margin:0;padding:16px;background:#f7f7fb}
+  #tarolo{display:grid;grid-template-columns:repeat(4,70px);gap:8px;justify-content:center;margin:16px auto;width:max-content}
+  .kartya{width:70px;height:70px;font-size:30px;display:flex;align-items:center;justify-content:center;background:#2b6cb0;color:transparent;border-radius:10px;cursor:pointer;user-select:none}
+  .nyit{background:#fff;color:#000;border:1px solid #ccc}.talalt{background:#c6f6d5}
+  button{padding:8px 14px;border:0;border-radius:8px;background:#2b6cb0;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>Memóriajáték</h1>
+<p><b id="allapot">Fordíts két kártyát!</b></p>
+<div id="tarolo"></div>
+<button id="r">Új játék</button>
+@S@
+(function(){
+  const ikonok=['🍎','🍌','🍇','🍓','🍒','🍍','🥝','🍑'];
+  let pakli, elso=null, masodik=null, talalt=0, allapot=document.getElementById('allapot');
+  function kever(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function rajz(){
+    const t=document.getElementById('tarolo'); t.textContent='';
+    pakli.forEach(function(ertek,i){
+      const d=document.createElement('div'); d.className='kartya'; d.dataset.i=i;
+      if(ertek.nyit||ertek.talalt){ d.classList.add(ertek.talalt?'talalt':'nyit'); d.textContent=ertek.ikon; }
+      t.appendChild(d);
+    });
+  }
+  function uj(){
+    pakli=kever(ikonok.concat(ikonok)).map(function(ikon){ return {ikon:ikon,nyit:false,talalt:false}; });
+    elso=null; masodik=null; talalt=0; allapot.textContent='Fordíts két kártyát!'; rajz();
+  }
+  document.getElementById('tarolo').addEventListener('click',function(e){
+    const c=e.target.closest('.kartya'); if(!c)return;
+    const i=Number(c.dataset.i), k=pakli[i];
+    if(k.nyit||k.talalt||elso&&masodik)return;
+    k.nyit=true; rajz();
+    if(!elso){ elso=i; return; }
+    masodik=i;
+    if(pakli[elso].ikon===pakli[masodik].ikon){
+      pakli[elso].talalt=true; pakli[masodik].talalt=true; talalt++;
+      allapot.textContent='Talált párok: '+talalt+' / 8';
+      if(talalt===8) allapot.textContent='Nyertél! 🎉';
+      elso=null; masodik=null; rajz();
+    } else {
+      setTimeout(function(){ pakli[elso].nyit=false; pakli[masodik].nyit=false; elso=null; masodik=null; rajz(); },700);
+    }
+  });
+  document.getElementById('r').onclick=uj;
+  uj();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Kvíz app', r:/kviz|quiz/,
+html:`@H@<title>Kvíz</title>
+<style>
+  body{font-family:sans-serif;max-width:460px;margin:30px auto;text-align:center}
+  button{display:block;width:100%;margin:8px 0;padding:12px;border:0;border-radius:8px;background:#edf2f7;cursor:pointer}
+  button:hover{background:#dbeafe}.helyes{background:#c6f6d5}.rossz{background:#fed7d7}
+</style>
+</head>
+<body>
+<h1>Kvíz</h1>
+<p id="kerdes"></p>
+<div id="valaszok"></div>
+<p id="allapot"></p>
+@S@
+(function(){
+  const kerdesek=[
+    ['Mi Magyarország fővárosa?',['Budapest','Pécs','Debrecen'],0],
+    ['Melyik bolygó a legnagyobb?',['Jupiter','Szaturnusz','Föld'],0],
+    ['Hány napos egy szökőév?',['366','365','360'],0]
+  ];
+  let i=0,pont=0;
+  const kerdes=document.getElementById('kerdes'), valaszok=document.getElementById('valaszok'), allapot=document.getElementById('allapot');
+  function rajz(){
+    if(i>=kerdesek.length){ kerdes.textContent='Vége!'; valaszok.textContent=''; allapot.textContent='Pontszám: '+pont+' / '+kerdesek.length; return; }
+    const k=kerdesek[i]; kerdes.textContent=k[0]; valaszok.textContent=''; allapot.textContent=(i+1)+'. kérdés';
+    k[1].forEach(function(v,j){
+      const b=document.createElement('button'); b.textContent=v;
+      b.onclick=function(){
+        if(j===k[2]){ pont++; b.classList.add('helyes'); }
+        else b.classList.add('rossz');
+        setTimeout(function(){ i++; rajz(); },500);
+      };
+      valaszok.appendChild(b);
+    });
+  }
+  rajz();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Jegyzetapp', r:/jegyzet|notes/,
+html:`@H@<title>Jegyzetek</title>
+<style>
+  body{font-family:sans-serif;max-width:480px;margin:24px auto;padding:0 12px}
+  textarea{width:100%;box-sizing:border-box;min-height:90px;padding:10px}
+  button{padding:10px 14px;border:0;border-radius:8px;background:#2b6cb0;color:#fff;cursor:pointer}
+  .jegyzet{background:#fffbea;border-left:4px solid #f6ad55;padding:10px;margin:10px 0;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Jegyzetek</h1>
+<textarea id="szoveg" placeholder="Írd ide a jegyzeted..."></textarea>
+<button id="ment">Mentés</button>
+<div id="lista"></div>
+@S@
+(function(){
+  const t=document.getElementById('szoveg'), lista=document.getElementById('lista');
+  function betolt(){ try{ return JSON.parse(localStorage.getItem('nexaJegyzetek')||'[]'); }catch(e){ return []; } }
+  function ment(a){ try{ localStorage.setItem('nexaJegyzetek',JSON.stringify(a)); }catch(e){} }
+  function rajz(){
+    const a=betolt(); lista.textContent='';
+    a.slice().reverse().forEach(function(szoveg,i){
+      const d=document.createElement('div'); d.className='jegyzet'; d.textContent=szoveg;
+      const x=document.createElement('button'); x.textContent='✕'; x.style.float='right';
+      x.onclick=function(){ const b=betolt(); b.splice(b.length-1-i,1); ment(b); rajz(); };
+      d.insertBefore(x,d.firstChild); lista.appendChild(d);
+    });
+  }
+  document.getElementById('ment').onclick=function(){
+    const v=t.value.trim(); if(!v)return;
+    const a=betolt(); a.push(v); ment(a); t.value=''; rajz();
+  };
+  rajz();
+})();
+@E@
+</body>
+</html>`},
+
+    {t:'Rajzoló', r:/rajzol|paint|rajzo/,
+html:`@H@<title>Rajzoló</title>
+<style>
+  body{font-family:sans-serif;text-align:center;margin:0;padding:16px;background:#f4f4f4}
+  canvas{background:#fff;border:2px solid #ccc;display:block;margin:0 auto;touch-action:none;cursor:crosshair}
+  .eszkoz{margin:10px auto;width:max-content}.eszkoz *{vertical-align:middle;margin:0 4px}
+</style>
+</head>
+<body>
+<h1>Rajzoló</h1>
+<div class="eszkoz">
+  <input id="szin" type="color" value="#e53e3e">
+  <input id="vastag" type="range" min="1" max="24" value="4">
+  <button id="torol">Törlés</button>
+</div>
+<canvas id="c" width="640" height="420"></canvas>
+@S@
+(function(){
+  const c=document.getElementById('c'), x=c.getContext('2d');
+  let rajzol=false;
+  x.lineCap='round'; x.lineJoin='round';
+  function poz(e){ const r=c.getBoundingClientRect(); return {x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}; }
+  function start(e){ rajzol=true; const p=poz(e); x.beginPath(); x.moveTo(p.x,p.y); }
+  function mozog(e){ if(!rajzol)return; const p=poz(e); x.strokeStyle=document.getElementById('szin').value; x.lineWidth=Number(document.getElementById('vastag').value); x.lineTo(p.x,p.y); x.stroke(); }
+  function vege(){ rajzol=false; }
+  c.addEventListener('pointerdown',start); c.addEventListener('pointermove',mozog);
+  window.addEventListener('pointerup',vege); c.addEventListener('pointerleave',vege);
+  document.getElementById('torol').onclick=function(){ x.clearRect(0,0,c.width,c.height); };
+})();
+@E@
+</body>
+</html>`}
   ];
 
   const RAINBOW_CSS = '<style>body{background:linear-gradient(120deg,#ff4d4d,#ffb347,#ffe66d,#5ddc9a,#4fc3f7,#7c6cf5,#e879f9,#ff4d4d)!important;background-size:400% 400%!important;animation:nexaRainbow 12s ease infinite;min-height:100vh}@keyframes nexaRainbow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}</style>';
@@ -1120,6 +1513,59 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
         'class '+name+' {\n  constructor(nev) {\n    this.nev = nev;\n  }\n\n  bemutatkozik() {\n    return "Én vagyok: " + this.nev;\n  }\n}\n\nconst p = new '+name+'("Példa");\nconsole.log(p.bemutatkozik());');
       return codeMsg('Python osztály', 'python',
         'class '+name+':\n    def __init__(self, nev):\n        self.nev = nev\n\n    def bemutatkozik(self):\n        return "Én vagyok: " + self.nev\n\n\np = '+name+'("Példa")\nprint(p.bemutatkozik())');
+    }
+    // Ismeretlen app esetén sem mondjuk azt, hogy nem tudjuk: adunk egy
+    // működő, a kért névvel ellátott, egyetlen HTML fájlban futó alapot.
+    if(codeIntent(n) && (!lg || lg==='html') && /(alkalmazas|app|jatek|oldal|weboldal|honlap|keszits|csinalj)/.test(n)){
+      let cim = raw
+        .replace(/^(írj|ird|csinálj|csinalj|csináljon|csinaljon|készíts|keszits|készítsen|keszitsen|generálj|generalj|mutass|mutasd|adj)\s+/i,'')
+        .replace(/^(egy|egy darab)\s+/i,'')
+        .replace(/(alkalmazást?|appot?|játékot?|weboldalt?|oldalt?|programot?|kódot?)\s*$/i,'')
+        .replace(/[.?!]+$/,'')
+        .trim();
+      if(!cim) cim = 'Az alkalmazásom';
+      cim = cim.charAt(0).toUpperCase() + cim.slice(1);
+      const biztonsagos = cim.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return progMsg({t:cim, html:
+`@H@<title>${biztonsagos}</title>
+<style>
+  body{font-family:sans-serif;max-width:460px;margin:30px auto;padding:0 12px}
+  h1{color:#2b6cb0}
+  #lista{list-style:none;padding:0}
+  #lista li{background:#f7fafc;border-left:4px solid #2b6cb0;padding:8px 10px;margin:8px 0;border-radius:6px}
+  #sor{display:flex;gap:6px}#uj{flex:1;padding:10px}
+  button{padding:10px 14px;border:0;border-radius:8px;background:#2b6cb0;color:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>${biztonsagos}</h1>
+<p>Ez a ${biztonsagos} helyben futó alapváltozata — bővítsd kedved szerint.</p>
+<div id="sor"><input id="uj" placeholder="Új elem"><button id="add">Hozzáadás</button></div>
+<ul id="lista"></ul>
+@S@
+(function(){
+  const t=document.getElementById("uj"), lista=document.getElementById("lista");
+  function rajz(){
+    lista.textContent="";
+    try{
+      JSON.parse(localStorage.getItem("nexaApp")||"[]").forEach(function(szoveg){
+        const li=document.createElement("li"); li.textContent=szoveg; lista.appendChild(li);
+      });
+    }catch(e){}
+  }
+  function hozzaad(){
+    const v=t.value.trim(); if(!v)return;
+    let a=[]; try{ a=JSON.parse(localStorage.getItem("nexaApp")||"[]"); }catch(e){}
+    a.push(v); try{ localStorage.setItem("nexaApp",JSON.stringify(a)); }catch(e){}
+    t.value=""; rajz();
+  }
+  document.getElementById("add").onclick=hozzaad;
+  t.addEventListener("keydown",function(e){ if(e.key==="Enter") hozzaad(); });
+  rajz();
+})();
+@E@
+</body>
+</html>`}, 'html', rainbow);
     }
     return null;
   }
@@ -1465,7 +1911,7 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
 
   function compose(raw){
     const _n = norm(raw);
-    if(codeIntent(_n) && /szamologep|kalkulator|todo|teendo|program|kod|oldal|alkalmazas|jatek|fuggveny|osztaly/.test(_n)) return null;
+    if(codeIntent(_n) && /(szamologep|kalkulator|todo|teendo|program|kod|oldal|weboldal|alkalmazas|app|jatek|fuggveny|osztaly|flapp|fluppy|bird|sakk|chess|snake|kigyo|beszelget|chat|memoria|kviz|quiz|jegyzet|rajzol)/.test(_n)) return null;
     // A Wikipediabol tanult tenyeket ne zerbeleje meg a tobbresz-beszelgetes
     // („meselj Budapestrol” korabban veletlen iroi adatot mondott vissza).
     const _f = flat(raw);
@@ -1612,7 +2058,7 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
     if(/mi a nevem|hogy hivnak engem/.test(n)) return {t: st.name ? 'A neved '+st.name+'.' : 'Még nem mondtad meg. Írd: „A nevem …”'};
 
     if(/^(segitseg|help|sugo)/.test(n)) return {t:
-      'Ezt tudom:\n• hétköznapi beszélgetés: több dolgot is felismerek egy üzenetben („szia, hogy vagy”), megjegyzem, amit mondasz („Szeretem a pizzát”, „A kedvenc színem a kék”), és ha több választ tanítasz („Tanulj még: …”), váltogatom őket\n• beszélgetés és kérdések (Magyarország, tudomány, programozás)\n• kód: „írj python ciklust”, „css flexbox”, „sql join”, „git push”, „html oldal”\n• generátor: „írj python függvényt, nevű osszead, paraméterek: a, b”, „python osztály Auto nevű”\n• kész programok: „írj számológépet”, „számológép szivárványos háttérrel”, „todo lista”, „számkitalálós játék”, „stopper”, „1-től 20-ig páros számok”, „két szám szorzása”\n• HTML és JavaScript kód alatt ▶ Futtatás: azonnal működő programként megnyílik, Mentés gombbal fájlba is teheted\n• ⚙ gomb: valódi AI bekötése (opcionális)\n• számolás: 12*7+3, „20% of 150”, „prím-e 97”, „faktoriális 10”, „négyzetgyök 144”, „lnko 12 18”, „római szám 2024”, „binárisan 42”\n• átváltás: „5 km hány mérföld”, „20 celsius fahrenheit”, „2 óra hány perc”\n• dátum: „hány nap van karácsonyig”, „milyen nap volt 2000.01.01”\n• szótár: „angolul alma”, „mi az apple magyarul”\n• kérdezz bátran: Magyarország, földrajz, történelem, tudomány, technika, sport, kultúra, főzés, egészség (általános), „közmondás”, „érdekesség”\n• idő, dátum, vicc, jelszó generálás\n• „kódlista”: milyen kódokat ismerek\n• TANÍTÁS: „Tanulj: kérdés => válasz” (a válasz lehet kód is)\n• „felejtsd el: …”, „fejlődés”'};
+      'Ezt tudom:\n• hétköznapi beszélgetés: több dolgot is felismerek egy üzenetben („szia, hogy vagy”), megjegyzem, amit mondasz („Szeretem a pizzát”, „A kedvenc színem a kék”), és ha több választ tanítasz („Tanulj még: …”), váltogatom őket\n• beszélgetés és kérdések (Magyarország, tudomány, programozás)\n• kód: „írj python ciklust”, „css flexbox”, „sql join”, „git push”, „html oldal”\n• generátor: „írj python függvényt, nevű osszead, paraméterek: a, b”, „python osztály Auto nevű”\n• kész programok: „írj számológépet”, „számológép szivárványos háttérrel”, „todo lista”, „számkitalálós játék”, „stopper”, „1-től 20-ig páros számok”, „két szám szorzása”\n• játékok és appok: „csinálj Flappy Birdöt”, „beszélgető appot”, „sakkot”, „Snake-et”, „memóriajátékot”, „kvizet”, „jegyzetappot”, „rajzolót” — mindegyik egyetlen, futtatható HTML fájl\n• HTML és JavaScript kód alatt ▶ Futtatás: azonnal működő programként megnyílik, Mentés gombbal fájlba is teheted\n• ⚙ gomb: valódi AI bekötése (opcionális)\n• számolás: 12*7+3, „20% of 150”, „prím-e 97”, „faktoriális 10”, „négyzetgyök 144”, „lnko 12 18”, „római szám 2024”, „binárisan 42”\n• átváltás: „5 km hány mérföld”, „20 celsius fahrenheit”, „2 óra hány perc”\n• dátum: „hány nap van karácsonyig”, „milyen nap volt 2000.01.01”\n• szótár: „angolul alma”, „mi az apple magyarul”\n• kérdezz bátran: Magyarország, földrajz, történelem, tudomány, technika, sport, kultúra, főzés, egészség (általános), „közmondás”, „érdekesség”\n• idő, dátum, vicc, jelszó generálás\n• „kódlista”: milyen kódokat ismerek\n• TANÍTÁS: „Tanulj: kérdés => válasz” (a válasz lehet kód is)\n• „felejtsd el: …”, „fejlődés”'};
     if(/kodlista|milyen kodokat|milyen nyelveken/.test(n)){
       return {t: 'Kész programok: '+PROGS.map(p=>p.t).join(', ')+'\n\n'+Object.keys(LNAME).map(l=>LNAME[l]+': '+SNIP.filter(s=>s.l===l).map(s=>s.t).join(', ')).join('\n\n')};
     }
@@ -1639,7 +2085,7 @@ print("Pontszám:", pont, "/", len(kerdesek))`}
 
     // kód
     const lg = langOf(n);
-    if(lg || (codeIntent(n) && /(kod|program|script|szkript|fuggveny|osztaly|oldal|weboldal|honlap|alkalmazas|jatek|algoritmus|ciklus)/.test(n)) || BARE.test(n) || OPQ.test(n) || /\d+\s*-?\s*tol\s*\d+/.test(n)){
+    if(lg || (codeIntent(n) && /(kod|program|script|szkript|fuggveny|osztaly|oldal|weboldal|honlap|alkalmazas|app|jatek|algoritmus|ciklus)/.test(n)) || BARE.test(n) || OPQ.test(n) || /\d+\s*-?\s*tol\s*\d+/.test(n)){
       if(st.llm.on && n.split(' ').length>7 && !/\d+\s*-?\s*tol\s*\d+/.test(n)) return {llm:true};
       const g = genCode(raw, n);
       if(g) return {t:g};

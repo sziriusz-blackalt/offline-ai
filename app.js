@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.7';
+const APP_VERSION = '1.5.8';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -29,8 +29,8 @@ const MODEL_DEFS = {
     group: 'Csevegés', nick: 'Magyarusz', icon: '🇭🇺',
     label: 'Magyarusz · külön tanuló magyar AI (saját csomag)',
     task: 'text-generation',
-    model: './ai/magyarusz.html?v=1.5.7b',
-    probe: './ai/magyarusz.html?v=1.5.7b',
+    model: './ai/magyarusz.html?v=1.5.8',
+    probe: './ai/magyarusz.html?v=1.5.8',
     web: 'local', wasm: 'local', sizeMB: 0.2, override: false,
     local: true,
     note: 'Külön, saját magyar AI: beszélgetik, kódot ír, és tanítod. A csomagot le kell tölteni; utána offline is működik.',
@@ -1162,16 +1162,19 @@ async function sendChat(text, forcedMode) {
   const canDownload = navigator.onLine && !offlineMode;
   const cached = await isModelCached(modelKey);
   if (!cached && !canDownload) {
-    const fallback = await findCachedChatModel();
+    const fallback = await findCachedChatModel(mode);
     if (fallback) {
-      toast(`${getDef(modelKey).nick} nincs letöltve — a már elérhető ${getDef(fallback).nick} válaszol.`, 'info');
+      // Ne csak erre az üzenetre váltsunk: a választott modell is frissüljön,
+      // hogy a következő küldésnél ne próbáljuk újra a hiányzó Novát.
+      commitChatModel(fallback);
+      toast(`${getDef(modelKey).nick} nincs letöltve — automatikusan a már elérhető ${getDef(fallback).nick} válaszol.`, 'info');
       modelKey = fallback;
     } else {
-      return toast('Nincs internet és a modell nincs letöltve. Kapcsold be a netet, vagy töltsd le a Beállítások → Modellekben.', 'error');
+      return toast('Nincs internet és egyik modell sincs letöltve. Kapcsold be a netet, vagy töltsd le a Beállítások → Modellekben.', 'error');
     }
   }
   if (canDownload && !cached) {
-    toast(`${getDef(modelKey).nick} nincs még letöltve — most letöltjük. A böngészőben láthatod a haladást.`, 'info');
+    toast(`${getDef(modelKey).nick} nincs még a gyorsítótárban — az első üzenethez magától betöltöm, külön letöltés nem kell.`, 'info');
   }
   // Offline + telefon: a nagy modell (Nova/Forge) CPU-n nagyon lassú.
   // Ha van már gyors, letöltött modell, az válaszol — ezt jelezzük is.
@@ -1179,6 +1182,7 @@ async function sendChat(text, forcedMode) {
     const fast = await findFastChatModel();
     if (fast) {
       toast(`${getDef(modelKey).nick} offline lassú a telefonon — ${getDef(fast).nick} válaszol.`, 'info');
+      commitChatModel(fast);
       modelKey = fast;
     }
   }
@@ -1857,8 +1861,13 @@ async function isModelCached(key) {
 }
 
 // Csak olyan modellre váltsunk, amely tényleg a gyorsítótárban van.
-async function findCachedChatModel() {
-  for (const key of ['lite', 'magyarusz', 'tiny', 'chat', 'nexa']) {
+// A sorrend a minőséget követi: kódmódban a Forge, beszélgetésben a Nova,
+// majd a Nova Lite, a beépített Magyarusz és végül a kis Szikra.
+async function findCachedChatModel(mode) {
+  const order = mode === 'code'
+    ? ['code', 'chat', 'lite', 'magyarusz', 'tiny', 'nexa']
+    : ['chat', 'code', 'lite', 'magyarusz', 'tiny', 'nexa'];
+  for (const key of order) {
     if (!modelDefs()[key]) continue;
     if (await isModelCached(key)) return key;
   }
