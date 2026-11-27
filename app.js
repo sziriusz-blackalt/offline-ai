@@ -21,7 +21,7 @@ function on(selector, event, handler) {
   if (el) el.addEventListener(event, handler);
   return el;
 }
-const APP_VERSION = '1.5.8';
+const APP_VERSION = '1.5.9';
 const SHELL_CACHE = `offline-ai-v${APP_VERSION}-shell`;
 
 const MODEL_DEFS = {
@@ -29,11 +29,21 @@ const MODEL_DEFS = {
     group: 'Csevegés', nick: 'Magyarusz', icon: '🇭🇺',
     label: 'Magyarusz · külön tanuló magyar AI (saját csomag)',
     task: 'text-generation',
-    model: './ai/magyarusz.html?v=1.5.8',
-    probe: './ai/magyarusz.html?v=1.5.8',
+    model: './ai/magyarusz.html?v=1.5.9',
+    probe: './ai/magyarusz.html?v=1.5.9',
     web: 'local', wasm: 'local', sizeMB: 0.2, override: false,
     local: true,
     note: 'Külön, saját magyar AI: beszélgetik, kódot ír, és tanítod. A csomagot le kell tölteni; utána offline is működik.',
+  },
+  magyaruszPack: {
+    group: 'Adatcsomag', nick: 'Magyarusz tudáscsomag', icon: '📚',
+    label: '107 892 magyar szó és fogalom (opcionális adatcsomag)',
+    task: 'text-generation',
+    model: './ai/magyarusz-pack.js?v=1.5.9',
+    probe: './ai/magyarusz-pack.js?v=1.5.9',
+    web: 'local', wasm: 'local', sizeMB: 15, override: false,
+    local: true,
+    note: 'Magyar Wikipédia, Magyar WordNet és helyesírási szótár. Első letöltés után offline is működik; a chatmodell-lista nem mutatja.',
   },
   nexa: {
     group: 'Csevegés', nick: 'Nexa HU', icon: '🧠', label: 'Nulláról tanított magyar modell (saját)', task: 'text-generation',
@@ -371,8 +381,13 @@ function modelUrl(model, file) {
 
 async function isFileCached(model, file) {
   try {
+    const url = modelUrl(model, file);
     const cache = await caches.open(env.cacheKey);
-    return Boolean(await cache.match(modelUrl(model, file)));
+    if (await cache.match(url)) return true;
+    // A service worker a helyi fájlokat a héj-gyorsítótárba is teheti;
+    // ilyenkor a csomag valójában offline elérhető, még ha a modellcache
+    // nem is tartalmazza.
+    return Boolean(await caches.match(url));
   } catch { return false; }
 }
 
@@ -1107,7 +1122,8 @@ async function magyaruszGenerate(text, bubble) {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`A Magyarusz csomag letöltése nem sikerült (${response.status}).`);
     const cache = await caches.open(env.cacheKey);
-    await cache.put(url, response.clone());
+    try { await cache.put(url, response.clone()); }
+    catch (err) { console.warn('A Magyarusz gyorsítótárazása nem sikerült:', err.message); }
   }
 
   if (!magyaruszFrame) {
@@ -2012,12 +2028,14 @@ async function downloadModel(key) {
   setProgress(key, 0, 'Indítás');
   try {
     if (def.local) {
+      if (!navigator.onLine) throw new Error('Nincs internet. A csomagot csak hálózat közben lehet letölteni.');
       const url = modelUrl(def.model, def.probe);
       const cache = await caches.open(env.cacheKey);
       if (!(await cache.match(url))) {
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error(`A csomag letöltése nem sikerült (${response.status}).`);
-        await cache.put(url, response.clone());
+        try { await cache.put(url, response.clone()); }
+        catch (err) { console.warn('A csomag gyorsítótárazása nem sikerült:', err.message); }
       }
       setProgress(key, 1, 'Kész');
       toast(`${def.nick} készen áll offline használatra.`, 'ok');

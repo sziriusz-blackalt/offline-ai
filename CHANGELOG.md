@@ -2,6 +2,12 @@
 
 Minden kiadás rövid összefoglalója. Ugyanez a napló az alkalmazáson belül is elérhető: **Beállítások → Release napló**.
 
+## v1.5.9 — 2026-11-27
+
+- **107 892 magyar szó és fogalom:** új, opcionálisan letölthető adatcsomag a Magyaruszhoz. Források: Magyar Wikipédia (rövid, magyar nyelvű bevezetők), Magyar WordNet (magyar definíciók) és egy magyar helyesírási szótár. „Mi az a sakk?”, „Ki volt Mátyás király?”, „Mesélj a mesterséges intelligenciáról” — mind offline, az első letöltés után.
+- A csomag a **Beállítások → Modellekben** külön **Adatcsomag** kártyaként jelenik meg, letölthető és törölhető. Nem szerepel a chat modellválasztóban, és nem növeli az alkalmazás héját. Online az első kérdésnél magától betöltődik; **szigorú offline módban nem indul hálózati letöltés**.
+- A Magyarusz okosan keres a csomagban: felismeri a kérdés témáját, és nem keveri össze a beszélgetési sablonokkal. „Fejlődés” most a szótár méretét is mutatja; a segítség forrásmegjelölést tartalmaz.
+
 ## v1.5.8 — 2026-11-27
 
 - **Okos modellváltás offline:** ha a kiválasztott modell (pl. Nova) nincs a gyorsítótárban, az app most a legjobb ténylegesen elérhető modellre vált, és ezt a választást is elmenti — nem csak az adott üzenethez. Kódmódban a Forge, beszélgetésben a Nova, majd a Nova Lite, a Magyarusz és a Szikra a sorrend.

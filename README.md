@@ -93,6 +93,8 @@ A Magyarusz beépített szótára magyar Wikipédia-cikkekből származó ténye
 
 A v1.5.8 óta a Magyarusz számos kész alkalmazást ír egyetlen HTML fájlba: **Flappy Bird, beszélgető app, sakk, Snake, memóriajáték, kvíz, jegyzetapp és rajzoló**. Ha olyan alkalmazást kérsz, aminek nincs kész sablonja, akkor sem mond „nem tudom”: a kért névvel egy működő, bővíthető alapot ad, amit a ▶ Futtatás gombbal rögtön ki is próbálhatsz.
 
+A v1.5.9 óta a Magyaruszhoz külön, **opcionálisan letölthető tudáscsomag** tartozik: **107 892 magyar szó és fogalom**. A Magyar Wikipédia rövid bevezetői, a Magyar WordNet definíciói és egy magyar helyesírási szótár alapján olyan kérdésekre is magyarázatot ad, mint „Mi az a sakk?”, „Ki volt Mátyás király?” vagy „Mesélj a mesterséges intelligenciáról”. A csomagot a **Beállítások → Modellek → 📚 Magyarusz tudáscsomag** kártyán kell egyszer letölteni; utána teljesen offline működik. Online módon az első kérdésnél magától betöltődik, külön gomb nélkül. **Szigorú offline módban vagy hálózat nélkül nem indul letöltés**: ha a csomag nincs a gyorsítótárban, a beépített szótár és a tanított válaszok működnek. Nem jelenik meg a chat modellválasztóban, és nem növeli az alkalmazás alapméretét. A források licence: Magyar Wikipédia (CC BY-SA), Magyar WordNet (CC BY-SA 4.0), magyar helyesírási szótár (LGPL/MPL).
+
 A v1.4.9-ban **nincs időzítő**: a modell addig ír, amíg a beállított hosszúságú válasz el nem készül (alapértelmezés: 128 token). A gyorsaságot a kisebb q4f16 modell, a rövid rendszerüzenet és az újrahasznált, betöltve tartott modell adja — **nem a válasz lecsonkítása**. Ha mégis gyorsabb eredményt szeretnél, a csevegőmező modellgombjából válassz **⚡ Szikrát**.
 
 ## Korlátok

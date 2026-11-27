@@ -101,6 +101,7 @@
   const KEY = 'magyarusz_agy_v1';
   const SEED_V = 5;
   const FENCE = '\x60\x60\x60';
+  const PACK_URL = './magyarusz-pack.js?v=1.5.9';
   const S1 = '<scr'+'ipt>', S2 = '<\/scr'+'ipt>';
 
   let storageOK = true;
@@ -232,6 +233,93 @@
     return _dict;
   }
 
+  /* ---------- Opcionalis, letoltheto 100 000+ elemu tudascsomag ---------- */
+  let _packPromise = null;
+  const PACK_PREFIX = /^(?:mi az a|mi az|mi a|mit jelent a|mit jelent az|mit jelent|ki volt|ki az a|ki a|meselj a|meselj|mondj valamit a|mondj valamit|magyarazd el a|magyarazd a|magyarazd|magyarazd el)\s+/;
+  function packIndex(){
+    const p = window.NEXA_PACK;
+    if(!p || !Array.isArray(p.entries) || p._index) return p && p._index;
+    const m = new Map();
+    for(const e of p.entries){
+      if(Array.isArray(e) && e[0] && e[1]){
+        const k = flat(e[0]);
+        if(k && !m.has(k)) m.set(k, e);
+      }
+    }
+    p._index = m;
+    return m;
+  }
+  async function packReady(){
+    if(window.NEXA_PACK && Array.isArray(window.NEXA_PACK.entries)) return true;
+    if(_packPromise) return _packPromise;
+    _packPromise = (async()=>{
+      let ok = false;
+      try{
+        // Előbb a gyorsítótárból próbáljuk — szigorú offline módban így
+        // egyáltalán nem indul hálózati kérés.
+        let cached = null;
+        try{ cached = await caches.match(PACK_URL); }catch(e){}
+        if(cached){
+          try{
+            const text = await cached.text();
+            if(text && !window.NEXA_PACK) (0,eval)(text.replace(/^\uFEFF/, ''));
+            ok = Boolean(packIndex());
+          }catch(e){ ok = false; }
+        }
+        const strict = localStorage.getItem('offline') === '1' || navigator.onLine === false;
+        if(!ok && !strict){
+          ok = await new Promise(resolve=>{
+            const s = document.createElement('script');
+            s.src = PACK_URL; s.async = true;
+            s.onload = ()=>resolve(Boolean(packIndex()));
+            s.onerror = ()=>resolve(false);
+            document.head.appendChild(s);
+          });
+        }
+      }catch(e){ ok = false; }
+      if(!ok) _packPromise = null;   // később, online újra próbálhatjuk
+      return ok;
+    })();
+    return _packPromise;
+  }
+  const HU_SUF = ['szamara','kent','egyutt','rol','tol','bol','ban','ben','nak','nek','hoz','hez','val','vel','on','en','an','at','et','ot','ast','est','as','es','ok','ak','ek','k','n','m','d','t','a','e','i','o','u'];
+  function stemWord(w){
+    for(const s of HU_SUF){
+      if(w.length > s.length + 2 && w.endsWith(s)) return w.slice(0, -s.length);
+    }
+    return w;
+  }
+  function packLookup(q){
+    const m = packIndex(); if(!m) return null;
+    const f = flat(String(q||'')).replace(PACK_PREFIX, '');
+    const toks = f.split(' ').filter(Boolean);
+    if(!toks.length) return null;
+    const forms = toks.map(w=>[w, stemWord(w)]);
+    // Előbb a teljes, majd a ragozott többszavas kifejezések.
+    for(let n=Math.min(4,toks.length); n>=1; n--){
+      for(let i=0; i+n<=toks.length; i++){
+        const part = forms.slice(i,i+n);
+        for(let mask=0; mask<(1<<n); mask++){
+          const key = part.map((p,j)=> (mask & (1<<j)) ? p[1] : p[0]).join(' ');
+          const hit = m.get(key);
+          if(hit) return hit;
+        }
+      }
+    }
+    // Végül hosszú prefixek az egyes ragozott szavakhoz („sakkot”, „Budapesten”).
+    for(const [w,s] of forms){
+      for(const cand of [w,s]){
+        for(let n=Math.min(cand.length,18); n>=4; n--){
+          const hit = m.get(cand.slice(0,n));
+          if(hit) return hit;
+        }
+      }
+    }
+    return null;
+  }
+  function packAnswer(q){ const hit = packLookup(q); return hit ? hit[1] : null; }
+  function packHasTopic(q){ return Boolean(packLookup(q)); }
+
   const UNITS = {
     length:{meter:1,m:1,mm:.001,milimeter:.001,millimeter:.001,cm:.01,centimeter:.01,km:1000,kilometer:1000,merfold:1609.344,mile:1609.344,lab:.3048,foot:.3048,feet:.3048,ft:.3048,inch:.0254,huvelyk:.0254,col:.0254,yard:.9144,jard:.9144},
     mass:{g:.001,gramm:.001,dkg:.01,dekagramm:.01,kg:1,kilo:1,kilogramm:1,tonna:1000,font:.45359237,pound:.45359237,lb:.45359237,lbs:.45359237,unc:.0283495,ounce:.0283495,oz:.0283495},
@@ -325,7 +413,10 @@
       key = key.replace(/^(az|a|egy) /,'').trim();
       const r = dictInit()[dir][key];
       if(r) return dir==='hu' ? key+' = '+r : key+' = '+r;
-      return 'Ezt a szót még nem ismerem ('+Object.keys(dictInit().hu).length+' szót tudok). Taníthatod: „Tanulj: mi az '+key+' angolul => ...”';
+      const pd = packAnswer(key);
+      if(pd) return key+' — '+pd;
+      const pc = (window.NEXA_PACK && window.NEXA_PACK.count) || 0;
+      return 'Ezt a szót még nem ismerem ('+(pc ? pc+' szó/fogalom a letöltött csomagban' : Object.keys(dictInit().hu).length+' beépített szó')+'). Taníthatod: „Tanulj: mi az '+key+' angolul => ...”';
     }
 
     // dátum
@@ -1915,7 +2006,7 @@ html:`@H@<title>Rajzoló</title>
     // A Wikipediabol tanult tenyeket ne zerbeleje meg a tobbresz-beszelgetes
     // („meselj Budapestrol” korabban veletlen iroi adatot mondott vissza).
     const _f = flat(raw);
-    if(WIKI.some(([t])=> _f.includes(flat(t)))) return null;
+    if(WIKI.some(([t])=> _f.includes(flat(t))) || packHasTopic(raw)) return null;
     if(raw.length>240 || /[`<>{}]/.test(raw)) return null;
     const prot = raw.replace(/(\d)[,.](\d)/g, '$1§$2');
     const chunks = prot.split(/[,;.!?\n]+/).map(c=>c.replace(/§/g,'.').trim()).filter(Boolean);
@@ -2019,8 +2110,9 @@ html:`@H@<title>Rajzoló</title>
     a.forEach(v=>out+=cs[v%cs.length]); return out;
   }
 
-  function reply(raw){
+  async function reply(raw){
     const n = norm(raw); let m;
+    await packReady();
     if(CRISIS.test(flat(raw))){ pending=null; return {t:CRISIS_TXT}; }
 
     if(pending){
@@ -2047,6 +2139,14 @@ html:`@H@<title>Rajzoló</title>
       if(b){ st.kb = st.kb.filter(i=>i!==b.it); save(); hud(); return {t:'Elfelejtettem: „'+b.it.q+'”'}; }
       return {t:'Nem találok ilyet a tudásomban.'};
     }
+    // A csomagból származó tényszerű válaszokat ne írja felül a hangulat/köszönés-sablon.
+    const appVerb = /(csinalj|csinal|irj|generalj|general|keszits|rajzol|fejlessz|modosit|fordit|kell)/.test(n);
+    if(!appVerb && !/(angolul|magyarul)\b/.test(n) && (
+        /^(?:mi az|mi a |mit jelent|ki volt|ki az a|ki a |meselj|mondj valamit|magyarazd el|magyarazd|a szo|szotar)/.test(n) ||
+        (!codeIntent(n) && words(raw).length<=3)
+      )){
+      const pkEarly = packAnswer(raw); if(pkEarly) return {t:pkEarly};
+    }
     { const q1 = words(raw).length<=9 ? qi(raw) : null;
       if(q1 && /^(repeat|laugh|andyou|mood|fact|fact\?|name\?)$/.test(q1.kind)){ if(q1.apply) q1.apply(); ctx.kind=q1.kind; return {t:q1.text()}; }
       const cp = compose(raw); if(cp) return cp; }
@@ -2058,7 +2158,7 @@ html:`@H@<title>Rajzoló</title>
     if(/mi a nevem|hogy hivnak engem/.test(n)) return {t: st.name ? 'A neved '+st.name+'.' : 'Még nem mondtad meg. Írd: „A nevem …”'};
 
     if(/^(segitseg|help|sugo)/.test(n)) return {t:
-      'Ezt tudom:\n• hétköznapi beszélgetés: több dolgot is felismerek egy üzenetben („szia, hogy vagy”), megjegyzem, amit mondasz („Szeretem a pizzát”, „A kedvenc színem a kék”), és ha több választ tanítasz („Tanulj még: …”), váltogatom őket\n• beszélgetés és kérdések (Magyarország, tudomány, programozás)\n• kód: „írj python ciklust”, „css flexbox”, „sql join”, „git push”, „html oldal”\n• generátor: „írj python függvényt, nevű osszead, paraméterek: a, b”, „python osztály Auto nevű”\n• kész programok: „írj számológépet”, „számológép szivárványos háttérrel”, „todo lista”, „számkitalálós játék”, „stopper”, „1-től 20-ig páros számok”, „két szám szorzása”\n• játékok és appok: „csinálj Flappy Birdöt”, „beszélgető appot”, „sakkot”, „Snake-et”, „memóriajátékot”, „kvizet”, „jegyzetappot”, „rajzolót” — mindegyik egyetlen, futtatható HTML fájl\n• HTML és JavaScript kód alatt ▶ Futtatás: azonnal működő programként megnyílik, Mentés gombbal fájlba is teheted\n• ⚙ gomb: valódi AI bekötése (opcionális)\n• számolás: 12*7+3, „20% of 150”, „prím-e 97”, „faktoriális 10”, „négyzetgyök 144”, „lnko 12 18”, „római szám 2024”, „binárisan 42”\n• átváltás: „5 km hány mérföld”, „20 celsius fahrenheit”, „2 óra hány perc”\n• dátum: „hány nap van karácsonyig”, „milyen nap volt 2000.01.01”\n• szótár: „angolul alma”, „mi az apple magyarul”\n• kérdezz bátran: Magyarország, földrajz, történelem, tudomány, technika, sport, kultúra, főzés, egészség (általános), „közmondás”, „érdekesség”\n• idő, dátum, vicc, jelszó generálás\n• „kódlista”: milyen kódokat ismerek\n• TANÍTÁS: „Tanulj: kérdés => válasz” (a válasz lehet kód is)\n• „felejtsd el: …”, „fejlődés”'};
+      'Ezt tudom:\n• hétköznapi beszélgetés: több dolgot is felismerek egy üzenetben („szia, hogy vagy”), megjegyzem, amit mondasz („Szeretem a pizzát”, „A kedvenc színem a kék”), és ha több választ tanítasz („Tanulj még: …”), váltogatom őket\n• beszélgetés és kérdések (Magyarország, tudomány, programozás)\n• kód: „írj python ciklust”, „css flexbox”, „sql join”, „git push”, „html oldal”\n• generátor: „írj python függvényt, nevű osszead, paraméterek: a, b”, „python osztály Auto nevű”\n• kész programok: „írj számológépet”, „számológép szivárványos háttérrel”, „todo lista”, „számkitalálós játék”, „stopper”, „1-től 20-ig páros számok”, „két szám szorzása”\n• játékok és appok: „csinálj Flappy Birdöt”, „beszélgető appot”, „sakkot”, „Snake-et”, „memóriajátékot”, „kvizet”, „jegyzetappot”, „rajzolót” — mindegyik egyetlen, futtatható HTML fájl\n• HTML és JavaScript kód alatt ▶ Futtatás: azonnal működő programként megnyílik, Mentés gombbal fájlba is teheted\n• ⚙ gomb: valódi AI bekötése (opcionális)\n• számolás: 12*7+3, „20% of 150”, „prím-e 97”, „faktoriális 10”, „négyzetgyök 144”, „lnko 12 18”, „római szám 2024”, „binárisan 42”\n• átváltás: „5 km hány mérföld”, „20 celsius fahrenheit”, „2 óra hány perc”\n• dátum: „hány nap van karácsonyig”, „milyen nap volt 2000.01.01”\n• szótár: „angolul alma”, „mi az apple magyarul”\n• 107 892 magyar szó és fogalom: „mi az a sakk”, „ki volt Mátyás király”, „mesélj a mesterséges intelligenciáról” — a csomagot a Beállítások → Modellekben egyszer le kell tölteni, utána offline is működik\n• tudásforrások: Magyar Wikipédia (CC BY-SA), Magyar WordNet (CC BY-SA 4.0), magyar helyesírási szótár (LGPL/MPL) — csak az opcionális adatcsomagban\n• kérdezz bátran: Magyarország, földrajz, történelem, tudomány, technika, sport, kultúra, főzés, egészség (általános), „közmondás”, „érdekesség”\n• idő, dátum, vicc, jelszó generálás\n• „kódlista”: milyen kódokat ismerek\n• TANÍTÁS: „Tanulj: kérdés => válasz” (a válasz lehet kód is)\n• „felejtsd el: …”, „fejlődés”'};
     if(/kodlista|milyen kodokat|milyen nyelveken/.test(n)){
       return {t: 'Kész programok: '+PROGS.map(p=>p.t).join(', ')+'\n\n'+Object.keys(LNAME).map(l=>LNAME[l]+': '+SNIP.filter(s=>s.l===l).map(s=>s.t).join(', ')).join('\n\n')};
     }
@@ -2071,9 +2171,9 @@ html:`@H@<title>Rajzoló</title>
     if(!/(program|kod|generator|python|javascript|\bjs\b)/.test(n) && (/(generalj|csinalj|adj|kell).*jelszo|jelszo.*(generalj|csinalj)/.test(n))) return {t:'Egy erős jelszó: '+password()+'\n(Csak itt jelent meg, sehova nem mentettem.)'};
     if(/fejlod|statisztik|hanyadik szint|mennyit tudsz|mennyit tanult/.test(n)){
       const {l} = level();
-      return {t:'Szint: '+l+'\nTudás: '+st.kb.length+' elem\nTőled tanult: '+st.stats.learned+'\nÜzenetek: '+st.stats.msgs+'\n👍 '+st.stats.up+'   👎 '+st.stats.down};
+      return {t:'Szint: '+l+'\nTudás: '+st.kb.length+' elem\nSzótár: '+((window.NEXA_PACK && window.NEXA_PACK.count) || 0)+' szó/fogalom (opcionális csomag)\nTőled tanult: '+st.stats.learned+'\nÜzenetek: '+st.stats.msgs+'\n👍 '+st.stats.up+'   👎 '+st.stats.down};
     }
-    if(/mondj valamit|meselj|kitalalj|szoljal/.test(n) && !WIKI.some(([t])=> flat(raw).includes(flat(t)))){
+    if(/mondj valamit|meselj|kitalalj|szoljal/.test(n) && !WIKI.some(([t])=> flat(raw).includes(flat(t))) && !packHasTopic(raw)){
       const b = babble();
       return {t: b || 'Még kevés mindent tudok ahhoz, hogy összerakjak valamit. Taníts még!'};
     }
@@ -2136,7 +2236,7 @@ html:`@H@<title>Rajzoló</title>
   function send(text){
     if(!text.trim()) return;
     add(text,'me'); st.hist.push({r:'me',t:text}); st.stats.msgs++; trim();
-    setTimeout(async ()=>{ let r; try{ r = reply(text); }catch(e){ r = {t:'Hopp, valami elromlott bennem: '+e.message}; }
+    setTimeout(async ()=>{ let r; try{ r = await reply(text); }catch(e){ r = {t:'Hopp, valami elromlott bennem: '+e.message}; }
       if(r.llm){ await viaLLM(text); return; }
       say(r.t, r.item, null, r.note); save(); }, 200+Math.random()*250);
   }
